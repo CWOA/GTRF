@@ -1,0 +1,64 @@
+<?xml version="1.0"?>
+<sdf version="1.4">
+  <world name="default">
+
+    <!-- Add a sun object -->
+    <include>
+      <uri>model://sun</uri>
+    </include>
+
+    <!-- Add a field-like ground plane -->
+    <include>
+      <uri>model://field_ground_plane</uri>
+    </include>
+
+    <!-- Add cow object at the origin -->
+    <model name="cow">
+      <pose>4 0 0  0 0 0</pose>
+      <static>true</static>
+      <link name="body">
+        <visual name="visual">
+          <geometry>
+            <mesh>
+              <uri>model://cow_normalised.dae</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+
+    <!-- To add a sky with moving clouds -->
+    <scene>
+      <sky>
+        <clouds>
+          <speed>9</speed>
+        </clouds>
+      </sky>
+    </scene>
+
+<!--       <model name="cow">
+      <link name="cow">
+        <pose>0 0 0  0 0 0</pose>
+        <collision name="cow_coll">
+          <geometry>
+            <mesh>
+              <uri>file://cow_normalised.dae</uri>
+              <scale>1 1 1</scale>
+            </mesh>
+          </geometry>
+        </collision>
+        <visual name="cow">
+          <geometry>
+            <mesh>
+              <uri>file://cow_normalised.dae</uri>
+              <scale>1 1 1</scale>
+            </mesh>
+          </geometry>
+          <cast_shadows>false</cast_shadows>
+        </visual>
+      </link>
+      <static>true</static>
+    </model> -->
+
+  </world>
+</sdf>
