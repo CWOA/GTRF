@@ -11,12 +11,15 @@
   <!-- Spawn simulated quadrotor uav -->
   <include file="$(find hector_quadrotor_gazebo)/launch/spawn_quadrotor_with_downward_gimbal_cam.launch" />
 
+  <arg name="save_id" />
+
   <!-- Start image processing node on image topic from UAV -->
   <node name="image_processor" pkg="uav_id" type="ImageProcessor.py" output="screen">
     <!-- Node topic remaps -->
     <remap from="cam_img" to="/downward_cam/camera/image"/>
     <!-- Node input parameters -->
   	<param name="save_input_frames" type="bool" value="true"/>
+    <param name="frame_save_loc" value="$(find uav_id)/output/$(arg save_id)/"/>
   </node>
 
   <!-- Start rviz visualization with preset config -->

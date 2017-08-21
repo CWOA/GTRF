@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import os
 import cv2
 import roslib
 roslib.load_manifest('uav_id')
@@ -21,26 +22,32 @@ class ImageProcessor:
 		# ROS parameters (from launch file or otherwise) ###############################
 
 		# Defines the relative location of the Inception v3 tensorflow graph (.pb)
-		self._v3_network_loc = ros.get_param("~v3-network-loc")
+		self._enable_img_proc = ros.get_param("~enable_img_proc", False)
+		self._v3_network_loc = ros.get_param("~v3-network-loc", "")
 
-		# If true, input frames from the camera are saved via OpenCV at a defined
-		# destination
+		# If true, input frames from the camera are saved via OpenCV at the destination
+		# defined in the second parameter
 		self._save_input_frames = ros.get_param("~save_input_frames")
+		self._save_frame_loc = ros.get_param("~frame_save_loc")
+		self._save_frame_ctr = 0
+		if not os.path.exists(self._save_frame_loc):
+			os.makedirs(self._save_frame_loc)
 
 		# Class attributes
 		self._bridge = CvBridge()
 		self._window_name = "ImageProcessor"
 
 		# Tensorflow attributes/initialisation
-		with tf.gfile.FastGFile(self._v3_network_loc, 'rb') as f:
-			graph_def = tf.GraphDef()
-			graph_def.ParseFromString(f.read())
-			_ = tf.import_graph_def(graph_def, name='')
-			ros.loginfo("Loaded network at directory: %s", self._v3_network_loc)
+		if self._enable_img_proc:
+			with tf.gfile.FastGFile(self._v3_network_loc, 'rb') as f:
+				graph_def = tf.GraphDef()
+				graph_def.ParseFromString(f.read())
+				_ = tf.import_graph_def(graph_def, name='')
+				ros.loginfo("Loaded network at directory: %s", self._v3_network_loc)
 
-		self._tf_sesh = tf.Session()
-		self._pool_tensor = self._tf_sesh.graph.get_tensor_by_name('pool_3:0')
-
+			self._tf_sesh = tf.Session()
+			self._pool_tensor = self._tf_sesh.graph.get_tensor_by_name('pool_3:0')
+		
 	# Called each time an image from the camera is received
 	def imageCallback(self, image_msg):
 		# Try converting the image into OpenCV format from ROS
@@ -51,16 +58,18 @@ class ImageProcessor:
 
 		# Check whether we should save the image out to file
 		if self._save_input_frames:
-			cv2.imwrite('')
+			save_loc = self._save_frame_loc + str(self._save_frame_ctr) + '.jpg'
+			cv2.imwrite(save_loc, cv_image)
+			self._save_frame_ctr += 1
 
 		# Extract Inception v3 convolutional representation of the input image
-		v3_out = self.extractV3Pool(cv_image)
-		print v3_out
-		print v3_out.shape
+		# v3_out = self.extractV3Pool(cv_image)
+		# print v3_out
+		# print v3_out.shape
 
-		# Display the image
-		cv2.imshow(self._window_name, cv_image)
-		cv2.waitKey(3)
+		# # Display the image
+		# cv2.imshow(self._window_name, cv_image)
+		# cv2.waitKey(3)
 
 	# Given an OpenCV image, extract its Inception V3 feature representation
 	def extractV3Pool(self, image):
@@ -89,4 +98,5 @@ if __name__ == '__main__':
 		print "ImageProcessor node shutting down"
 	finally:
 		cv2.destroyAllWindows()
-		ip._tf_sesh.close()
+		if ip._enable_img_proc:
+			ip._tf_sesh.close()
