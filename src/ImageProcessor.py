@@ -13,13 +13,19 @@ from cv_bridge import CvBridge, CvBridgeError
 
 class ImageProcessor:
 	def __init__(self):
-		# Subscriber and respective callback functions
+		# Subscribers and respective callback functions ################################
 		sub_image = ros.Subscriber('cam_img', Image, self.imageCallback)
 
-		# Publishers
+		# Publishers ###################################################################
 
-		# ROS parameters (from launch file or otherwise)
+		# ROS parameters (from launch file or otherwise) ###############################
+
+		# Defines the relative location of the Inception v3 tensorflow graph (.pb)
 		self._v3_network_loc = ros.get_param("~v3-network-loc")
+
+		# If true, input frames from the camera are saved via OpenCV at a defined
+		# destination
+		self._save_input_frames = ros.get_param("~save_input_frames")
 
 		# Class attributes
 		self._bridge = CvBridge()
@@ -43,6 +49,10 @@ class ImageProcessor:
 		except CvBridgeError as e:
 			print e
 
+		# Check whether we should save the image out to file
+		if self._save_input_frames:
+			cv2.imwrite('')
+
 		# Extract Inception v3 convolutional representation of the input image
 		v3_out = self.extractV3Pool(cv_image)
 		print v3_out
@@ -59,11 +69,10 @@ class ImageProcessor:
 		tf_image = np.asarray(image)
 		tf_image = np.expand_dims(tf_image, axis=0)
 
-		# Get the image's pool3 CNN representation
+		# Get the image's pool3 CNN representation in 2048-wide vector form
 		cnn_representation = self._tf_sesh.run(self._pool_tensor,
 			{'Mul:0': tf_image})
-
-		return cnn_representation
+		return cnn_representation[0][0][0]
 
 # Entry method
 if __name__ == '__main__':
@@ -80,3 +89,4 @@ if __name__ == '__main__':
 		print "ImageProcessor node shutting down"
 	finally:
 		cv2.destroyAllWindows()
+		ip._tf_sesh.close()
