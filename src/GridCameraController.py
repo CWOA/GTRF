@@ -3,6 +3,7 @@
 import roslib
 roslib.load_manifest('uav_id')
 import rospy as ros
+import numpy as np
 from gazebo_msgs.msg import *
 from std_srvs.srv import Empty
 from sensor_msgs.msg import Image
@@ -33,6 +34,9 @@ class GridCameraController:
 		# Store the current object pose
 		self._current_pose = ModelState()
 
+		# Store the current simulated camera image
+		self._current_img = np.empty(1)
+
 		# Model robot name from gazebo/launch file/xacro definition
 		self._rob_name = "sim_cam"
 
@@ -61,11 +65,9 @@ class GridCameraController:
 	def imageCallback(self, image_msg):
 		# Try converting the image into OpenCV format from ROS
 		try:
-			cv_image = self._bridge.imgmsg_to_cv2(image_msg, "bgr8")
+			self._current_img = self._bridge.imgmsg_to_cv2(image_msg, "bgr8")
 		except CvBridgeError as e:
 			print e
-
-		# Do something with the image
 
 	def move(self, move_input):
 		desired_pose = self._current_pose

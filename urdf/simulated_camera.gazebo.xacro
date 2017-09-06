@@ -56,12 +56,12 @@
 	</link>
 
 	<joint name="optical_joint" type="fixed">
-		<origin xyz="0 0 0" rpy="0 0 0"/>
+		<origin xyz="0 0 0" rpy="0 ${M_PI/2} 0"/>
 		<parent link="body_link"/>
-		<child link="optical_frame"/>
+		<child link="optical_link"/>
 	</joint>
 
-	<link name="optical_frame">
+	<link name="optical_link">
 		<inertial>
 			<mass value="1" />
 			<origin xyz="0 0 0" />
@@ -78,16 +78,16 @@
 	<gazebo reference="body_link">
 		<gravity>0</gravity>
 	</gazebo>
-<!-- 	<gazebo reference="optical_frame">
+	<gazebo reference="optical_link">
 		<gravity>0</gravity>
-	</gazebo> -->
+	</gazebo>
 
-<!-- 	<gazebo reference="base_link">
+	<gazebo reference="optical_link">
 		<gravity>0</gravity>
 		<sensor type="camera" name="$(arg name)_camera_sensor">
 			<update_rate>$(arg update_rate)</update_rate>
 			<camera>
-				<horizontal_fov>$(arg hfov) * M_PI/180.0</horizontal_fov>
+				<horizontal_fov>${$(arg hfov) * M_PI/180.0}</horizontal_fov>
 				<image>
 					<format>$(arg image_format)</format>
 					<width>$(arg res_x)</width>
@@ -103,9 +103,9 @@
 				<cameraName>$(arg name)</cameraName>
 				<imageTopicName>$(arg ros_topic)</imageTopicName>
 				<cameraInfoTopicName>$(arg cam_info_topic)</cameraInfoTopicName>
-				<frameName>optical_frame</frameName>
+				<frameName>optical_link</frameName>
 			</plugin>
 		</sensor>
-	</gazebo> -->
+	</gazebo>
 </robot>
 
