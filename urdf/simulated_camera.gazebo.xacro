@@ -1,0 +1,111 @@
+<?xml version="1.0"?>
+
+<robot name="sim_cam" xmlns:xacro="http://www.ros.org/wiki/xacro">
+	<xacro:property name="M_PI" value="3.1415926535897931" />
+
+	<!-- Camera properties -->
+	<arg name="name" default="downward_cam"/>
+	<arg name="update_rate" default="20"/>
+	<arg name="hfov" default="100"/>
+	<arg name="image_format" default="R8G8B8"/>
+	<arg name="res_x" default="640"/>
+	<arg name="res_y" default="480"/>
+	<arg name="ros_topic" default="camera/image"/>
+	<arg name="cam_info_topic" default="camera/info"/>
+
+	<link name="base_link">
+		<inertial>
+			<mass value="1" />
+			<origin xyz="0 0 0" />
+			<inertia 
+				ixx="1" ixy="0" ixz="0" 
+				iyy="1" iyz="0" 
+				izz="1" />
+		</inertial>
+	</link>
+
+	<joint name="base_joint" type="fixed">
+		<origin xyz="0 0 0" rpy="0 0 0"/>
+		<parent link="base_link"/>
+		<child link="body_link"/>
+	</joint>
+
+	<link name="body_link">
+		<inertial>
+			<mass value="1" />
+			<origin xyz="0 0 0" />
+			<inertia 
+				ixx="1" ixy="0" ixz="0" 
+				iyy="1" iyz="0" 
+				izz="1" />
+		</inertial>
+
+		<visual>
+			<origin xyz="0 0 0" rpy="0 0 0" />
+			<geometry>
+				<mesh filename="package://hector_quadrotor_description/meshes/quadrotor/quadrotor_base.dae"/>
+			</geometry>
+		</visual>
+
+		<collision>
+			<origin xyz="0 0 0" rpy="0 0 0" />
+			<geometry>
+				<mesh filename="package://hector_quadrotor_description/meshes/quadrotor/quadrotor_base.stl"/>
+			</geometry>
+		</collision>
+	</link>
+
+	<joint name="optical_joint" type="fixed">
+		<origin xyz="0 0 0" rpy="0 0 0"/>
+		<parent link="body_link"/>
+		<child link="optical_frame"/>
+	</joint>
+
+	<link name="optical_frame">
+		<inertial>
+			<mass value="1" />
+			<origin xyz="0 0 0" />
+			<inertia 
+				ixx="1" ixy="0" ixz="0" 
+				iyy="1" iyz="0" 
+				izz="1" />
+		</inertial>
+	</link>
+
+	<gazebo reference="base_link">
+		<gravity>0</gravity>
+	</gazebo>
+	<gazebo reference="body_link">
+		<gravity>0</gravity>
+	</gazebo>
+<!-- 	<gazebo reference="optical_frame">
+		<gravity>0</gravity>
+	</gazebo> -->
+
+<!-- 	<gazebo reference="base_link">
+		<gravity>0</gravity>
+		<sensor type="camera" name="$(arg name)_camera_sensor">
+			<update_rate>$(arg update_rate)</update_rate>
+			<camera>
+				<horizontal_fov>$(arg hfov) * M_PI/180.0</horizontal_fov>
+				<image>
+					<format>$(arg image_format)</format>
+					<width>$(arg res_x)</width>
+					<height>$(arg res_y)</height>
+				</image>
+				<clip>
+					<near>0.01</near>
+					<far>100</far>
+				</clip>
+			</camera>
+
+			<plugin name="$(arg name)_camera_controller" filename="libgazebo_ros_camera.so">
+				<cameraName>$(arg name)</cameraName>
+				<imageTopicName>$(arg ros_topic)</imageTopicName>
+				<cameraInfoTopicName>$(arg cam_info_topic)</cameraInfoTopicName>
+				<frameName>optical_frame</frameName>
+			</plugin>
+		</sensor>
+	</gazebo> -->
+</robot>
+

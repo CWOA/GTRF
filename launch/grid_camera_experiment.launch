@@ -9,11 +9,11 @@
   <include file="$(find uav_id)/launch/start_world.launch">
   	<arg name="world" value="$(find uav_id)/world/test.world"/>
     <!-- Start Gazebo without visualisation/GUI (still produces simulated image topic) -->
-  	<arg name="gui" value="false"/>
+  	<arg name="gui" value="true"/>
   </include>
 
-  <!-- Spawn simulated quadrotor uav -->
-  <include file="$(find hector_quadrotor_gazebo)/launch/spawn_quadrotor_with_downward_gimbal_cam.launch" />
+  <!-- Spawn GRID-based, no-gravity camera -->
+  <include file="$(find uav_id)/launch/spawn_static_camera.launch" />
 
   <arg name="save_id" />
 
@@ -24,14 +24,14 @@
     <!-- Node input parameters -->
   	<param name="save_input_frames" type="bool" value="false"/>
     <param name="frame_save_loc" value="$(find uav_id)/output/$(arg save_id)/"/>
-    <param name="disp_raw_img_feed" type="bool" value="false"/>
+    <param name="disp_raw_img_feed" type="bool" value="true"/>
   </node>
 
   <!-- Start the node that controls the flight of the UAV -->
-  <node name="fligh_path" pkg="uav_id" type="FlightPath.py" output="screen" required="false">
-
+  <node name="grid_camera_controller" pkg="uav_id" type="GridCameraController.py" output="screen" required="false">
+    <param name="granularity" type="int" value="1"/>
   </node>
 
   <!-- Start rviz visualization with preset config -->
-  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find uav_id)/rviz_cfg/will_test.rviz"/>
+<!--   <node pkg="rviz" type="rviz" name="rviz" args="-d $(find uav_id)/rviz_cfg/will_test.rviz"/> -->
 </launch>

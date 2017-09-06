@@ -23,14 +23,17 @@ class ImageProcessor:
 
 		# Defines the relative location of the Inception v3 tensorflow graph (.pb)
 		self._enable_img_proc = ros.get_param("~enable_img_proc", False)
-		self._v3_network_loc = ros.get_param("~v3-network-loc", "")
+		self._v3_network_loc = ros.get_param("~v3_network_loc", "")
+
+		# Whether to display the camera output before processing
+		self._disp_raw_img_feed = ros.get_param("~disp_raw_img_feed", False)
 
 		# If true, input frames from the camera are saved via OpenCV at the destination
 		# defined in the second parameter
 		self._save_input_frames = ros.get_param("~save_input_frames")
 		self._save_frame_loc = ros.get_param("~frame_save_loc")
 		self._save_frame_ctr = 0
-		if not os.path.exists(self._save_frame_loc):
+		if self._save_input_frames and not os.path.exists(self._save_frame_loc):
 			os.makedirs(self._save_frame_loc)
 
 		# Class attributes
@@ -56,6 +59,11 @@ class ImageProcessor:
 		except CvBridgeError as e:
 			print e
 
+		# Check whether we should display the raw image
+		if self._disp_raw_img_feed:
+			cv2.imshow(self._window_name, cv_image)
+			cv2.waitKey(3)
+
 		# Check whether we should save the image out to file
 		if self._save_input_frames:
 			save_loc = self._save_frame_loc + str(self._save_frame_ctr) + '.jpg'
@@ -66,10 +74,6 @@ class ImageProcessor:
 		# v3_out = self.extractV3Pool(cv_image)
 		# print v3_out
 		# print v3_out.shape
-
-		# # Display the image
-		# cv2.imshow(self._window_name, cv_image)
-		# cv2.waitKey(3)
 
 	# Given an OpenCV image, extract its Inception V3 feature representation
 	def extractV3Pool(self, image):
