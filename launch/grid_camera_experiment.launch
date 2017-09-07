@@ -1,9 +1,5 @@
 <?xml version="1.0"?>
 
-<!-- Launch with command as follows: -->
-<!-- roslaunch uav_id passive_flyover_experiment.launch save_id:=x -->
-<!-- where x is the desired ID prefix for saved output frames -->
-
 <launch>
   <!-- Start Gazebo with field/cow world -->
   <include file="$(find uav_id)/launch/start_world.launch">
@@ -15,21 +11,16 @@
   <!-- Spawn GRID-based, no-gravity camera -->
   <include file="$(find uav_id)/launch/spawn_static_camera.launch" />
 
-  <arg name="save_id" />
-
-  <!-- Start image processing node on image topic from UAV -->
-  <node name="image_processor" pkg="uav_id" type="ImageProcessor.py" output="screen">
-    <!-- Node topic remaps -->
-    <remap from="cam_img" to="/downward_cam/camera/image"/>
-    <!-- Node input parameters -->
-  	<param name="save_input_frames" type="bool" value="false"/>
-    <param name="frame_save_loc" value="$(find uav_id)/output/$(arg save_id)/"/>
-    <param name="disp_raw_img_feed" type="bool" value="true"/>
-  </node>
-
   <!-- Start the node that controls the flight of the UAV -->
   <node name="grid_camera_controller" pkg="uav_id" type="GridCameraController.py" output="screen" required="false">
+    <!-- Node topic remaps -->
+    <remap from="cam_img" to="/downward_cam/camera/image"/>
+    <remap from="get_all_model_states" to="/gazebo/model_states"/>
+    <remap from="set_model_state" to="/gazebo/set_model_state"/>
+    
+    <!-- Node input parameters -->
     <param name="granularity" type="int" value="1"/>
+    <param name="disp_raw_img_feed" type="bool" value="true"/>
   </node>
 
   <!-- Start rviz visualization with preset config -->

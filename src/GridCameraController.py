@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import cv2
 import roslib
 roslib.load_manifest('uav_id')
 import rospy as ros
@@ -9,27 +10,28 @@ from std_srvs.srv import Empty
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 
-
 class GridCameraController:
-	def __init__(self):
+	# Class initalised with desired starting position for simulated UAV. Default is (0,0,3.5)
+	def __init__(self, init_x=0, init_y=0, init_z=3.5):
 		### ROS Publishers
-		self._pos_pub = ros.Publisher('/gazebo/set_model_state', ModelState, queue_size=1)
+		self._pos_pub = ros.Publisher('set_model_state', ModelState, queue_size=1)
 
 		### ROS Subscribers
-		self._pos_sub = ros.Subscriber('/gazebo/model_states', ModelStates, self.poseCallback)
+		self._pos_sub = ros.Subscriber('get_all_model_states', ModelStates, self.poseCallback)
 		self._sub_image = ros.Subscriber('cam_img', Image, self.imageCallback)
 
 		### ROS Parameters
 		self._granularity = ros.get_param("~granularity", 1)
+		self._disp_img = ros.get_param("~disp_raw_img_feed", False)
 
 		### Class attributes
 		# Movement vectors
-		self._forward	= []
-		self._backward 	= []
-		self._left 		= []
-		self._right 	= []
-		self._up 		= []
-		self._down 		= []
+		self._forward	= []	# +x
+		self._backward 	= []	# -x
+		self._left 		= []	# +y
+		self._right 	= []	# -y
+		self._up 		= []	# +z
+		self._down 		= []	# -z
 
 		# Store the current object pose
 		self._current_pose = ModelState()
@@ -38,22 +40,28 @@ class GridCameraController:
 		self._current_img = np.empty(1)
 
 		# Model robot name from gazebo/launch file/xacro definition
-		self._rob_name = "sim_cam"
+		self._robot_name = "sim_cam"
+
+		# For converting ROS image topics to OpenCV format
+		self._bridge = CvBridge()
+
+		# OpenCV window name 
+		self._window_name = "UAV Image feed"
 
 		### Pre-processing
+		# Update movement granularity given the supplied parameter
 		self.updateMovementVectors(self._granularity)
 
-	def updateMovementVectors(self, gran):
-		self._forward	= [gran,	0,		0]
-		self._backward	= [-gran,	0,		0]
-		self._left		= [0,	 gran,		0]
-		self._right		= [0,	-gran,		0]
-		self._up		= [0,		0,	 gran]
-		self._down		= [0,		0,	-gran]
+		# Teleport the UAV to the given initial position
+		ros.sleep(1)
+		ros.loginfo("Initialising grid UAV with x:{:}, y:{:}, z:{:}".format(init_x, init_y, init_z))
+		self.teleportAbsolute(init_x, init_y, init_z)
+
+	### ROS callback functions
 
 	def poseCallback(self, data):
 		try:
-			idx = data.name.index(self._rob_name)
+			idx = data.name.index(self._robot_name)
 			self._current_pose.model_name = data.name[idx]
 			self._current_pose.pose = data.pose[idx]
 			self._current_pose.twist = data.twist[idx]
@@ -69,20 +77,66 @@ class GridCameraController:
 		except CvBridgeError as e:
 			print e
 
-	def move(self, move_input):
+		# If we're meant to display image we've receivd
+		if self._disp_img:
+			cv2.imshow(self._window_name, self._current_img)
+			cv2.waitKey(3)
+
+	### Class methods
+	def updateMovementVectors(self, gran):
+		self._forward	= [gran,	0,		0]
+		self._backward	= [-gran,	0,		0]
+		self._left		= [0,	 gran,		0]
+		self._right		= [0,	-gran,		0]
+		self._up		= [0,		0,	 gran]
+		self._down		= [0,		0,	-gran]
+
+	# Teleport the UAV to an absolute position
+	def teleportAbsolute(self, x, y, z):
+		desired_pose = ModelState()
+		desired_pose.model_name = self._robot_name
+		desired_pose.pose.position.x = x
+		desired_pose.pose.position.y = y
+		desired_pose.pose.position.z = z
+		desired_pose.pose.orientation.x = 0
+		desired_pose.pose.orientation.y = 0
+		desired_pose.pose.orientation.z = 0
+		desired_pose.pose.orientation.w = 1
+		self._pos_pub.publish(desired_pose)
+
+	# Teleport the UAV relative to its current position by some movement vector
+	def teleportRelative(self, move_input):
 		desired_pose = self._current_pose
 		desired_pose.pose.position.x = self._current_pose.pose.position.x + move_input[0]
 		desired_pose.pose.position.y = self._current_pose.pose.position.y + move_input[1]
 		desired_pose.pose.position.z = self._current_pose.pose.position.z + move_input[2]
 		self._pos_pub.publish(desired_pose)
 
+	def moveForward(self):
+		self.teleportRelative(self._forward)
+
+	def moveBackward(self):
+		self.teleportRelative(self._backward)
+
+	def moveLeft(self):
+		self.teleportRelative(self._left)
+
+	def moveRight(self):
+		self.teleportRelative(self._right)
+
+	def moveUp(self):
+		self.teleportRelative(self._up)
+
+	def moveDown(self):
+		self.teleportRelative(self._down)
+
 # Entry method
 if __name__ == '__main__':
 	# Initialise this ROS node
 	ros.init_node('grid_camera_controller')
 
-	# Create an object instance
-	gcc = GridCameraController()
+	# Create object instance
+	gcc = GridCameraController(5,5,5)
 
 	ros.sleep(4)
 
@@ -90,19 +144,27 @@ if __name__ == '__main__':
 	try:
 		while not ros.is_shutdown():
 			ros.loginfo("Moving forward")
-			gcc.move(gcc._forward)
+			gcc.moveForward()
 			ros.sleep(2)
 
 			ros.loginfo("Moving backward")
-			gcc.move(gcc._backward)
+			gcc.moveBackward()
 			ros.sleep(2)
 
 			ros.loginfo("Moving up")
-			gcc.move(gcc._up)
+			gcc.moveUp()
 			ros.sleep(2)
 
 			ros.loginfo("Moving down")
-			gcc.move(gcc._down)
+			gcc.moveDown()
+			ros.sleep(2)
+
+			ros.loginfo("Moving left")
+			gcc.moveLeft()
+			ros.sleep(2)
+
+			ros.loginfo("Moving right")
+			gcc.moveRight()
 			ros.sleep(2)
 
 	except ros.ROSInterruptException:
