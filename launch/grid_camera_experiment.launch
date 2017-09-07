@@ -21,6 +21,7 @@
     <!-- Node input parameters -->
     <param name="granularity" type="int" value="1"/>
     <param name="disp_raw_img_feed" type="bool" value="true"/>
+    <param name="store_history" type="bool" value="true"/>
   </node>
 
   <!-- Start rviz visualization with preset config -->

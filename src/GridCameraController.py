@@ -2,6 +2,7 @@
 
 import cv2
 import roslib
+import pickle
 roslib.load_manifest('uav_id')
 import rospy as ros
 import numpy as np
@@ -23,6 +24,7 @@ class GridCameraController:
 		### ROS Parameters
 		self._granularity = ros.get_param("~granularity", 1)
 		self._disp_img = ros.get_param("~disp_raw_img_feed", False)
+		self._store_history = ros.get_param("~store_history", False)
 
 		### Class attributes
 		# Movement vectors
@@ -32,6 +34,9 @@ class GridCameraController:
 		self._right 	= []	# -y
 		self._up 		= []	# +z
 		self._down 		= []	# -z
+
+		# If enabled, the history of frames/movements will be stored
+		self._history = []
 
 		# Store the current object pose
 		self._current_pose = ModelState()
@@ -91,7 +96,7 @@ class GridCameraController:
 		self._up		= [0,		0,	 gran]
 		self._down		= [0,		0,	-gran]
 
-	# Teleport the UAV to an absolute position
+	# Teleport the UAV to an absolute position, only used for initial UAV position
 	def teleportAbsolute(self, x, y, z):
 		desired_pose = ModelState()
 		desired_pose.model_name = self._robot_name
@@ -106,6 +111,9 @@ class GridCameraController:
 
 	# Teleport the UAV relative to its current position by some movement vector
 	def teleportRelative(self, move_input):
+		if self._store_history:
+			self._history.append((self._current_img, move_input))
+
 		desired_pose = self._current_pose
 		desired_pose.pose.position.x = self._current_pose.pose.position.x + move_input[0]
 		desired_pose.pose.position.y = self._current_pose.pose.position.y + move_input[1]
@@ -129,6 +137,13 @@ class GridCameraController:
 
 	def moveDown(self):
 		self.teleportRelative(self._down)
+
+	# Called once main ROS loop terminates (naturally or via keyboard interrupt)
+	def cleanUp(self):
+		# Store movement history if we're meant to
+		if self._store_history:
+			with open("output/history.pkl", "wb") as fout:
+				pickle.dump(self._history, fout)
 
 # Entry method
 if __name__ == '__main__':
@@ -170,5 +185,6 @@ if __name__ == '__main__':
 	except ros.ROSInterruptException:
 		pass
 	finally:
+		gcc.cleanUp()
 		ros.loginfo("Experiment finished, shutting everything down..")
 		ros.signal_shutdown("Experiment finished")
