@@ -25,6 +25,7 @@ class GridCameraController:
 		self._granularity = ros.get_param("~granularity", 1)
 		self._disp_img = ros.get_param("~disp_raw_img_feed", False)
 		self._store_history = ros.get_param("~store_history", False)
+		self._save_location = ros.get_param("~history_save_loc", "")
 
 		### Class attributes
 		# Movement vectors
@@ -142,8 +143,9 @@ class GridCameraController:
 	def cleanUp(self):
 		# Store movement history if we're meant to
 		if self._store_history:
-			with open("output/history.pkl", "wb") as fout:
+			with open(self._save_location, "wb") as fout:
 				pickle.dump(self._history, fout)
+				ros.loginfo("Saved history to: {:}".format(self._save_location))
 
 # Entry method
 if __name__ == '__main__':
@@ -151,7 +153,7 @@ if __name__ == '__main__':
 	ros.init_node('grid_camera_controller')
 
 	# Create object instance
-	gcc = GridCameraController(5,5,5)
+	gcc = GridCameraController()
 
 	ros.sleep(4)
 

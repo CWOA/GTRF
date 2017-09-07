@@ -1,11 +1,13 @@
 <?xml version="1.0"?>
 
 <launch>
+  <arg name="save_id" />
+
   <!-- Start Gazebo with field/cow world -->
   <include file="$(find uav_id)/launch/start_world.launch">
   	<arg name="world" value="$(find uav_id)/world/test.world"/>
     <!-- Start Gazebo without visualisation/GUI (still produces simulated image topic) -->
-  	<arg name="gui" value="true"/>
+  	<arg name="gui" value="false"/>
   </include>
 
   <!-- Spawn GRID-based, no-gravity camera -->
@@ -22,6 +24,7 @@
     <param name="granularity" type="int" value="1"/>
     <param name="disp_raw_img_feed" type="bool" value="true"/>
     <param name="store_history" type="bool" value="true"/>
+    <param name="history_save_loc" value="$(find uav_id)/output/history_$(arg save_id).pkl"/>
   </node>
 
   <!-- Start rviz visualization with preset config -->
