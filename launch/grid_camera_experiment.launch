@@ -1,7 +1,11 @@
 <?xml version="1.0"?>
 
 <launch>
-  <arg name="save_id" />
+  <!-- Command line arguments -->
+  <arg name="save_id"/>
+
+  <!-- The ID of the cow to spawn in gazebo -->
+  <arg name="cow_display_id"/>
 
   <!-- Start Gazebo with field/cow world -->
   <include file="$(find uav_id)/launch/start_world.launch">
@@ -21,9 +25,9 @@
     <remap from="set_model_state" to="/gazebo/set_model_state"/>
     
     <!-- Node input parameters -->
-    <param name="granularity" type="int" value="1"/>
+    <param name="granularity" type="double" value="0.1"/>
     <param name="disp_raw_img_feed" type="bool" value="true"/>
-    <param name="store_history" type="bool" value="true"/>
+    <param name="store_history" type="bool" value="false"/>
     <param name="history_save_loc" value="$(find uav_id)/output/history_$(arg save_id).pkl"/>
   </node>
 

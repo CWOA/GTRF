@@ -20,7 +20,7 @@
         <visual name="visual">
           <geometry>
             <mesh>
-              <uri>model://cow_normalised.dae</uri>
+              <uri>model://cow20.dae</uri>
             </mesh>
           </geometry>
         </visual>
@@ -35,30 +35,6 @@
         </clouds>
       </sky>
     </scene>
-
-<!--       <model name="cow">
-      <link name="cow">
-        <pose>0 0 0  0 0 0</pose>
-        <collision name="cow_coll">
-          <geometry>
-            <mesh>
-              <uri>file://cow_normalised.dae</uri>
-              <scale>1 1 1</scale>
-            </mesh>
-          </geometry>
-        </collision>
-        <visual name="cow">
-          <geometry>
-            <mesh>
-              <uri>file://cow_normalised.dae</uri>
-              <scale>1 1 1</scale>
-            </mesh>
-          </geometry>
-          <cast_shadows>false</cast_shadows>
-        </visual>
-      </link>
-      <static>true</static>
-    </model> -->
 
   </world>
 </sdf>
