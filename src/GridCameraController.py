@@ -67,8 +67,7 @@ class GridCameraController:
 		# OpenCV window name 
 		self._window_name = "UAV Image feed"
 
-		self._nav_model = NavigationModel()
-		self._nav_model.loadModel()
+		self._nav_model = NavigationModel(load_model=True)
 
 		### Pre-processing
 		# Update movement granularity given the supplied parameter
@@ -238,7 +237,7 @@ class GridCameraController:
 
 		centred = False
 
-		self._nav_model.evaluateTrainedModel()
+		#self._nav_model.evaluateTrainedModel()
 
 		raw_input()
 
@@ -268,9 +267,9 @@ class GridCameraController:
 				print "Moved right"
 
 			# Sleep for a bit (to allow image callback to update)
-			ros.sleep(0.1)
+			ros.sleep(0.2)
 
-			raw_input()
+			#raw_input()
 
 
 	# Called once main ROS loop terminates (naturally or via keyboard interrupt)
