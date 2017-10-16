@@ -101,6 +101,14 @@ class FieldMap:
 		# Map is binary (cells are either 1: visited, 0: not visited)
 		self._map = np.zeros((self._grid_width, self._grid_height))
 
+		### Attributes for agent-visible window
+
+		# Number of cells centred around the agent visible around the agent
+		# e.g. with padding = 1, visible window would be 3x3
+		self._visible_padding = 1
+
+		self._line_thickness = 5
+
 		### Display attributes
 
 		# Bool to decide whether to actually visualise
@@ -121,6 +129,7 @@ class FieldMap:
 		self._visited_colour = (181,161,62)
 		self._agent_colour = (89,174,110)
 		self._target_colour = (64,30,162)
+		self._visible_colour = (247,242,236)
 
 	def visualise(self):
 		# Create image to render to
@@ -137,7 +146,7 @@ class FieldMap:
 		for x in range(self._grid_width):
 			for y in range(self._grid_height):
 				# Have we been to this coordinate before?
-				if self._map[x,y]:
+				if self._map[y,x]:
 					# Render this square as have being visited
 					img = self.renderGridPosition(x, y, img, self._visited_colour)
 
@@ -147,13 +156,34 @@ class FieldMap:
 											img, 
 											self._agent_colour		)
 
+		# Render the window that is visible to the agent
+		img = self.renderVisibilityWindow(	self._agent_x,
+											self._agent_y,
+											self._visible_padding,
+											self._line_thickness,
+											img,
+											self._visible_colour	)
+
 		# Display the image
 		cv2.imshow(self._window_name, img)
 		cv2.waitKey(0)
 
 	def renderGridPosition(self, x, y, img, colour):
-		img[x*self._grid_pixels:(x+1)*self._grid_pixels,
-			y*self._grid_pixels:(y+1)*self._grid_pixels,:] = colour
+		img[y*self._grid_pixels:(y+1)*self._grid_pixels,
+			x*self._grid_pixels:(x+1)*self._grid_pixels,:] = colour
+
+		return img
+
+	def renderVisibilityWindow(self, x, y, pad, thickness, img, colour):
+		p1 = ((x-pad)*self._grid_pixels, (y-pad)*self._grid_pixels)
+		p2 = ((x+pad+1)*self._grid_pixels, (y-pad)*self._grid_pixels)
+		p3 = ((x+pad+1)*self._grid_pixels, (y+pad+1)*self._grid_pixels)
+		p4 = ((x-pad)*self._grid_pixels, (y+pad+1)*self._grid_pixels)
+
+		cv2.line(img, p1, p2, colour, thickness)
+		cv2.line(img, p2, p3, colour, thickness)
+		cv2.line(img, p3, p4, colour, thickness)
+		cv2.line(img, p4, p1, colour, thickness)
 
 		return img
 
@@ -175,6 +205,52 @@ class FieldMap:
 				num_generated += 1
 
 		return targets
+
+	# Examines whether a target is currently visible and suggests actions towards it
+	# NOTE
+	# For the moment, this only works when visible padding is 1 (need a better solution)
+	def checkVisibility(self, actions):
+		a_x = self._agent_x
+		a_y = self._agent_y
+
+		desired_actions = []
+
+		# Iterate over each target
+		for target in self._targets:
+			# Get the current target's position
+			t_x = target[0]
+			t_y = target[1]
+
+			# 1: Top left
+			if t_x == a_x - 1 and t_y == a_y - 1:
+				desired_actions = ['F', 'L']
+			# 2: Top middle
+			elif t_x == a_x and t_y == a_y - 1:
+				desired_actions = ['F']
+			# 3: Top right
+			elif t_x == a_x + 1 and t_y == a_y - 1:
+				desired_actions = ['F', 'R']
+			# 4: Middle left
+			elif t_x == a_x - 1 and t_y == a_y:
+				desired_actions = ['L']
+			# 5: Middle right
+			elif t_x == a_x + 1 and t_y == a_y:
+				desired_actions = ['R']
+			# 6: Bottom left
+			elif t_x == a_x - 1 and t_y == a_y + 1:
+				desired_actions = ['B', 'L']
+			#7: Bottom middle
+			elif t_x == a_x and t_y == a_y + 1:
+				desired_actions = ['B']
+			#8: Bottom right
+			elif t_x == a_x + 1 and t_y == a_y + 1:
+				desired_actions = ['B', 'R']
+
+		# See which desired and possible actions are common (if any)
+		possible_actions = list(set(desired_actions) & set(actions))
+
+		if len(possible_actions) == 0: return actions
+		else: return possible_actions
 
 	# Removes possible actions due to the boundary of the map
 	def checkMapBoundaries(self, actions):
@@ -203,16 +279,16 @@ class FieldMap:
 		#Iterate over the supplied possible actions
 		for action in actions:
 			if action == 'F':
-				if not self._map[x,y-1]:
+				if not self._map[y-1,x]:
 					possible_actions.append('F')
 			elif action == 'B':
-				if not self._map[x,y+1]:
+				if not self._map[y+1,x]:
 					possible_actions.append('B')
 			elif action == 'L':
-				if not self._map[x-1,y]:
+				if not self._map[y,x-1]:
 					possible_actions.append('L')
 			elif action == 'R':
-				if not self._map[x+1,y]:
+				if not self._map[y,x+1]:
 					possible_actions.append('R')
 			else:
 				print "Action: {} not recognised!".format(action)
@@ -220,8 +296,9 @@ class FieldMap:
 		return possible_actions
 
 	def performAction(self, action):
-		# Record history of map visitation
-		self._map[self._agent_x, self._agent_y] = 1
+		# Action performed
+		# print "Action performed = {}".format(action)
+		# print self._map
 
 		# Make the move
 		if action == 'F': 	self._agent_y -= self._move_dist
@@ -230,41 +307,105 @@ class FieldMap:
 		elif action == 'R': self._agent_x += self._move_dist
 		else: print "Action: {} not recognised!".format(action)
 
+		# Record history of map visitation
+		self._map[self._agent_y, self._agent_x] = 1
+
+	# Assign a point if a target has been visited for the first time
+	def checkAgentTargetMatch(self):
+		a_x = self._agent_x
+		a_y = self._agent_y
+
+		for target in self._targets:
+			t_x = target[0]
+			t_y = target[1]
+
+			if t_x == a_x and t_y == a_y:
+				if not self._map[a_y, a_x]:
+					return 1
+
+		return 0
+
+	# Clamps value n between range [a, b]
+	def clamp(self, n, a, b):
+		return max(a, min(n, b))
+
+	# Given a position x,y return neighbouring values within a given radius
+	def determineCellNeighbours(self, x, y, radius):
+		# Index bounds
+		y_upper = self._grid_height - 1
+		x_upper = self._grid_width - 1
+
+		# Determine neighbouring cell bounds for radius
+		y_low = self.clamp(y - radius, 0, y_upper)
+		y_high = self.clamp(y + radius, 0, y_upper)
+		x_low = self.clamp(x - radius, 0, x_upper)
+		x_high = self.clamp(x + radius, 0, x_upper)
+
+		# Get neighbouring elements within radius (includes x,y-th element)
+		sub = self._map[y_low:y_high+1, x_low:x_high+1]
+
+		print sub
+		cv2.waitKey(0)
+
+	def findUnvisitedDirection(self):
+		# Cell search radius for unvisited cells
+		radius = 1
+
+		while True:
+			self.determineCellNeighbours(self._agent_x, self._agent_y, radius)
+
+			radius += 1
+
 	# Reset the map (agent position, target positions, memory, etc.)
 	def reset(self):
 		pass
 
 	def begin(self):
-		# Need to decide what termination criterion actually are
-		finished = False
+		# Record history of map visitation
+		self._map[self._agent_y, self._agent_x] = 1
+
+		# Render out if we're supposed to
+		if self._visualise:
+			self.visualise()
 
 		# All possible agent actions
 		all_actions = ['F', 'B', 'L', 'R']
 
-		while not finished:
-			# Render out if we're supposed to
-			if self._visualise:
-				self.visualise()
+		# Number of targets the agent has visited
+		num_visited = 0
 
+		while num_visited != self._num_targets:
 			# Remove impossible actions imposed by map boundary
 			possible_actions = self.checkMapBoundaries(list(all_actions))
 
 			# Create a seperate list of possible actions discluding visited locations
 			visit_actions = self.checkVisitedLocations(possible_actions)
 
-			# There isn't anywhere to go!
-			if not len(visit_actions):
-				print "I'm stuck here!"
+			# Ideally navigate towards target (if we can see one)
+			desired_actions = self.checkVisibility(visit_actions)
+
+			# There isn't anywhere to go, engage un-stucking mode
+			if not len(desired_actions):
+				print "Oops, I'm stuck."
+
+				# Try to move towards an unvisited location
+				choice = self.findUnvisitedDirection()
 			else:
 				# Choose a random possible action (for the time being)
-				choice = visit_actions[random.randint(0, len(visit_actions)-1)]
+				choice = desired_actions[random.randint(0, len(desired_actions)-1)]
 
-				# Make the move
-				self.performAction(choice)
+			# Make the move
+			self.performAction(choice)
 
-			# Termination critertion for the moment is that each cell has been visited
-			if np.sum(self._map) == self._grid_width * self._grid_height:
-				finished = True
+			# Check whether the agent has now visited a target
+			num_visited += self.checkAgentTargetMatch()
+
+			# Print out score
+			print "I've visted {} targets".format(num_visited)
+
+			# Render out if we're supposed to
+			if self._visualise:
+				self.visualise()
 
 # Entry method
 if __name__ == '__main__':

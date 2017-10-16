@@ -39,7 +39,7 @@ class GridCameraController:
 		self._right 			= []	# -y
 		self._up 				= []	# +z
 		self._down 				= []	# -z
-		# Diagonal movement vectors (for when z is disabled/fixed)
+		# Diagonal movement vectors (for when z is disabled/fixed?)
 		self._forward_left		= []	# +x-y
 		self._forward_right		= []	# +x+y
 		self._backward_left		= []	# -x-y
