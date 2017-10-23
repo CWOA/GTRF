@@ -172,9 +172,9 @@ class dnn_model:
 		net = tflearn.merge([net0, net1], "concat", axis=1)
 		net = fully_connected(net, self._num_classes, activation='softmax')
 		net = regression(		net, 
-										optimizer='momentum',
-										loss='categorical_crossentropy',
-										learning_rate=0.001						)
+								optimizer='momentum',
+								loss='categorical_crossentropy',
+								learning_rate=0.001						)
 
 		return net
 
@@ -195,11 +195,11 @@ class dnn_model:
 			num_visited = 0
 
 			while num_visited != self._FM._num_targets:
-				# Render the updated view
-				render_img, subview = self._FM.render()
-
 				# Get the map
 				visit_map = self._FM._map.copy()
+
+				# Render the updated view
+				render_img, subview = self._FM.render()
 
 				# Mark the current location of the agent
 				visit_map[self._FM._agent_y, self._FM._agent_x] = 10
@@ -677,9 +677,6 @@ class FieldMap:
 		return action
 
 	def begin(self):
-		# Record history of map visitation
-		self._map[self._agent_y, self._agent_x] = 1
-
 		# Render the updated view
 		self._render_img, self._agent_subview = self.render()
 
@@ -782,6 +779,9 @@ class FieldMap:
 		# Grid-visit map of environment (Agent has access to this)
 		# Map is binary (cells are either 1: visited, 0: not visited)
 		self._map = np.zeros((self._grid_width, self._grid_height))
+
+		# Record the current agent position in the visitation map
+		self._map[self._agent_y, self._agent_x] = 1
 
 		# Randomly initialise positions of targets, ensure they don't
 		# take up the positions of other targets or the agent
