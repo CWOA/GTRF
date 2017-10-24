@@ -151,7 +151,7 @@ class NavigationModel:
         elif load_method == 2:
             X, Y = self.loadPickleData()
         else:
-            print "Loade method not recognised, breaking"
+            print "Load method not recognised, breaking"
             return
 
         # Split data into training/testing

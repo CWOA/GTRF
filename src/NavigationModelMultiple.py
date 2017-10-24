@@ -31,7 +31,7 @@ class dnn_model:
 		self._data_ratio = 0.9
 
 		# Number of epochs to train for
-		self._n_epochs = 5
+		self._n_epochs = 40
 
 		# Number of classes
 		self._num_classes = len(self._FM._actions)
@@ -89,6 +89,14 @@ class dnn_model:
 																					Y,
 																					train_size=self._data_ratio,
 																					random_state=42					)
+
+		# Print some info about what the data looks like
+		print "X0_train.shape={:}".format(X0_train.shape)
+		print "X0_test.shape={:}".format(X0_test.shape)
+		print "X1_train.shape={:}".format(X1_train.shape)
+		print "X1_test.shape={:}".format(X1_test.shape)
+		print "Y_train.shape={:}".format(Y_train.shape)
+		print "Y_test.shape={:}".format(Y_test.shape)
 
 		return X0_train, X0_test, X1_train, X1_test, Y_train, Y_test
 
@@ -184,6 +192,10 @@ class dnn_model:
 		# Load the model from file
 		self.loadModel()
 
+		# Sanity check
+		# X0_train, X0_test, X1_train, X1_test, Y_train, Y_test = self.loadData()
+		# self.evaluateModel(X0_test, X1_test, Y_test)
+
 		# Number of test/examples to run in total
 		num_examples = 10
 
@@ -218,6 +230,7 @@ class dnn_model:
 
 				# Display the image
 				cv2.imshow(self._FM._window_name, render_img)
+				cv2.imshow(self._FM._window_name_agent, subview)
 				print action
 				print visit_map
 				cv2.waitKey(0)
@@ -287,6 +300,7 @@ class FieldMap:
 
 		# Window name
 		self._window_name = "Visualisation grid"
+		self._window_name_agent = "Agent subview"
 
 		# Colours (BGR)
 		self._background_colour = (42,42,23)
@@ -310,6 +324,10 @@ class FieldMap:
 		for target in self._targets:
 			img = self.renderGridPosition(target[0], target[1], img, self._target_colour)
 
+		# Make a copy of the image (we don't want to render visitation history
+		# to the agent subview)
+		img_copy = img.copy()
+
 		# Render visited locations
 		for x in range(self._grid_width):
 			for y in range(self._grid_height):
@@ -318,18 +336,22 @@ class FieldMap:
 					# Render this square as have being visited
 					img = self.renderGridPosition(x, y, img, self._visited_colour)
 
-		# Render current agent position
+		# Render current agent position to both images
 		img = self.renderGridPosition(		a_x, 
 											a_y, 
 											img, 
 											self._agent_colour		)
+		img_copy = self.renderGridPosition(		a_x, 
+												a_y, 
+												img_copy, 
+												self._agent_colour		)
 
 		# Number of pixels to pad subview with
 		pad = self._grid_pixels * self._visible_padding
 
 		# Pad the image with grid_pixels in background colour in case the agent
 		# is at a border
-		subview = self.padBorders(img.copy(), pad)
+		subview = self.padBorders(img_copy, pad)
 
 		s_x = ((a_x + self._visible_padding) * self._grid_pixels) - pad
 		s_y = ((a_y + self._visible_padding) * self._grid_pixels) - pad
@@ -735,9 +757,6 @@ class FieldMap:
 					# Choose a random possible action (for the time being)
 					chosen_action = desired_actions[random.randint(0, len(desired_actions)-1)]
 
-			# Make the move
-			num_visited += self.performAction(chosen_action)
-
 			# Print out score
 			#print "I've visted {} targets".format(num_visited)
 
@@ -751,10 +770,11 @@ class FieldMap:
 
 				action_vector = self.actionToClassVector(chosen_action)
 
-				print action_vector
-
 				row = [self._agent_subview, map_copy, action_vector]
 				self._training_output.append(row)
+
+			# Make the move
+			num_visited += self.performAction(chosen_action)
 
 			# Render the updated view
 			self._render_img, self._agent_subview = self.render()
@@ -762,7 +782,8 @@ class FieldMap:
 			# Display if we're supposed to
 			if self._visualise:
 				# Display the image
-				cv2.imshow(self._window_name, self._agent_subview)
+				cv2.imshow(self._window_name, self._render_img)
+				cv2.imshow(self._window_name_agent, self._agent_subview)
 				cv2.waitKey(0)
 
 	# Reset the map (agent position, target positions, memory, etc.)
