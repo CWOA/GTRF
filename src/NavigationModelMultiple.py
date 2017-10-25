@@ -7,6 +7,7 @@ import pickle
 import random
 import tflearn
 import numpy as np
+from collections import deque
 from sklearn.model_selection import train_test_split
 from tflearn.layers.core import input_data, dropout, fully_connected
 from tflearn.layers.conv import conv_2d, max_pool_2d
@@ -196,6 +197,9 @@ class dnn_model:
 		# X0_train, X0_test, X1_train, X1_test, Y_train, Y_test = self.loadData()
 		# self.evaluateModel(X0_test, X1_test, Y_test)
 
+		# Object to detect infinite agent loops
+		detector = LoopDetector()
+
 		# Number of test/examples to run in total
 		num_examples = 10
 
@@ -203,8 +207,14 @@ class dnn_model:
 			# Reset the grid
 			self._FM.reset()
 
+			# Reset the detector
+			detector.reset()
+
 			# Number of targets the agent has visited
 			num_visited = 0
+
+			# Number of moves the agent has made
+			num_moves = 0
 
 			while num_visited != self._FM._num_targets:
 				# Get the map
@@ -225,16 +235,78 @@ class dnn_model:
 				choice[max_idx] = 1
 				action = self._FM.classVectorToAction(choice)
 
+				# Add the suggested action and check history
+				if detector.addCheckAction(action):
+					print "DETECTED INFINITE AGENT LOOP"
+
 				# Make the move
 				num_visited += self._FM.performAction(action)
+
+				# Increment the number of moves made by the agent
+				num_moves += 1
 
 				# Display the image
 				cv2.imshow(self._FM._window_name, render_img)
 				cv2.imshow(self._FM._window_name_agent, subview)
-				print action
-				print visit_map
+				# print action
+				# print visit_map
 				cv2.waitKey(0)
 
+			# Print some stats
+			print "Solving this example took {} steps".format(num_moves)
+
+# Class designed to help with detecting whether the agent is stuck in an infinite loop
+class LoopDetector:
+	# Class constructor
+	def __init__(self, max_queue_size=3):
+		# Start fresh
+		self.reset()
+
+		# Maximum length of queue
+		self._max_queue_size = max_queue_size
+
+	# Reset so we can start a new instance
+	def reset(self):
+		# Queue to store past actions
+		self._actions = deque()
+
+	# Add an action and check the queue
+	def addCheckAction(self, action):
+		self.addActionToQueue(action)
+		return self.checkForLoop()
+
+	# Add an action to the queue
+	def addActionToQueue(self, action):
+		# Add the action
+		self._actions.append(action)
+
+		# Check the length of the queue
+		if len(self._actions) == self._max_queue_size + 1:
+			# We need to pop an older entry
+			self._actions.popleft()
+
+	# Check whether the supplied sequence and 
+	def checkActionSequence(self, sequence):
+		equal = True
+
+		if len(sequence) == len(self._actions):
+			for i in range(len(sequence)):
+				if sequence[i] != self._actions[i]:
+					equal = False
+					break
+		else:
+			return False
+
+		return equal
+
+	# Given the current action queue, detect whether a loop has occurred
+	def checkForLoop(self):
+		if self.checkActionSequence(['F', 'B', 'F']): return True
+		if self.checkActionSequence(['B', 'F', 'B']): return True
+		if self.checkActionSequence(['L', 'R', 'L']): return True
+		if self.checkActionSequence(['R', 'L', 'R']): return True
+
+		return False
 
 class FieldMap:
 	# Class constructor
