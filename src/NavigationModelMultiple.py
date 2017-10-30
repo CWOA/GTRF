@@ -216,8 +216,12 @@ class dnn_model:
 			# Number of moves the agent has made
 			num_moves = 0
 
+			# Indicator of whether the agent is stuck
+			agent_stuck = False
+
+			# Loop until we've visited all the targets
 			while num_visited != self._FM._num_targets:
-				# Get the map
+				# Get a copy of the visitation map
 				visit_map = self._FM._map.copy()
 
 				# Render the updated view
@@ -226,7 +230,7 @@ class dnn_model:
 				# Mark the current location of the agent
 				visit_map[self._FM._agent_y, self._FM._agent_x] = 10
 
-				# Based on this state, use the model to predict where to go
+				# Based on this state, use the trained model to predict where to go
 				prediction = self.testModelSingle(subview, visit_map)
 
 				# Find the index of the max argument
@@ -235,9 +239,13 @@ class dnn_model:
 				choice[max_idx] = 1
 				action = self._FM.classVectorToAction(choice)
 
-				# Add the suggested action and check history
+				# Add the suggested action and check history, check if the agent is
+				# stuck in a loop, act accordingly
 				if detector.addCheckAction(action):
-					print "DETECTED INFINITE AGENT LOOP"
+					agent_stuck = True
+					print "Detected infinite agent loop."
+				else:
+					pass
 
 				# Make the move
 				num_visited += self._FM.performAction(action)
@@ -677,11 +685,15 @@ class FieldMap:
 		# Cell search radius for unvisited cells
 		radius = 1
 
+		# Determined action to take
 		action = None
 
+		# Loop until we find a suitable unvisited direction
 		while action is None:
+			# Try and find an unvisited location in the current radius
 			action = self.determineCellNeighbours(self._agent_x, self._agent_y, radius)
 
+			# Increment the radius
 			radius += 1
 
 		return action
