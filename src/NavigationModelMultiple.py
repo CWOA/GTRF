@@ -219,13 +219,13 @@ class dnn_model:
 			# Indicator of whether the agent is stuck
 			agent_stuck = False
 
+			# Render the updated view
+			render_img, subview = self._FM.render()
+
 			# Loop until we've visited all the targets
 			while num_visited != self._FM._num_targets:
 				# Get a copy of the visitation map
 				visit_map = self._FM._map.copy()
-
-				# Render the updated view
-				render_img, subview = self._FM.render()
 
 				# Mark the current location of the agent
 				visit_map[self._FM._agent_y, self._FM._agent_x] = 10
@@ -241,24 +241,37 @@ class dnn_model:
 
 				# Add the suggested action and check history, check if the agent is
 				# stuck in a loop, act accordingly
-				if detector.addCheckAction(action):
+				if not agent_stuck and detector.addCheckAction(action):
 					agent_stuck = True
 					print "Detected infinite agent loop."
-				else:
-					pass
 
-				# Make the move
-				num_visited += self._FM.performAction(action)
+				# Agent is stuck, move towards nearest unvisited location
+				if agent_stuck:
+					action = self._FM.findUnvisitedDirection()
+					print "Agent in unstucking mode, moving: {}".format(action)
+					# cv2.waitKey(0)
+
+				# Make the move (Forward, Backward, Left, Right)
+				has_visited, reward = self._FM.performAction(action)
+				num_visited += reward
+
+				# Check whether the agent is still stuck following a performed action
+				if agent_stuck and not has_visited:
+					agent_stuck = False
+					print "Agent is no longer stuck!"
 
 				# Increment the number of moves made by the agent
 				num_moves += 1
+
+				# Render the updated view
+				render_img, subview = self._FM.render()
 
 				# Display the image
 				cv2.imshow(self._FM._window_name, render_img)
 				cv2.imshow(self._FM._window_name_agent, subview)
 				# print action
 				# print visit_map
-				cv2.waitKey(0)
+				cv2.waitKey(10)
 
 			# Print some stats
 			print "Solving this example took {} steps".format(num_moves)
@@ -611,10 +624,17 @@ class FieldMap:
 		# Check whether the agent has now visited a target
 		ret = self.checkAgentTargetMatch()
 
-		# Record history of map visitation
-		self._map[self._agent_y, self._agent_x] = 1
+		# Bool to store whether the agent has been to this location already
+		has_visited = True
 
-		return ret
+		# Check whether we've been here before
+		if not self._map[self._agent_y, self._agent_x]:
+			# Record history of map visitation
+			self._map[self._agent_y, self._agent_x] = 1
+
+			has_visited = False
+
+		return has_visited, ret
 
 	# Assign a point if a target has been visited for the first time
 	def checkAgentTargetMatch(self):
@@ -668,16 +688,22 @@ class FieldMap:
 			a_x = np.floor((d_rad+1)/2)
 			a_y = np.floor((d_rad+1)/2)
 
+			# Random 0 element in subview
+			size = indices[1].shape[0]
+			rand_element = random.randint(0, size-1)
+			z_x = indices[1][rand_element]
+			z_y = indices[0][rand_element]
+
 			# 0 element position in subview
-			z_x = indices[0][0]
-			z_y = indices[1][0]
+			# z_x = indices[1][0]
+			# z_y = indices[0][0]
 
 			# Find the best action for the angle between them
 			action = self.findActionForAngle((a_x, a_y), (z_x, z_y))
 
-		print sub
-		print indices
-		cv2.waitKey(0)
+		# print sub
+		# print indices
+		# cv2.waitKey(0)
 
 		return action
 
@@ -858,7 +884,8 @@ class FieldMap:
 				self._training_output.append(row)
 
 			# Make the move
-			num_visited += self.performAction(chosen_action)
+			has_visited, reward = self.performAction(chosen_action)
+			num_visited += reward
 
 			# Render the updated view
 			self._render_img, self._agent_subview = self.render()

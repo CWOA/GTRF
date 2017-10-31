@@ -9,9 +9,9 @@
 
   <!-- Start Gazebo with field/cow world -->
   <include file="$(find uav_id)/launch/start_world.launch">
-  	<arg name="world" value="$(find uav_id)/world/test.world"/>
+  	<arg name="world" value="$(find uav_id)/world/random_5_cows.world"/>
     <!-- Start Gazebo without visualisation/GUI (still produces simulated image topic) -->
-  	<arg name="gui" value="false"/>
+  	<arg name="gui" value="true"/>
   </include>
 
   <!-- Spawn GRID-based, no-gravity camera -->
