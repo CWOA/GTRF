@@ -18,6 +18,8 @@ class Utility:
 		filename = "{}.tflearn".format(const.MODEL_NAME)
 		return os.path.join(const.BASE_DIR, const.MODELS_DIR, filename)
 
+	# Converts from a single action to a class vector required by the dnn model
+	# e.g. 'F' -> [1,0,0,0]
 	@staticmethod
 	def actionToClassVector(action):
 		vec = np.zeros(len(self._actions))
@@ -30,6 +32,7 @@ class Utility:
 
 		return vec
 
+	# The opposite of the above function
 	@staticmethod
 	def classVectorToAction(class_vec):
 		action = ''
@@ -42,6 +45,30 @@ class Utility:
 
 		return action
 
+	# Given the position of a target, find the angle between the agent position and
+	# the target and choose the best possible action towards navigating towards that
+	# target object
+	@staticmethod
+	def bestActionForAngle(self, a, b):
+		# Get relative position
+		rel_x = a[0] - b[0]
+		rel_y = a[1] - b[1]
+
+		# Compute angle
+		angle = math.atan2(rel_x, rel_y)
+
+		# print "Angle = {} for point ({},{})".format(math.degrees(angle), rel_x, rel_y)
+
+		if angle < math.pi/4 and angle > -math.pi/4: action = 'F'
+		elif angle >= math.pi/4 and angle < 3*math.pi/4: action = 'L'
+		elif angle <= math.pi/4 and angle > -3*math.pi/4: action = 'R'
+		elif angle >= 3*math.pi/4 or angle <= -3*math.pi/4: action = 'B'
+
+		# Make sure the assigned action is valid
+		assert(action in const.ACTIONS)
+
+		return action
+
 	# Rotate or shift sequence by n
 	@staticmethod
 	def rotateList(sequence, n):
@@ -49,7 +76,7 @@ class Utility:
 
 	# Returns the Euclidean distance between input coordinates a, b in tuple form (x, y)
 	@staticmethod
-	def findDistanceBetweenPoints(a, b):
+	def distanceBetweenPoints(a, b):
 		return math.sqrt((b[0] - a[0])**2 + (b[1] - a[1])**2)
 
 	@staticmethod

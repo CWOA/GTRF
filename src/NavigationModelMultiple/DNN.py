@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 
+import Utility
 import tflearn
 import numpy as np
 import Constants as const
-from Utility import Utility
+import Utility
 from sklearn.model_selection import train_test_split
 from tflearn.layers.core import input_data, dropout, fully_connected
 from tflearn.layers.conv import conv_2d, max_pool_2d
@@ -13,7 +14,9 @@ from tflearn.layers.estimator import regression
 class DNNModel:
 	# Class constructor
 	def __init__(self):
-		### Class attributes
+		"""
+		Class attributes
+		"""
 
 		# All training/testing data
 		self._data = []
@@ -102,7 +105,7 @@ class DNNModel:
 		np_map[0,:,:,0] = visit_map
 
 		# Predict on given img and map
-		return self._model.predict([np_img, np_map])
+		return self._model.predict_label([np_img, np_map])
 
 	def evaluateModel(self, X0_test, X1_test, Y_test):
 		print self._model.evaluate([X0_test, X1_test], Y_test)
