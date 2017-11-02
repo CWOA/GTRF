@@ -30,9 +30,11 @@ class Object:
 			# Colour to render for visualisation
 			self._colour = const.TARGET_COLOUR
 
-	# Return a tuple of the agent's current coordinates
 	def getPos(self):
 		return self._x, self._y
+
+	def getPosTuple(self):
+		return (self._x, self._y)
 
 	def setPos(self, x, y):
 		if self._agent:
@@ -137,25 +139,6 @@ class ObjectHandler:
 	def updateAgentPos(self, x, y):
 		self._agent.setPos(x, y)
 
-	# Check whether the agent is in the same position as an *unvisited* target
-	def checkAgentTargetMatch(self):
-		# Get the agent
-		a_x, a_y = self._agent.getPos()
-
-		# Check all targets
-		for target in self._targets:
-			# Check we haven't visited this target already
-			if not target.visited:
-				# Get this target's position
-				t_x = target[0]
-				t_y = target[1]
-
-				# The positions match?
-				if a_x == t_x and a_y == t_y:
-					return 1
-
-		return 0
-
 	# Returns the coordinates of the closest target to the current agent position that
 	# hasn't already been visited
 	def findClosestTarget(self):
@@ -191,9 +174,31 @@ class ObjectHandler:
 	def getAgentPos(self):
 		return self._agent.getPos()
 
-	# Simply set the position of agent
+	# Set the position of agent, check whether it matches a target position
 	def setAgentPos(self, x, y):
+		# Set the position
 		self._agent.setPos(x, y)
+
+		self.checkAgentTargetMatch()
+
+	# Marks a target as visited if the agent position matches it
+	def checkAgentTargetMatch(self):
+		a_x, a_y = self.getAgentPos()
+
+		for target in self._targets:
+			t_x, t_y = target.getPos()
+
+			if a_x == t_x and a_y == t_y:
+				target.visited = True
+
+	# Returns a list of all target positions
+	def getTargetPositions(self):
+		positions = []
+
+		for target in self._targets:
+			positions.append(target.getPosTuple())
+
+		return positions
 
 # Entry method for unit testing
 if __name__ == '__main__':

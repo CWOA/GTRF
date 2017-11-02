@@ -37,8 +37,17 @@ class MapHandler:
 		# Make the current agent position a visited location
 		self.setElement(curr_x, curr_y, const.VISITED_VAL)
 
+		# See whether the agent has already visited the new position
+		if getElement(new_x, new_y) == const.UNVISITED_VAL: visited = False
+		else: visited = True 
+
 		# Mark the new agent position
 		self.setElement(new_x, new_y, const.AGENT_VAL)
+
+		return visited
+
+	def getElement(self, x, y):
+		return self._map[y, x]
 
 	# Set an element at coordinates (x, y) to value
 	def setElement(self, x, y, value):
@@ -147,6 +156,13 @@ class MapHandler:
 			action = Utility.bestActionForAngle((a_x, a_y), (z_x, z_y))
 
 		return action
+
+	# Check whether the supplied position is out of bounds
+	def checkPositionInBounds(self, x, y):
+		if x < 0 or y < 0 or x >= const.MAP_WIDTH or y >= const.MAP_HEIGHT:
+			return False
+
+		return True
 
 # Entry method/unit testing
 if __name__ == '__main__':

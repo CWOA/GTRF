@@ -66,75 +66,60 @@ class FieldMap:
 		# Reset loop detection
 		self._loop_detector.reset()
 
-	def padBorders(self, img, pad):
-		# Create a new image with the correct borders
-		pad_img = np.zeros((self._disp_height+pad*2, self._disp_width+pad*2, 3), np.uint8)
-
-		pad_img[:] = self._background_colour
-
-		# Copy the image to the padded image
-		pad_img[pad:self._disp_height+pad,pad:self._disp_width+pad] = img
-
-		return pad_img
-
-	def renderGridPosition(self, x, y, img, colour):
-		img[y*self._grid_pixels:(y+1)*self._grid_pixels,
-			x*self._grid_pixels:(x+1)*self._grid_pixels,:] = colour
-
-		return img
-
-	def checkAgentInBounds(self):
-		if self._agent_x < 0 or self._agent_y < 0:
-			return False
-		if self._agent_x >= self._grid_width or self._agent_y >= self._grid_height:
-			return False
-
-		return True
-
+	# Perform a given action
 	def performAction(self, action):
+		# Get the agent's current position
 		old_x, old_y = self._object_handler.getAgentPos()
 
+		# Make a copy
+		req_x = old_x
+		req_y = old_y
+
 		# Make the move
-		if action == 'F': 	self._agent_y -= self._move_dist
-		elif action == 'B': self._agent_y += self._move_dist
-		elif action == 'L': self._agent_x -= self._move_dist
-		elif action == 'R': self._agent_x += self._move_dist
-		else: print "Action: {} not recognised!".format(action)
+		if action == 'F': 	req_y -= const.MOVE_DIST
+		elif action == 'B': req_y += const.MOVE_DIST
+		elif action == 'L': req_x -= const.MOVE_DIST
+		elif action == 'R': req_x += const.MOVE_DIST
+		else: Utility.die("Action: {} not recognised!".format(action))
 
-		if not self.checkAgentInBounds():
-			self._agent_x = old_x
-			self._agent_y = old_y
-
+		# Requested position is in bounds
+		if self._map_handler.checkPositionInBounds(req_x, req_y):
+			# Set the new agent position
+			self._object_handler.setAgentPos(req_x, req_y)
+		# Agent tried to move out of bounds, select a random valid action instead
+		else:
 			# Find possible actions from all actions given the map boundaries
-			possible_actions = self.checkMapBoundaries(list(self._actions))
+			possible_actions = self._map_handler.possibleActionsForPosition(old_x, old_y)
 
 			# Randomly select an action
 			rand_idx = random.randint(0, len(possible_actions)-1)
 			choice = possible_actions[rand_idx]
 
-			# print "Agent trying to move out of bounds, randomly chose {}".format(choice)
-
-			# Recurse
+			# Recurse to perform selected action
 			return self.performAction(choice)
 
-		# Check whether the agent has now visited a target
-		ret = self.checkAgentTargetMatch()
+		# Update the map, function returns whether this new position
+		# has been visited before
+		is_new_location = self._map_handler.update(req_x, req_y)
 
-		# Bool to store whether the agent has been to this location already
-		has_visited = True
+		return is_new_location
 
-		# Check whether we've been here before
-		if not self._map[self._agent_y, self._agent_x]:
-			# Record history of map visitation
-			self._map[self._agent_y, self._agent_x] = 1
+	# Retrieves the current agent position, list of target positions and visitation map
+	def retrieveStates(self):
+		# Get the agent position
+		a_x, a_y = self._object_handler.getAgentPos()
 
-			has_visited = False
+		# Get all the target positions
+		targets_pos = self._object_handler.getTargetPositions()
 
-		return has_visited, ret
+		# Get the visit map
+		visit_map = self._map_handler.getMap()
+
+		return (a_x, a_y), targets_pos, visit_map
 
 	def beginInstance(self, testing, wait_amount=0):
 		# Render the initial game state
-		complete_img, subview = self._visualiser.update()
+		complete_img, subview = self._visualiser.update(self.retrieveStates())
 
 		# Number of moves the agent has made
 		num_moves = 0
@@ -186,16 +171,16 @@ class FieldMap:
 										Utility.actionToClassVector(chosen_action)	)
 
 			# Make the move
-			new_location = self.performAction(chosen_action)
+			is_new_location = self.performAction(chosen_action)
 
 			# Check whether the agent is still stuck
-			if agent_stuck and testing and new_location: agent_stuck = False
+			if agent_stuck and testing and is_new_location: agent_stuck = False
 
 			# Increment the move counter
 			num_moves += 1
 
 			# Render the updated view
-			complete_img, subview = self._visualiser.update()
+			complete_img, subview = self._visualiser.update(self.retrieveStates())
 
 			# Display if we're supposed to
 			if self._visualise: self._visualiser.display(wait_amount)

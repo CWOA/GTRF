@@ -20,6 +20,9 @@ MAP_HEIGHT = 10
 ACTIONS = ['F', 'B', 'L', 'R']
 AGENT_START_COORDS = (0, 0)
 
+# Unit to move the agent by each step
+MOVE_DIST = 1
+
 # Number of targets to generate if random number of targets is disabled
 NUM_TARGETS = 5
 
