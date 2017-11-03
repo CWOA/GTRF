@@ -1,22 +1,18 @@
 #!/usr/bin/env python
 
-import Utility
+from Utility import Utility
 import numpy as np
 import Constants as const
+import random
 
 class MapHandler:
 	# Class constructor
-	def __init__(self, agent_initial_x, agent_initial_y):
+	def __init__(self):
 		"""
 		Class attributes/properties
 		"""
 
-		"""
-		Class setup
-		"""
-
-		# Reinitialise the map
-		self.reset(agent_initial_x, agent_initial_y)
+		print "Initialised MapHandler"
 
 	# Reset the map itself, mark the agent's initial position
 	def reset(self, a_x, a_y):
@@ -32,13 +28,13 @@ class MapHandler:
 	# Update the map to reflect new (given) agent positions
 	def update(self, new_x, new_y):
 		# Fetch the agent's current position
-		curr_x, curr_y = getAgentCoordinates()
+		curr_x, curr_y = self.getAgentCoordinates()
 
 		# Make the current agent position a visited location
 		self.setElement(curr_x, curr_y, const.VISITED_VAL)
 
 		# See whether the agent has already visited the new position
-		if getElement(new_x, new_y) == const.UNVISITED_VAL: visited = False
+		if self.getElement(new_x, new_y) == const.UNVISITED_VAL: visited = False
 		else: visited = True 
 
 		# Mark the new agent position
@@ -65,7 +61,7 @@ class MapHandler:
 	# actions that don't result in the agent going out of bounds
 	def possibleActionsForPosition(self, x, y):
 		# Get the list of all actions
-		actions = const.ACTIONS
+		actions = list(const.ACTIONS)
 
 		# Check map boundaries in x axis
 		if x == 0: actions.remove('L')
@@ -86,7 +82,7 @@ class MapHandler:
 		if index[0].shape[0] > 1 and index[1].shape[0] > 1:
 			Utility.die("Found more than one agent location!")
 
-		return index[0][0], index[1][0]
+		return index[1][0], index[0][0]
 
 	def findUnvisitedDirection(self, a_x, a_y):
 		# Ensure given and knowledge of agent positions match
@@ -153,7 +149,7 @@ class MapHandler:
 			z_y = indices[0][rand_element]
 
 			# Find the best action for the angle between them
-			action = Utility.bestActionForAngle((a_x, a_y), (z_x, z_y))
+			action = Utility.bestActionForAngle(a_x, a_y, z_x, z_y)
 
 		return action
 

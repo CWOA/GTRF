@@ -2,9 +2,12 @@
 
 import DNN
 import Object
-import Utility
+import random
+import numpy as np
+from Utility import *
 import Visualisation
 import VisitationMap
+import Constants as const
 
 class FieldMap:
 	# Class constructor
@@ -39,7 +42,7 @@ class FieldMap:
 		self._visualiser = Visualisation.Visualiser()
 
 		# Initialise the agent loop detection module
-		self._loop_detector = Utility.LoopDetector()
+		self._loop_detector = LoopDetector()
 
 		# Deep Neural Network class for model prediction, training, etc.
 		self._dnn = DNN.DNNModel()
@@ -57,11 +60,11 @@ class FieldMap:
 
 	# Reset the map (agent position, target positions, memory, etc.)
 	def reset(self):
-		# Reset objects (agent, target)
-		self._object_handler.reset()
+		# Reset objects (agent, target), returns generated agent position
+		a_x, a_y = self._object_handler.reset()
 
 		# Reset the visit map
-		self._map_handler.reset()
+		self._map_handler.reset(a_x, a_y)
 
 		# Reset loop detection
 		self._loop_detector.reset()
@@ -107,7 +110,7 @@ class FieldMap:
 	# Retrieves the current agent position, list of target positions and visitation map
 	def retrieveStates(self):
 		# Get the agent position
-		a_x, a_y = self._object_handler.getAgentPos()
+		pos = self._object_handler.getAgentPos()
 
 		# Get all the target positions
 		targets_pos = self._object_handler.getTargetPositions()
@@ -115,7 +118,23 @@ class FieldMap:
 		# Get the visit map
 		visit_map = self._map_handler.getMap()
 
-		return (a_x, a_y), targets_pos, visit_map
+		return (pos, targets_pos, visit_map)
+
+	# Given the current agent subview and visit map, use the trained DNN model to predict
+	# the best possible action in this circumstance
+	def predictBestAction(self, subview, visit_map):
+		# Predict using DNN, returns probabilty score list for each class
+		probability_vec = self._dnn.testModelSingle(subview, visit_map)
+
+		# Find index of max value
+		max_idx = np.argmax(probability_vec)
+
+		# Create a new probability vector with the max index = 1
+		choice_vec = np.zeros(len(const.ACTIONS))
+		choice_vec[max_idx] = 1
+
+		# Convert to action
+		return Utility.classVectorToAction(choice_vec)
 
 	def beginInstance(self, testing, wait_amount=0):
 		# Render the initial game state
@@ -131,17 +150,14 @@ class FieldMap:
 		if testing: agent_stuck = False
 
 		# Loop until we've visited all the target objects
-		while not self._object_handler.allTargetsVisited()
+		while not self._object_handler.allTargetsVisited():
 			# Use the DNN model to make action decisions
 			if testing:
 				# Get the map
 				visit_map = self._map_handler.getMap()
 
 				# Use DNN model to predict correct action
-				action_vector = self._dnn.testModelSingle(subview, visit_map)
-
-				# Convert to action
-				chosen_action = Utility.classVectorToAction(action_vector)
+				chosen_action = self.predictBestAction(subview, visit_map)
 
 				# Add the suggested action and check history, check if the agent is
 				# stuck in a loop, act accordingly
@@ -151,7 +167,7 @@ class FieldMap:
 				# Agent is stuck, move towards nearest unvisited location
 				if agent_stuck:
 					a_x, a_y = self._object_handler.getAgentPos()
-					action = self._map_handler.findUnvisitedDirection(a_x, a_y)
+					chosen_action = self._map_handler.findUnvisitedDirection(a_x, a_y)
 
 			# We're just producing training instances
 			else:
@@ -208,8 +224,8 @@ class FieldMap:
 	# Do a given number of episodes
 	def startTrainingEpisodes(self, num_episodes):
 		for i in range(num_episodes):
-			self.reset()
 			self.beginInstance(False)
+			self.reset()
 
 			print "{}/{}, {}% complete".format(i+1, num_episodes, (float(i+1)/num_episodes)*100)
 
@@ -231,8 +247,8 @@ class FieldMap:
 
 		# Do some testing episodes
 		for i in range(num_episodes):
+			num_moves = self.beginInstance(True, wait_amount=const.WAIT_AMOUNT)
 			self.reset()
-			num_moves = self.beginInstance(True)
 
 			if num_moves < upper_num_moves: num_under += 1
 
@@ -247,4 +263,4 @@ class FieldMap:
 
 # Entry method/unit testing
 if __name__ == '__main__':
-	
+	pass	

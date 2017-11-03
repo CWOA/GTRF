@@ -2,7 +2,9 @@
 
 import os
 import sys
+import math
 import Constants as const
+from collections import deque
 
 # Utility class for static methods
 class Utility:
@@ -49,10 +51,10 @@ class Utility:
 	# the target and choose the best possible action towards navigating towards that
 	# target object
 	@staticmethod
-	def bestActionForAngle(self, a, b):
+	def bestActionForAngle(a_x, a_y, b_x, b_y):
 		# Get relative position
-		rel_x = a[0] - b[0]
-		rel_y = a[1] - b[1]
+		rel_x = a_x - b_x
+		rel_y = a_y - b_y
 
 		# Compute angle
 		angle = math.atan2(rel_x, rel_y)
@@ -87,12 +89,15 @@ class Utility:
 # Class designed to help with detecting whether the agent is stuck in an infinite loop
 class LoopDetector:
 	# Class constructor
-	def __init__(self, max_queue_size=4):
-		# Start fresh
-		self.reset()
+	def __init__(self, max_queue_size=8):
+		"""
+		Class attributes
+		"""
 
 		# Maximum length of queue
 		self._max_queue_size = max_queue_size
+
+		print "Initialised LoopDetector"
 
 	# Reset so we can start a new instance
 	def reset(self):
@@ -131,11 +136,10 @@ class LoopDetector:
 	# Check for a substring in the actual sequence
 	def checkActionSequenceSubstring(self, sequence):
 		# Convert list of characters to an ordered string
-		given = ''.join(sequence)
 		actual = ''.join(self._actions)
 
 		# Supplied substring is present in actual sequence string
-		if given in actual:
+		if sequence in actual:
 			return True
 
 		return False
@@ -143,26 +147,38 @@ class LoopDetector:
 	# Check actual sequence for given sequence with all possible rotations (shifts)
 	# e.g. RBLF, FRBL, LFRB, ...
 	def checkActionSequenceRotation(self, sequence):
-		for i in range(len(self._actions)):
-			rotated = self.rotateList(sequence, i)
+		for i in range(len(sequence)):
+			rotated = Utility.rotateList(sequence, i)
 			if self.checkActionSequence(rotated):
 				return True
 
 		return False
 
+	# *** Also check the reverse of the given sequence
+	def checkActionSequenceRotationReverse(self, sequence):
+		# Convert to list of characters
+		sequence = list(sequence)
+
+		# Check forwards
+		if self.checkActionSequenceRotation(sequence): return True
+		
+		# Reverse the list
+		sequence.reverse()
+
+		# Check the reverse
+		if self.checkActionSequenceRotation(sequence): return True
+
+		return False
+
 	# Given the current action queue, detect whether a loop has occurred
 	def checkForLoop(self):
-		if self.checkActionSequenceSubstring(['F', 'B', 'F']): return True
-		if self.checkActionSequenceSubstring(['B', 'F', 'B']): return True
-		if self.checkActionSequenceSubstring(['L', 'R', 'L']): return True
-		if self.checkActionSequenceSubstring(['R', 'L', 'R']): return True
-		# Clockwise loop
-		if self.checkActionSequenceRotation(['R', 'B', 'L', 'F']):
-			# print "Detected clockwise loop"
-			return True
-		# Anti-clockwise loop
-		if self.checkActionSequenceRotation(['L', 'B', 'R', 'F']):
-			# print "Detected anti-clockwise loop"
-			return True
+		if self.checkActionSequenceSubstring("FBF"): return True
+		if self.checkActionSequenceSubstring("BFB"): return True
+		if self.checkActionSequenceSubstring("LRL"): return True
+		if self.checkActionSequenceSubstring("RLR"): return True
+		if self.checkActionSequenceRotationReverse("RBLF"): return True
+		if self.checkActionSequenceRotationReverse("RRBLLF"): return True
+		if self.checkActionSequenceRotationReverse("RBBLFF"): return True
+		if self.checkActionSequenceRotationReverse("RRFFBBLL"): return True
 
 		return False

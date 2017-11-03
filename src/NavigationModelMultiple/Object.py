@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import Utility
+from Utility import Utility
 import random as rand
 import Constants as const
 
@@ -29,6 +29,12 @@ class Object:
 
 			# Colour to render for visualisation
 			self._colour = const.TARGET_COLOUR
+
+	def getVisited(self):
+		return self._visited
+
+	def setVisited(self, visited):
+		self._visited = visited
 
 	def getPos(self):
 		return self._x, self._y
@@ -68,12 +74,7 @@ class ObjectHandler:
 		self._agent = None
 		self._targets = None
 
-		"""
-		Class setup
-		"""
-
-		# Initialise the class
-		self.reset()
+		print "Initialised ObjectHandler"
 
 	# Reset this handler so we can go again
 	def reset(self):
@@ -98,6 +99,8 @@ class ObjectHandler:
 		for i in range(num_targets):
 			t_x, t_y = self.generateUnoccupiedPosition()
 			self._targets.append(Object(False, x=t_x, y=t_y))
+
+		return self.getAgentPos()
 
 	# Generate a random position within the grid that isn't already occupied
 	def generateUnoccupiedPosition(self):
@@ -165,7 +168,7 @@ class ObjectHandler:
 	# Returns True if all targets have been visited
 	def allTargetsVisited(self):
 		for target in self._targets:
-			if not target.visited:
+			if not target.getVisited():
 				return False
 
 		return True
@@ -179,17 +182,15 @@ class ObjectHandler:
 		# Set the position
 		self._agent.setPos(x, y)
 
-		self.checkAgentTargetMatch()
+		self.checkAgentTargetMatch(x, y)
 
 	# Marks a target as visited if the agent position matches it
-	def checkAgentTargetMatch(self):
-		a_x, a_y = self.getAgentPos()
-
+	def checkAgentTargetMatch(self, a_x, a_y):
 		for target in self._targets:
 			t_x, t_y = target.getPos()
 
 			if a_x == t_x and a_y == t_y:
-				target.visited = True
+				target.setVisited(True)
 
 	# Returns a list of all target positions
 	def getTargetPositions(self):

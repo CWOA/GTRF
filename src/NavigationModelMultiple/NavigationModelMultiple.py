@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import FieldMap
+from FieldMap import FieldMap
 
 # Generating training data
 def generateTrainingExamples():
@@ -16,8 +16,7 @@ def trainModel():
 # Testing trained model on real example/problem
 def testModel():
 	fm = FieldMap(visualise=True)
-	model = dnn_model(fm)
-	model.testModelOnRealExample()
+	fm.startTestingEpisodes(1000)
 
 # Entry method
 if __name__ == '__main__':

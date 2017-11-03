@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 
-import Utility
+from Utility import Utility
 import tflearn
 import numpy as np
 import Constants as const
-import Utility
 from sklearn.model_selection import train_test_split
 from tflearn.layers.core import input_data, dropout, fully_connected
 from tflearn.layers.conv import conv_2d, max_pool_2d
@@ -35,6 +34,8 @@ class DNNModel:
 		self._model = tflearn.DNN(	self._network,
 									tensorboard_verbose=0,
 									tensorboard_dir=Utility.getTensorboardDir()	)
+
+		print "Initialised DNN"
 
 
 	# Load pickled data from file
@@ -105,7 +106,7 @@ class DNNModel:
 		np_map[0,:,:,0] = visit_map
 
 		# Predict on given img and map
-		return self._model.predict_label([np_img, np_map])
+		return self._model.predict([np_img, np_map])
 
 	def evaluateModel(self, X0_test, X1_test, Y_test):
 		print self._model.evaluate([X0_test, X1_test], Y_test)
