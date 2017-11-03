@@ -163,6 +163,7 @@ class FieldMap:
 				# stuck in a loop, act accordingly
 				if not agent_stuck and self._loop_detector.addCheckAction(chosen_action):
 					agent_stuck = True
+					#print "Agent stuck, entering unstucking mode"
 
 				# Agent is stuck, move towards nearest unvisited location
 				if agent_stuck:

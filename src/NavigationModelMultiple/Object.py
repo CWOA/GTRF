@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from Utility import Utility
-import random as rand
+import random
 import Constants as const
 
 class Object:
@@ -80,7 +80,8 @@ class ObjectHandler:
 	def reset(self):
 		# Generate a random starting agent coordinate if we're supposed to
 		if self._random_agent_pos:
-			a_x, a_y = self.generateUnoccupiedPosition()
+			a_x = random.randint(0, const.MAP_WIDTH-1)
+			a_y = random.randint(0, const.MAP_HEIGHT-1)
 			self._agent = Object(True, x=a_x, y=a_y)
 		# Default agent starting coordinates
 		else: self._agent = Object(True)
@@ -100,6 +101,9 @@ class ObjectHandler:
 			t_x, t_y = self.generateUnoccupiedPosition()
 			self._targets.append(Object(False, x=t_x, y=t_y))
 
+		print self.getAgentPos()
+		print self.getTargetPositions()
+
 		return self.getAgentPos()
 
 	# Generate a random position within the grid that isn't already occupied
@@ -108,17 +112,16 @@ class ObjectHandler:
 		occupied = []
 
 		# Combine all generated positions up to this point
-		if self._agent is not None:
-			occupied.append([self._agent.getPos()])
+		occupied.append(self.getAgentPos())
 		if self._targets is not None:
 			for target in self._targets:
-				occupied.append([target.getPos()])
+				occupied.append(target.getPosTuple())
 
 		# Loop until we've generated a valid position
 		while True:
 			# Generate a position within bounds
-			rand_x = rand.randint(0, const.MAP_WIDTH-1)
-			rand_y = rand.randint(0, const.MAP_HEIGHT-1)
+			rand_x = random.randint(0, const.MAP_WIDTH-1)
+			rand_y = random.randint(0, const.MAP_HEIGHT-1)
 
 			ok = True
 
@@ -126,6 +129,7 @@ class ObjectHandler:
 			for pos in occupied:
 				if rand_x == pos[0] and rand_y == pos[1]:
 					ok = False
+					break
 
 			if ok: return rand_x, rand_y
 
@@ -190,7 +194,8 @@ class ObjectHandler:
 			t_x, t_y = target.getPos()
 
 			if a_x == t_x and a_y == t_y:
-				target.setVisited(True)
+				if not target.getVisited():
+					target.setVisited(True)
 
 	# Returns a list of all target positions
 	def getTargetPositions(self):

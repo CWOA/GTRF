@@ -119,20 +119,6 @@ class LoopDetector:
 			# We need to pop an older entry
 			self._actions.popleft()
 
-	# Check whether the supplied sequence and actual sequence are exactly equal
-	def checkActionSequence(self, sequence):
-		equal = True
-
-		if len(sequence) == len(self._actions):
-			for i in range(len(sequence)):
-				if sequence[i] != self._actions[i]:
-					equal = False
-					break
-		else:
-			return False
-
-		return equal
-
 	# Check for a substring in the actual sequence
 	def checkActionSequenceSubstring(self, sequence):
 		# Convert list of characters to an ordered string
@@ -149,7 +135,7 @@ class LoopDetector:
 	def checkActionSequenceRotation(self, sequence):
 		for i in range(len(sequence)):
 			rotated = Utility.rotateList(sequence, i)
-			if self.checkActionSequence(rotated):
+			if self.checkActionSequenceSubstring(''.join(rotated)):
 				return True
 
 		return False
@@ -157,16 +143,16 @@ class LoopDetector:
 	# *** Also check the reverse of the given sequence
 	def checkActionSequenceRotationReverse(self, sequence):
 		# Convert to list of characters
-		sequence = list(sequence)
+		sequence_char_list = list(sequence)
 
 		# Check forwards
-		if self.checkActionSequenceRotation(sequence): return True
-		
+		if self.checkActionSequenceRotation(sequence_char_list): return True
+
 		# Reverse the list
-		sequence.reverse()
+		sequence_char_list.reverse()
 
 		# Check the reverse
-		if self.checkActionSequenceRotation(sequence): return True
+		if self.checkActionSequenceRotation(sequence_char_list): return True
 
 		return False
 

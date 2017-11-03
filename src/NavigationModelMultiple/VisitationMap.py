@@ -130,8 +130,11 @@ class MapHandler:
 		# Get neighbouring elements within radius (includes x,y-th element)
 		sub = padded_map[y_low:y_high+1, x_low:x_high+1]
 
-		# Get indices of elements that are unvisited (0)
-		indices = np.where(sub == 0)
+		try:
+			# Get indices of elements that are unvisited (0)
+			indices = np.where(sub == 0)
+		except Exception as e:
+			Utility.die("All cells have been visited..")
 
 		# Action to carry out
 		action = None
