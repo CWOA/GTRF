@@ -164,13 +164,16 @@ class MapHandler:
 		# Is that element anywhere else in the vote table?
 		other_idx = np.where(vote_table == element)
 
+		# Find the size
+		other_idx_size = len(other_idx[0])
+
 		# If that element is only found once
-		if len(other_idx) == 1:
+		if other_idx_size == 1:
 			action = const.ACTIONS[max_idx]
 		# Randomly chose an index and action
 		else:
-			rand_idx = random.randint(0, other_idx.size - 1)
-			action = const.ACTIONS[rand_idx]
+			rand_idx = random.randint(0, other_idx_size - 1)
+			action = const.ACTIONS[other_idx[0][rand_idx]]
 
 		return action
 

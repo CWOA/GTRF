@@ -194,6 +194,4 @@ class LoopDetector:
 		if self.checkActionSequenceRotationReverse("RBBLFF"): return True
 		if self.checkActionSequenceRotationReverse("RRFFBBLL"): return True
 
-		print self._actions
-		
 		return False
