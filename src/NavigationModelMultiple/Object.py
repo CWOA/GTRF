@@ -101,9 +101,6 @@ class ObjectHandler:
 			t_x, t_y = self.generateUnoccupiedPosition()
 			self._targets.append(Object(False, x=t_x, y=t_y))
 
-		print self.getAgentPos()
-		print self.getTargetPositions()
-
 		return self.getAgentPos()
 
 	# Generate a random position within the grid that isn't already occupied

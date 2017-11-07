@@ -34,13 +34,13 @@ class MapHandler:
 		self.setElement(curr_x, curr_y, const.VISITED_VAL)
 
 		# See whether the agent has already visited the new position
-		if self.getElement(new_x, new_y) == const.UNVISITED_VAL: visited = False
-		else: visited = True 
+		if self.getElement(new_x, new_y) == const.UNVISITED_VAL: new_location = True
+		else: new_location = False 
 
 		# Mark the new agent position
 		self.setElement(new_x, new_y, const.AGENT_VAL)
 
-		return visited
+		return new_location
 
 	def getElement(self, x, y):
 		return self._map[y, x]
@@ -145,16 +145,67 @@ class MapHandler:
 			a_x = np.floor((d_rad+1)/2)
 			a_y = np.floor((d_rad+1)/2)
 
-			# Random 0 element in subview
-			size = indices[1].shape[0]
-			rand_element = random.randint(0, size-1)
-			z_x = indices[1][rand_element]
-			z_y = indices[0][rand_element]
-
 			# Find the best action for the angle between them
-			action = Utility.bestActionForAngle(a_x, a_y, z_x, z_y)
+			action = self.bestActionForCoordinates(a_x, a_y, indices[1], indices[0])
 
 		return action
+
+	# Construct the action vote table, find the most voted for action
+	def bestActionForCoordinates(self, a_x, a_y, indices_x, indices_y):
+		# Construct vote table of possible actions
+		vote_table = self.constructActionVoteTable(a_x, a_y, indices_x, indices_y)
+
+		# Find first occurence of most voted for action
+		max_idx = np.argmax(vote_table)
+
+		# What's the vote count for the most voted for
+		element = vote_table[max_idx]
+
+		# Is that element anywhere else in the vote table?
+		other_idx = np.where(vote_table == element)
+
+		# If that element is only found once
+		if len(other_idx) == 1:
+			action = const.ACTIONS[max_idx]
+		# Randomly chose an index and action
+		else:
+			rand_idx = random.randint(0, other_idx.size - 1)
+			action = const.ACTIONS[rand_idx]
+
+		return action
+
+	def constructActionVoteTable(self, a_x, a_y, indices_x, indices_y):
+		# Check the coordinate vectors are equal in size
+		assert(indices_x.size == indices_y.size)
+
+		# Initialise vote table to the number of all actions
+		vote_table = np.zeros(len(const.ACTIONS))
+
+		# Iterate over each coordinate
+		for i in range(indices_x.size):
+			# Extract current coordinates
+			b_x = indices_x[i]
+			b_y = indices_y[i]
+
+			# Get a vector of possible actions for this position
+			possible_actions = Utility.possibleActionsForAngle(a_x, a_y, b_x, b_y)
+
+			# Increment vote table with suitable actions returned for these coordinates
+			vote_table = self.incrementActionCounts(vote_table, possible_actions)
+
+		return vote_table
+
+	# Given the current action vote table, increment elements that are present in 
+	# the provided action vector
+	def incrementActionCounts(self, table, action_vec):
+		for action in action_vec:
+			if action == 'F': table[0] += 1
+			elif action == 'B':  table[1] += 1
+			elif action == 'L': table[2] += 1
+			elif action == 'R': table[3] += 1
+			else: Utility.die("Action not recognised")
+
+		return table
 
 	# Check whether the supplied position is out of bounds
 	def checkPositionInBounds(self, x, y):
@@ -165,5 +216,10 @@ class MapHandler:
 
 # Entry method/unit testing
 if __name__ == '__main__':
-	map_handler = MapHandler(0, 0)
-	map_handler.update(1, 1)
+	# map_handler = MapHandler(0, 0)
+	# map_handler.update(1, 1)
+
+	Utility.possibleActionsForAngle(1, 1, 0, 0) # Top-left
+	Utility.possibleActionsForAngle(1, 1, 0, 2) # Bottom-left
+	Utility.possibleActionsForAngle(1, 1, 2, 2) # Bottom-right
+	Utility.possibleActionsForAngle(1, 1, 2, 0) # Top-right

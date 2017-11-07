@@ -52,6 +52,40 @@ class Utility:
 	# target object
 	@staticmethod
 	def bestActionForAngle(a_x, a_y, b_x, b_y):
+		# Compute angle between given points
+		angle = Utility.angleBetweenPoints(a_x, a_y, b_x, b_y)
+
+		if angle < math.pi/4 and angle > -math.pi/4: action = 'F'
+		elif angle >= math.pi/4 and angle < 3*math.pi/4: action = 'L'
+		elif angle <= math.pi/4 and angle > -3*math.pi/4: action = 'R'
+		elif angle >= 3*math.pi/4 or angle <= -3*math.pi/4: action = 'B'
+		else: Utility.die("Angle is not in [0,360] degrees")
+
+		# Make sure the assigned action is valid
+		assert(action in const.ACTIONS)
+
+		return action
+
+	# Very similar to "bestActionForAngle" except for the case when an angle is 45 degrees
+	# it returns both F, R in a char vector
+	@staticmethod
+	def possibleActionsForAngle(a_x, a_y, b_x, b_y):
+		# Compute angle between given points
+		angle = Utility.angleBetweenPoints(a_x, a_y, b_x, b_y)
+
+		# Pi!
+		p = math.pi
+
+		# If the angle is exactly diagonal (in 45 degree increments)
+		# top left 
+		if angle == p/4: return ['F', 'L']
+		elif angle == 3*p/4: return ['L', 'B']
+		elif angle == -3*p/4: return ['B', 'R']
+		elif angle == -p/4: return ['R', 'F']
+		else: return Utility.bestActionForAngle(a_x, a_y, b_x, b_y) 
+
+	@staticmethod
+	def angleBetweenPoints(a_x, a_y, b_x, b_y):
 		# Get relative position
 		rel_x = a_x - b_x
 		rel_y = a_y - b_y
@@ -60,16 +94,9 @@ class Utility:
 		angle = math.atan2(rel_x, rel_y)
 
 		# print "Angle = {} for point ({},{})".format(math.degrees(angle), rel_x, rel_y)
+	
+		return angle
 
-		if angle < math.pi/4 and angle > -math.pi/4: action = 'F'
-		elif angle >= math.pi/4 and angle < 3*math.pi/4: action = 'L'
-		elif angle <= math.pi/4 and angle > -3*math.pi/4: action = 'R'
-		elif angle >= 3*math.pi/4 or angle <= -3*math.pi/4: action = 'B'
-
-		# Make sure the assigned action is valid
-		assert(action in const.ACTIONS)
-
-		return action
 
 	# Rotate or shift sequence by n
 	@staticmethod
@@ -167,4 +194,6 @@ class LoopDetector:
 		if self.checkActionSequenceRotationReverse("RBBLFF"): return True
 		if self.checkActionSequenceRotationReverse("RRFFBBLL"): return True
 
+		print self._actions
+		
 		return False

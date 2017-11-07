@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import cv2
 import DNN
 import Object
 import random
@@ -163,7 +164,7 @@ class FieldMap:
 				# stuck in a loop, act accordingly
 				if not agent_stuck and self._loop_detector.addCheckAction(chosen_action):
 					agent_stuck = True
-					#print "Agent stuck, entering unstucking mode"
+					# print "Agent stuck, entering unstucking mode"
 
 				# Agent is stuck, move towards nearest unvisited location
 				if agent_stuck:
@@ -191,12 +192,19 @@ class FieldMap:
 			is_new_location = self.performAction(chosen_action)
 
 			# Check whether the agent is still stuck
-			if agent_stuck and testing and is_new_location: agent_stuck = False
+			if agent_stuck and testing and is_new_location:
+				# Delete elements in the loop detector
+				self._loop_detector.reset()
+
+				# Indicate that the agent is no longer stuck
+				agent_stuck = False
+
+				# print "Agent is no longer stuck!"
 
 			# Increment the move counter
 			num_moves += 1
 
-			# Render the updated view
+			# Render the updated views (for input into the subsequent iteration)
 			complete_img, subview = self._visualiser.update(self.retrieveStates())
 
 			# Display if we're supposed to
