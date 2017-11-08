@@ -54,7 +54,24 @@ GRID_PIXELS = 1
 WAIT_AMOUNT = 1
 
 """
-DNN constants
+SimulatorBridge constants
+"""
+VIS_ROS_NODE_NAME = "simulator_bridge"
+SET_MODEL_STATE_TOPIC_NAME = "set_model_state"
+GET_MODEL_STATES_TOPIC_NAME = "get_all_model_states"
+UAV_CAM_IMG_TOPIC_NAME = "cam_img"
+
+# Default height of agent (this height does NOT vary)
+DEFAULT_HEIGHT = 5
+
+# Gazebo name of the agent/robot
+ROBOT_NAME = "sim_cam"
+
+# Base name for gazebo cow targets (e.g. cow_0, cow_1, cow_2, ...)
+BASE_TARGET_NAME = "cow"
+
+"""
+DNN model/training constants
 """
 MODEL_NAME = "visit_map_navigation_model"
 DATA_RATIO = 0.9

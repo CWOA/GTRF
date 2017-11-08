@@ -14,6 +14,7 @@ class FieldMap:
 	# Class constructor
 	def __init__(		self, 
 						visualise=False,
+						use_simulator=True,
 						random_agent_pos=True, 
 						save=False						):
 		"""
@@ -40,7 +41,7 @@ class FieldMap:
 		self._map_handler = VisitationMap.MapHandler()
 
 		# Class in charge of visualisation (for both model input and our benefit)
-		self._visualiser = Visualisation.Visualiser()
+		self._visualiser = Visualisation.Visualiser(use_simulator)
 
 		# Initialise the agent loop detection module
 		self._loop_detector = LoopDetector()

@@ -4,7 +4,7 @@ from FieldMap import FieldMap
 
 # Generating training data
 def generateTrainingExamples():
-	fm = FieldMap(visualise=False, agent_global_view=True, save=True)
+	fm = FieldMap(visualise=False, use_simulator=True, save=False)
 	fm.startXEpisodes(20000)
 
 # Training model on synthesised data
@@ -20,6 +20,6 @@ def testModel():
 
 # Entry method
 if __name__ == '__main__':
-	# generateTrainingExamples()
+	generateTrainingExamples()
 	# trainModel()
-	testModel()
+	# testModel()
