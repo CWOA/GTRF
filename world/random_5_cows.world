@@ -14,7 +14,7 @@
 		<!-- Add 5 cows at randomly generated locations -->
 		<population name="herd">
 			<!-- Add the actual model -->
-			<model name="cow1">
+			<model name="cow">
 				<static>true</static>
 				<link name="body">
 					<visual name="visual">
@@ -42,6 +42,22 @@
 				<step>1 1 0</step> -->
 			</distribution>
 		</population>
+
+		    <population name="can_population1">
+      <model name="can1">
+        <include>
+          <uri>model://coke_can</uri>
+        </include>
+      </model>
+      <pose>3 3 0 0 0 0</pose>
+      <box>
+        <size>1 1 0.1</size>
+      </box>
+      <model_count>10</model_count>
+      <distribution>
+        <type>random</type>
+      </distribution>
+    </population>
 <!-- 
 
 		<model name="cow">

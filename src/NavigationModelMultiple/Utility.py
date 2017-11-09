@@ -97,7 +97,6 @@ class Utility:
 	
 		return angle
 
-
 	# Rotate or shift sequence by n
 	@staticmethod
 	def rotateList(sequence, n):

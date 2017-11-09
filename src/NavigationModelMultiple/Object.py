@@ -101,7 +101,7 @@ class ObjectHandler:
 			t_x, t_y = self.generateUnoccupiedPosition()
 			self._targets.append(Object(False, x=t_x, y=t_y))
 
-		return self.getAgentPos()
+		return self.getAgentPos(), self.getTargetPositions()
 
 	# Generate a random position within the grid that isn't already occupied
 	def generateUnoccupiedPosition(self):
@@ -155,16 +155,16 @@ class ObjectHandler:
 		# Iterate over each target
 		for target in self._targets:
 			# Check that we haven't already visited this target
-			if not target.visited:
+			if not target.getVisited():
 				# Find the distance
-				distance = Utility.distanceBetweenPoints((a_x, a_y), target)
+				distance = Utility.distanceBetweenPoints((a_x, a_y), target.getPosTuple())
 
 				# Is the current distance better
 				if distance < best_dist:
 					best_dist = distance
 					best_coords = target
 
-		return best_coords
+		return (a_x, a_y), best_coords.getPosTuple()
 
 	# Returns True if all targets have been visited
 	def allTargetsVisited(self):

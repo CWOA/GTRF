@@ -30,6 +30,9 @@ class FieldMap:
 		# Whether or not we should be saving output to file
 		self._save_output = save
 
+		# Whether or not we should use ROS/gazebo simulator
+		self._use_simulator = use_simulator
+
 		"""
 		Class attributes
 		"""
@@ -40,8 +43,8 @@ class FieldMap:
 		# Class in charge of visitation map
 		self._map_handler = VisitationMap.MapHandler()
 
-		# Class in charge of visualisation (for both model input and our benefit)
-		self._visualiser = Visualisation.Visualiser(use_simulator)
+		# Class in charge of visualisation (for both model input and our viewing benefit)
+		self._visualiser = Visualisation.Visualiser(self._use_simulator)
 
 		# Initialise the agent loop detection module
 		self._loop_detector = LoopDetector()
@@ -62,8 +65,15 @@ class FieldMap:
 
 	# Reset the map (agent position, target positions, memory, etc.)
 	def reset(self):
-		# Reset objects (agent, target), returns generated agent position
-		a_x, a_y = self._object_handler.reset()
+		# Reset objects (agent, target), returns generated agent/target positions
+		states = self._object_handler.reset()
+		a_x = states[0][0]
+		a_y = states[0][1]
+		target_poses = states[1]
+
+		# If we're using the gazebo simulator, move the agent/targets to generated positions
+		if self._use_simulator:
+			self._visualiser.resetAgentTargets(a_x, a_y, target_poses)
 
 		# Reset the visit map
 		self._map_handler.reset(a_x, a_y)
@@ -175,13 +185,13 @@ class FieldMap:
 			# We're just producing training instances
 			else:
 				# Find the coordinates of the closest target to the current agent position
-				closest_target = self._object_handler.findClosestTarget()
-
-				# Fetch agent's current position
-				agent_pos = self._object_handler.getAgentPos()
+				agent_pos, closest_target = self._object_handler.findClosestTarget()
 
 				# Find the best action for the closest target
-				chosen_action = self.findActionForAngle(agent_pos, closest_target)
+				chosen_action = Utility.bestActionForAngle(	agent_pos[0],
+															agent_pos[1],
+															closest_target[0],
+															closest_target[1]	)
 
 				# Save the subimage, memory map and action (class)
 				if self._save_output:
@@ -193,7 +203,7 @@ class FieldMap:
 			is_new_location = self.performAction(chosen_action)
 
 			# Check whether the agent is still stuck
-			if agent_stuck and testing and is_new_location:
+			if testing and agent_stuck and is_new_location:
 				# Delete elements in the loop detector
 				self._loop_detector.reset()
 

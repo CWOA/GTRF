@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # encoding: utf-8
+
 """
 Constants.py
 """
@@ -57,9 +58,11 @@ WAIT_AMOUNT = 1
 SimulatorBridge constants
 """
 VIS_ROS_NODE_NAME = "simulator_bridge"
-SET_MODEL_STATE_TOPIC_NAME = "set_model_state"
-GET_MODEL_STATES_TOPIC_NAME = "get_all_model_states"
-UAV_CAM_IMG_TOPIC_NAME = "cam_img"
+
+# Topic names
+SET_MODEL_STATE_TOPIC_NAME = "/gazebo/set_model_state"
+GET_MODEL_STATES_TOPIC_NAME = "/gazebo/model_states"
+UAV_CAM_IMG_TOPIC_NAME = "/downward_cam/camera/image"
 
 # Default height of agent (this height does NOT vary)
 DEFAULT_HEIGHT = 5

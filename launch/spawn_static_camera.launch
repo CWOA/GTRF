@@ -3,7 +3,7 @@
 <launch>
 	<arg name="x" default="0.0"/>
 	<arg name="y" default="0.0"/>
-	<arg name="z" default="3.5"/>
+	<arg name="z" default="5"/>
 	<arg name="name" default="sim_cam"/>
 	<arg name="model" default="$(find uav_id)/urdf/simulated_camera.gazebo.xacro"/>
 

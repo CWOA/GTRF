@@ -8,7 +8,7 @@
 	<arg name="update_rate" default="20"/>
 	<arg name="hfov" default="100"/>
 	<arg name="image_format" default="R8G8B8"/>
-	<arg name="res_x" default="640"/>
+	<arg name="res_x" default="480"/>
 	<arg name="res_y" default="480"/>
 	<arg name="ros_topic" default="camera/image"/>
 	<arg name="cam_info_topic" default="camera/info"/>

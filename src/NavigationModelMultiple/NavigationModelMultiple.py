@@ -4,8 +4,8 @@ from FieldMap import FieldMap
 
 # Generating training data
 def generateTrainingExamples():
-	fm = FieldMap(visualise=False, use_simulator=True, save=False)
-	fm.startXEpisodes(20000)
+	fm = FieldMap(visualise=True, use_simulator=True, save=False)
+	fm.startTrainingEpisodes(20000)
 
 # Training model on synthesised data
 def trainModel():
