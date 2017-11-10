@@ -61,11 +61,12 @@ VIS_ROS_NODE_NAME = "simulator_bridge"
 
 # Topic names
 SET_MODEL_STATE_SERVICE_NAME = "/gazebo/set_model_state"
-GET_MODEL_STATES_TOPIC_NAME = "/gazebo/model_states"
 UAV_CAM_IMG_TOPIC_NAME = "/downward_cam/camera/image"
 
 # Default height of agent (this height does NOT vary)
-DEFAULT_HEIGHT = 5
+DEFAULT_HEIGHT = 3.5
+
+SCALE_FACTOR = 2
 
 # Gazebo name of the agent/robot
 ROBOT_NAME = "sim_cam"
