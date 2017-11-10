@@ -9,7 +9,7 @@ Constants.py
 Directory constats
 """
 BASE_DIR = "/home/will/catkin_ws/src/uav_id/tflearn"
-DATA_DIR = "data/multiple_nav_data.pkl"
+DATA_DIR = "data/multiple_nav_data_SIMULATOR.pkl"
 TENSORBOARD_DIR = "tensorboard"
 MODELS_DIR = "models"
 
@@ -62,6 +62,10 @@ VIS_ROS_NODE_NAME = "simulator_bridge"
 # Topic names
 SET_MODEL_STATE_SERVICE_NAME = "/gazebo/set_model_state"
 UAV_CAM_IMG_TOPIC_NAME = "/downward_cam/camera/image"
+
+# Downsample ratio for simulated agent subview
+IMG_DOWNSAMPLED_WIDTH = 50
+IMG_DOWNSAMPLED_HEIGHT = 50
 
 # Default height of agent (this height does NOT vary)
 DEFAULT_HEIGHT = 3.5

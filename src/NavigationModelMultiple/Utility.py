@@ -3,6 +3,7 @@
 import os
 import sys
 import math
+import numpy as np
 import Constants as const
 from collections import deque
 
@@ -24,7 +25,7 @@ class Utility:
 	# e.g. 'F' -> [1,0,0,0]
 	@staticmethod
 	def actionToClassVector(action):
-		vec = np.zeros(len(self._actions))
+		vec = np.zeros(len(const.ACTIONS))
 
 		if action == 'F': vec[0] = 1
 		elif action == 'B': vec[1] = 1

@@ -4,10 +4,12 @@ import cv2
 import DNN
 import Object
 import random
+import pickle
 import numpy as np
 from Utility import *
 import Visualisation
 import VisitationMap
+from tqdm import tqdm
 import Constants as const
 
 class FieldMap:
@@ -150,7 +152,7 @@ class FieldMap:
 
 	def beginInstance(self, testing, wait_amount=0):
 		# Render the initial game state
-		complete_img, subview = self._visualiser.update(self.retrieveStates())
+		_, subview = self._visualiser.update(self.retrieveStates())
 
 		# Number of moves the agent has made
 		num_moves = 0
@@ -216,7 +218,7 @@ class FieldMap:
 			num_moves += 1
 
 			# Render the updated views (for input into the subsequent iteration)
-			complete_img, subview = self._visualiser.update(self.retrieveStates())
+			_, subview = self._visualiser.update(self.retrieveStates())
 
 			# Display if we're supposed to
 			if self._visualise: self._visualiser.display(wait_amount)
@@ -243,11 +245,18 @@ class FieldMap:
 
 	# Do a given number of episodes
 	def startTrainingEpisodes(self, num_episodes):
+		# Initialise progress bar (TQDM) object
+		pbar = tqdm(total=num_episodes)
+
 		for i in range(num_episodes):
-			self.beginInstance(False)
+			self.beginInstance(False, wait_amount=const.WAIT_AMOUNT)
 			self.reset()
 
-			print "{}/{}, {}% complete".format(i+1, num_episodes, (float(i+1)/num_episodes)*100)
+			pbar.update()
+
+			# print "{}/{}, {}% complete".format(i+1, num_episodes, (float(i+1)/num_episodes)*100)
+
+		pbar.close()
 
 		# Save the output if we're supposed to
 		if self._save_output: self.saveDataToFile()
