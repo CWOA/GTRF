@@ -9,7 +9,8 @@ Constants.py
 Directory constats
 """
 BASE_DIR = "/home/will/catkin_ws/src/uav_id/tflearn"
-DATA_DIR = "data/multiple_nav_data_SIMULATOR.pkl"
+DATA_DIR_PICKLE = "data/multiple_nav_data_SIMULATOR.pkl"
+DATA_DIR_HDF5 = "data/multiple_nav_data_SIMULATOR.h5"
 TENSORBOARD_DIR = "tensorboard"
 MODELS_DIR = "models"
 
@@ -29,6 +30,11 @@ NUM_TARGETS = 5
 
 # Range of random numbers of targets
 NUM_TARGETS_RANGE = (2, 10)
+
+# Method/API to use for saving synthesised training data
+# When true, it uses HDF5 (which is suitable for larger databases)
+# when false, uses pickle (not sure what it's good for...)
+USE_HDF5 = True
 
 """
 VisitationMap constants
@@ -67,9 +73,10 @@ UAV_CAM_IMG_TOPIC_NAME = "/downward_cam/camera/image"
 IMG_DOWNSAMPLED_WIDTH = 50
 IMG_DOWNSAMPLED_HEIGHT = 50
 
-# Default height of agent (this height does NOT vary)
+# Default height of agent (this height does NOT vary currently)
 DEFAULT_HEIGHT = 3.5
 
+# Gazebo XY plane scale factor (so targets are more distant)
 SCALE_FACTOR = 2
 
 # Gazebo name of the agent/robot
@@ -81,6 +88,6 @@ BASE_TARGET_NAME = "cow"
 """
 DNN model/training constants
 """
-MODEL_NAME = "visit_map_navigation_model"
+MODEL_NAME = "nav_model_multiple_SIMULATOR"
 DATA_RATIO = 0.9
-NUM_EPOCHS = 40
+NUM_EPOCHS = 2

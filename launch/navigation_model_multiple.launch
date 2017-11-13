@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<!-- All constants are in "Constants.py" -->
+<launch>
+  <!-- Start Gazebo with field/cow world -->
+  <include file="$(find uav_id)/launch/start_world.launch">
+  	<arg name="world" value="$(find uav_id)/world/5_cows.world"/>
+    <!-- Start Gazebo without visualisation/GUI (still produces simulated image topic) -->
+  	<arg name="gui" value="true"/>
+  </include>
+
+  <!-- Spawn GRID-based, no-gravity camera -->
+  <include file="$(find uav_id)/launch/spawn_static_camera.launch" />
+
+  <!-- Launch non-ROS node NavigationModelMultiple.py -->
+  <node pkg="uav_id" name="NavigationModelMultiple" type="NavigationModelMultiple.py" output="screen" required="true">
+
+  </node>
+
+  <!-- Start rviz visualization with preset config -->
+<!--   <node pkg="rviz" type="rviz" name="rviz" args="-d $(find uav_id)/rviz_cfg/will_test.rviz"/> -->
+</launch>

@@ -1,0 +1,101 @@
+<?xml version="1.0"?>
+<sdf version="1.4">
+  <world name="default">
+
+    <!-- Add a sun object -->
+    <include>
+      <uri>model://sun</uri>
+    </include>
+
+    <!-- Add a field-like ground plane -->
+    <include>
+      <uri>model://field_ground_plane</uri>
+    </include>
+
+    <!-- Add cow objects at the origin -->
+    <model name="cow_0">
+      <pose>0 0 0  0 0 0</pose>
+      <static>false</static>
+      <link name="body">
+        <gravity>0</gravity>
+        <visual name="visual">
+          <geometry>
+            <mesh>
+              <uri>model://cow20.dae</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+
+    <model name="cow_1">
+      <pose>0 0 0  0 0 0</pose>
+      <static>false</static>
+      <link name="body">
+        <gravity>0</gravity>
+        <visual name="visual">
+          <geometry>
+            <mesh>
+              <uri>model://cow20.dae</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+
+    <model name="cow_2">
+      <pose>0 0 0  0 0 0</pose>
+      <static>false</static>
+      <link name="body">
+        <gravity>0</gravity>
+        <visual name="visual">
+          <geometry>
+            <mesh>
+              <uri>model://cow20.dae</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+
+    <model name="cow_3">
+      <pose>0 0 0  0 0 0</pose>
+      <static>false</static>
+      <link name="body">
+        <gravity>0</gravity>
+        <visual name="visual">
+          <geometry>
+            <mesh>
+              <uri>model://cow20.dae</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+
+    <model name="cow_4">
+      <pose>0 0 0  0 0 0</pose>
+      <static>false</static>
+      <link name="body">
+        <gravity>0</gravity>
+        <visual name="visual">
+          <geometry>
+            <mesh>
+              <uri>model://cow20.dae</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+
+    <!-- To add a sky with moving clouds -->
+    <scene>
+      <sky>
+        <clouds>
+          <speed>9</speed>
+        </clouds>
+      </sky>
+    </scene>
+
+  </world>
+</sdf>

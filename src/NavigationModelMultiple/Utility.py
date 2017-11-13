@@ -11,14 +11,21 @@ from collections import deque
 class Utility:
 	### Directory functions
 	@staticmethod
-	def getDataDir():
-		return os.path.join(const.BASE_DIR, const.DATA_DIR)
+	def getPickleDataDir():
+		return os.path.join(const.BASE_DIR, const.DATA_DIR_PICKLE)
+	@staticmethod
+	def getHDF5DataDir():
+		return os.path.join(const.BASE_DIR, const.DATA_DIR_HDF5)
 	@staticmethod
 	def getTensorboardDir():
 		return os.path.join(const.BASE_DIR, const.TENSORBOARD_DIR)
 	@staticmethod
 	def getModelDir():
 		filename = "{}.tflearn".format(const.MODEL_NAME)
+		return os.path.join(const.BASE_DIR, const.MODELS_DIR, filename)
+	@staticmethod
+	def getBestModelDir():
+		filename = "{}_BEST.tflearn".format(const.MODEL_NAME)
 		return os.path.join(const.BASE_DIR, const.MODELS_DIR, filename)
 
 	# Converts from a single action to a class vector required by the dnn model

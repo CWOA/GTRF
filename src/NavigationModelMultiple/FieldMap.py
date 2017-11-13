@@ -4,7 +4,6 @@ import cv2
 import DNN
 import Object
 import random
-import pickle
 import numpy as np
 from Utility import *
 import Visualisation
@@ -17,7 +16,8 @@ class FieldMap:
 	def __init__(		self, 
 						visualise=False,
 						use_simulator=True,
-						random_agent_pos=True, 
+						random_agent_pos=True,
+						training_model=False,
 						save=False						):
 		"""
 		Class arguments from init
@@ -35,35 +35,42 @@ class FieldMap:
 		# Whether or not we should use ROS/gazebo simulator
 		self._use_simulator = use_simulator
 
+		# If we're just training the DNN
+		self._training_model = training_model
+
 		"""
 		Class attributes
 		"""
 
-		# Class in charge of handling agent/targets
-		self._object_handler = Object.ObjectHandler()
+		# Don't initialise the Visualiser (and ROS node) if we're just training
+		if not self._training_model:
+			# Class in charge of handling agent/targets
+			self._object_handler = Object.ObjectHandler()
 
-		# Class in charge of visitation map
-		self._map_handler = VisitationMap.MapHandler()
+			# Class in charge of visitation map
+			self._map_handler = VisitationMap.MapHandler()
 
-		# Class in charge of visualisation (for both model input and our viewing benefit)
-		self._visualiser = Visualisation.Visualiser(self._use_simulator)
+			# Class in charge of visualisation (for both model input and our viewing benefit)
+			self._visualiser = Visualisation.Visualiser(self._use_simulator)
 
-		# Initialise the agent loop detection module
-		self._loop_detector = LoopDetector()
+			# Initialise the agent loop detection module
+			self._loop_detector = LoopDetector()
+
+			# Training data list to pickle upon completion (if we're supposed to be
+			# saving output)
+			self._training_output = []
 
 		# Deep Neural Network class for model prediction, training, etc.
-		self._dnn = DNN.DNNModel()
-
-		# Training data list to pickle upon completion (if we're supposed to be
-		# saving output)
-		self._training_output = []
+		self._dnn = DNN.DNNModel(self._use_simulator)
 
 		"""
 		Class setup
 		"""
 
-		# Initialise all the necessary elements
-		self.reset()
+		# Don't initialise this class if we're just training
+		if not self._training_model:
+			# Initialise all the necessary elements
+			self.reset()
 
 	# Reset the map (agent position, target positions, memory, etc.)
 	def reset(self):
@@ -235,11 +242,51 @@ class FieldMap:
 
 	# Save output data to file
 	def saveDataToFile(self):
-		print "Pickling/saving data, this may take some time..."
+		# Use HDF5 py
+		if const.USE_HDF5:
+			import h5py
 
-		# Save it out
-		with open(Utility.getDataDir(), 'wb') as fout:
-				pickle.dump(self._training_output, fout)
+			print "Saving data using h5py"
+
+			# Open the dataset file (may overwrite an existing file!!)
+			dataset = h5py.File(Utility.getHDF5DataDir(), 'w')
+
+			# The number of training instances generated
+			num_instances = len(self._training_output)
+
+			# The number of possible action classes
+			num_classes = len(const.ACTIONS)
+
+			# Image dimensions
+			img_width = const.IMG_DOWNSAMPLED_WIDTH
+			img_height = const.IMG_DOWNSAMPLED_HEIGHT
+			channels = const.NUM_CHANNELS
+
+			# Create three datasets within the file with the correct shapes:
+			# X0: agent visual subview
+			# X1: visitation map
+			# Y: corresponding ground truth action vector in form [0, 1, 0, 0]
+			dataset.create_dataset('X0', (num_instances, img_width, img_height, channels))
+			dataset.create_dataset('X1', (num_instances, const.MAP_WIDTH, const.MAP_WIDTH))
+			dataset.create_dataset('Y', (num_instances, num_classes))
+
+			# Actually add instances to the respective datasets
+			for i in range(len(self._training_output)):
+				dataset['X0'][i] = self._training_output[i][0]
+				dataset['X1'][i] = self._training_output[i][1]
+				dataset['Y'][i] = self._training_output[i][2]
+
+			# Finish up
+			dataset.close()
+		# Use pickle
+		else:
+			import pickle
+
+			print "Pickling/saving data, this may take some time..."
+
+			# Save it out
+			with open(Utility.getPickleDataDir(), 'wb') as fout:
+					pickle.dump(self._training_output, fout)
 
 		print "Finished saving data!"
 
@@ -289,6 +336,10 @@ class FieldMap:
 																num_examples,
 																upper_num_moves,
 																percent_correct		)
+
+	# Signifies DNN class to train model on data at a given directory
+	def trainModel(self):
+		self._dnn.trainModel()
 
 # Entry method/unit testing
 if __name__ == '__main__':

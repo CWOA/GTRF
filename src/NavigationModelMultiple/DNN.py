@@ -4,6 +4,7 @@ from Utility import Utility
 import tflearn
 import numpy as np
 import Constants as const
+import datetime
 from sklearn.model_selection import train_test_split
 from tflearn.layers.core import input_data, dropout, fully_connected
 from tflearn.layers.conv import conv_2d, max_pool_2d
@@ -12,20 +13,29 @@ from tflearn.layers.estimator import regression
 
 class DNNModel:
 	# Class constructor
-	def __init__(self):
+	def __init__(self, use_simulator=True):
 		"""
 		Class attributes
 		"""
 
-		# All training/testing data
-		self._data = []
+		# If we're using the ROS/gazebo simulator for visual input
+		self._use_simluator = use_simulator
 
 		# Number of classes
 		self._num_classes = len(const.ACTIONS)
 
-		# Input data dimensions for IMAGE input
-		self._img_width = const.GRID_PIXELS * 3
-		self._img_height = const.GRID_PIXELS * 3
+		# If we're using the ROS/gazebo simulator for visual input
+		if use_simulator:
+			self._img_width = const.IMG_DOWNSAMPLED_WIDTH
+			self._img_height = const.IMG_DOWNSAMPLED_HEIGHT
+		else:
+			# Input data dimensions for IMAGE input
+			self._img_width = const.GRID_PIXELS * 3
+			self._img_height = const.GRID_PIXELS * 3
+
+		"""
+		Class setup
+		"""
 
 		# Network architecture
 		self._network = self.defineDNN()
@@ -33,31 +43,52 @@ class DNNModel:
 		# Model declaration
 		self._model = tflearn.DNN(	self._network,
 									tensorboard_verbose=0,
-									tensorboard_dir=Utility.getTensorboardDir()	)
+									tensorboard_dir=Utility.getTensorboardDir(),
+									best_checkpoint_path=Utility.getBestModelDir()	)
 
 		print "Initialised DNN"
 
 
 	# Load pickled data from file
 	def loadData(self):
-		# Load pickled data
-		with open(self._FM._data_dir, 'rb') as fin:
-			self._data = pickle.load(fin)
+		# Use HDF5 python implementation
+		if const.USE_HDF5:
+			import h5py
 
-		num_instances = len(self._data)
+			# Load the data
+			dataset = h5py.File(Utility.getHDF5DataDir(), 'r')
 
-		# Agent subview
-		X0 = np.zeros((num_instances, self._img_width, self._img_height, const.NUM_CHANNELS))
-		# Visitation map
-		X1 = np.zeros((num_instances, const.MAP_WIDTH, const.MAP_HEIGHT, 1))
+			# Extract the datasets contained within the file as numpy arrays, simple :)
+			X0 = dataset['X0'][()]
+			X1 = dataset['X1'][()]
+			Y = dataset['Y'][()]
 
-		# Ground truth labels
-		Y = np.zeros((num_instances, self._num_classes))
+			# Add extra dimension to X1 at the end
+			X_temp = np.zeros((X1.shape[0], X1.shape[1], X1.shape[2], 1))
+			X_temp[:,:,:,0] = X1
+			X1 = X_temp
+		# Use pickle
+		else:
+			import pickle
 
-		for i in range(num_instances):
-			X0[i,:,:,:] = self._data[i][0]
-			X1[i,:,:,0] = self._data[i][1]
-			Y[i,:] = self._data[i][2]
+			# Load pickled data
+			with open(Utility.getDataDir()) as fin:
+				self._data = pickle.load(fin)
+
+			num_instances = len(self._data)
+
+			# Agent subview
+			X0 = np.zeros((num_instances, self._img_width, self._img_height, const.NUM_CHANNELS))
+			# Visitation map
+			X1 = np.zeros((num_instances, const.MAP_WIDTH, const.MAP_HEIGHT, 1))
+
+			# Ground truth labels
+			Y = np.zeros((num_instances, self._num_classes))
+
+			for i in range(num_instances):
+				X0[i,:,:,:] = self._data[i][0]
+				X1[i,:,:,0] = self._data[i][1]
+				Y[i,:] = self._data[i][2]
 
 		return self.segregateData(X0, X1, Y)
 
@@ -79,6 +110,13 @@ class DNNModel:
 
 		return X0_train, X0_test, X1_train, X1_test, Y_train, Y_test
 
+	# Construct a unique RunID (for tensorboard) for this training run
+	def constructRunID(self):
+		date_str = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+		return "{}_{}".format(const.MODEL_NAME, date_str)
+
+	# Complete function which loads the appropriate training data, trains the model,
+	# saves it to file and evaluates the trained model's performance
 	def trainModel(self):
 		# Get and split the data
 		X0_train, X0_test, X1_train, X1_test, Y_train, Y_test = self.loadData()
@@ -87,9 +125,9 @@ class DNNModel:
 		self._model.fit(	[X0_train, X1_train],
 							Y_train,
 							validation_set=([X0_test, X1_test], Y_test),
-							n_epoch=self._n_epochs,
+							n_epoch=const.NUM_EPOCHS,
 							batch_size=64,
-							run_id=self._model_name,
+							run_id=self.constructRunID(),
 							show_metric=True								)
 
 		self.loadSaveModel(load=False)
