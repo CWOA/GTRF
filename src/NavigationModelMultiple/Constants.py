@@ -10,7 +10,7 @@ Directory constats
 """
 BASE_DIR = "/home/will/catkin_ws/src/uav_id/tflearn"
 DATA_DIR_PICKLE = "data/multiple_nav_data_SIMULATOR.pkl"
-DATA_DIR_HDF5 = "data/multiple_nav_data_SIMULATOR.h5"
+DATA_DIR_HDF5 = "data/TEMP.h5"
 TENSORBOARD_DIR = "tensorboard"
 MODELS_DIR = "models"
 
@@ -90,4 +90,4 @@ DNN model/training constants
 """
 MODEL_NAME = "nav_model_multiple_SIMULATOR"
 DATA_RATIO = 0.9
-NUM_EPOCHS = 2
+NUM_EPOCHS = 10

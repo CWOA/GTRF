@@ -23,10 +23,6 @@ class Utility:
 	def getModelDir():
 		filename = "{}.tflearn".format(const.MODEL_NAME)
 		return os.path.join(const.BASE_DIR, const.MODELS_DIR, filename)
-	@staticmethod
-	def getBestModelDir():
-		filename = "{}_BEST.tflearn".format(const.MODEL_NAME)
-		return os.path.join(const.BASE_DIR, const.MODELS_DIR, filename)
 
 	# Converts from a single action to a class vector required by the dnn model
 	# e.g. 'F' -> [1,0,0,0]

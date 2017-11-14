@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import cv2
 from Utility import Utility
 import tflearn
 import numpy as np
@@ -43,14 +44,15 @@ class DNNModel:
 		# Model declaration
 		self._model = tflearn.DNN(	self._network,
 									tensorboard_verbose=0,
-									tensorboard_dir=Utility.getTensorboardDir(),
-									best_checkpoint_path=Utility.getBestModelDir()	)
+									tensorboard_dir=Utility.getTensorboardDir()	)
 
 		print "Initialised DNN"
 
 
 	# Load pickled data from file
 	def loadData(self):
+		print "Loading data"
+
 		# Use HDF5 python implementation
 		if const.USE_HDF5:
 			import h5py
@@ -67,12 +69,16 @@ class DNNModel:
 			X_temp = np.zeros((X1.shape[0], X1.shape[1], X1.shape[2], 1))
 			X_temp[:,:,:,0] = X1
 			X1 = X_temp
+
+			# Normalise all visual input from [0,255] to [0,1]
+			# X0 = self.normaliseInstances(X0, 255)
+			# X1 = self.normaliseInstances(X1, const.AGENT_VAL)
 		# Use pickle
 		else:
 			import pickle
 
 			# Load pickled data
-			with open(Utility.getDataDir()) as fin:
+			with open(Utility.getPickleDataDir()) as fin:
 				self._data = pickle.load(fin)
 
 			num_instances = len(self._data)
@@ -90,7 +96,13 @@ class DNNModel:
 				X1[i,:,:,0] = self._data[i][1]
 				Y[i,:] = self._data[i][2]
 
-		return self.segregateData(X0, X1, Y)
+		print "Finished loading data"
+
+		# Quickly check there are the same number of data instances
+		assert(X0.shape[0] == X1.shape[0])
+		assert(X1.shape[0] == Y.shape[0])
+
+		return X0, X1, Y
 
 	def segregateData(self, X0, X1, Y):
 		# Split data into training/testing with the specified ratio
@@ -118,8 +130,14 @@ class DNNModel:
 	# Complete function which loads the appropriate training data, trains the model,
 	# saves it to file and evaluates the trained model's performance
 	def trainModel(self):
-		# Get and split the data
-		X0_train, X0_test, X1_train, X1_test, Y_train, Y_test = self.loadData()
+		# Load the data
+		X0, X1, Y = self.loadData()
+
+		# Sanity checking
+		self.inspectData(X0, X1, Y)
+
+		# Split the data into training/testing chunks
+		X0_train, X0_test, X1_train, X1_test, Y_train, Y_test = self.segregateData(X0, X1, Y)
 
 		# Train the model
 		self._model.fit(	[X0_train, X1_train],
@@ -130,9 +148,30 @@ class DNNModel:
 							run_id=self.constructRunID(),
 							show_metric=True								)
 
+		# Save the trained model
 		self.loadSaveModel(load=False)
 
+		# Evaluate how we did
 		self.evaluateModel(X0_test, X1_test, Y_test)
+
+	# Just iteratively inspect the data so it appears to make sense (figuratively)
+	def inspectData(self, X0, X1, Y):
+		# Loop over all instances
+		for i in range(X0.shape[0]):
+			# Get the current image
+			current_img = X0[i,:,:,:]
+
+			# Normalise
+			current_img /= 255
+
+			# Display relevant things
+			cv2.imshow(const.AGENT_WINDOW_NAME, current_img)
+			print current_img
+			print X1[i,:,:,0]
+			print Utility.classVectorToAction(Y[i,:])
+
+			# Wait for a keypress
+			cv2.waitKey(0)
 
 	def testModelSingle(self, img, visit_map):
 		# Insert image into 4D numpy array
@@ -160,6 +199,13 @@ class DNNModel:
 			string = "Saved"
 
 		print "{} TFLearn model at directory:{}".format(string, model_dir)
+
+	# Normalise all given instances with a given value (255 in most cases)
+	def normaliseInstances(self, array, value):
+		for i in range(array.shape[0]):
+			array[i,:,:,:] = array[i,:,:,:] / value
+
+		return array
 
 	def defineDNN(self):
 		# Network 0 definition (IMAGE) -> AlexNet

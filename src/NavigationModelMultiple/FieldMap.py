@@ -205,7 +205,7 @@ class FieldMap:
 				# Save the subimage, memory map and action (class)
 				if self._save_output:
 					self.recordData(	subview, 
-										self._map_handler.getMap(),
+										np.copy(self._map_handler.getMap()),
 										Utility.actionToClassVector(chosen_action)	)
 
 			# Make the move
@@ -267,7 +267,7 @@ class FieldMap:
 			# X1: visitation map
 			# Y: corresponding ground truth action vector in form [0, 1, 0, 0]
 			dataset.create_dataset('X0', (num_instances, img_width, img_height, channels))
-			dataset.create_dataset('X1', (num_instances, const.MAP_WIDTH, const.MAP_WIDTH))
+			dataset.create_dataset('X1', (num_instances, const.MAP_WIDTH, const.MAP_HEIGHT))
 			dataset.create_dataset('Y', (num_instances, num_classes))
 
 			# Actually add instances to the respective datasets
@@ -300,8 +300,6 @@ class FieldMap:
 			self.reset()
 
 			pbar.update()
-
-			# print "{}/{}, {}% complete".format(i+1, num_episodes, (float(i+1)/num_episodes)*100)
 
 		pbar.close()
 
