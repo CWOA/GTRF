@@ -180,15 +180,17 @@ class FieldMap:
 				# Use DNN model to predict correct action
 				chosen_action = self.predictBestAction(subview, visit_map)
 
+				# Get the current agent position
+				a_x, a_y = self._object_handler.getAgentPos()
+
 				# Add the suggested action and check history, check if the agent is
 				# stuck in a loop, act accordingly
-				if not agent_stuck and self._loop_detector.addCheckAction(chosen_action):
+				if not agent_stuck and self._loop_detector.addCheckElement(chosen_action, (a_x, a_y)):
 					agent_stuck = True
-					# print "Agent stuck, entering unstucking mode"
+					print "Agent stuck, entering unstucking mode"
 
 				# Agent is stuck, move towards nearest unvisited location
 				if agent_stuck:
-					a_x, a_y = self._object_handler.getAgentPos()
 					chosen_action = self._map_handler.findUnvisitedDirection(a_x, a_y)
 
 			# We're just producing training instances
@@ -219,7 +221,7 @@ class FieldMap:
 				# Indicate that the agent is no longer stuck
 				agent_stuck = False
 
-				# print "Agent is no longer stuck!"
+				print "Agent is no longer stuck!"
 
 			# Increment the move counter
 			num_moves += 1
@@ -329,9 +331,9 @@ class FieldMap:
 			print "Solving example {}/{} took {} moves".format(i+1, num_episodes, num_moves)
 
 		# Print some more stats
-		percent_correct = float(num_under/num_examples) * 100
+		percent_correct = float(num_under/num_episodes) * 100
 		print "{}/{} under {} moves, or {}% success".format(	num_under,
-																num_examples,
+																num_episodes,
 																upper_num_moves,
 																percent_correct		)
 

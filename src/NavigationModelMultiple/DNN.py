@@ -44,7 +44,8 @@ class DNNModel:
 		# Model declaration
 		self._model = tflearn.DNN(	self._network,
 									tensorboard_verbose=0,
-									tensorboard_dir=Utility.getTensorboardDir()	)
+									tensorboard_dir=Utility.getTensorboardDir(),
+									best_checkpoint_path=Utility.getBestModelDir()	)
 
 		print "Initialised DNN"
 
@@ -134,7 +135,7 @@ class DNNModel:
 		X0, X1, Y = self.loadData()
 
 		# Sanity checking
-		self.inspectData(X0, X1, Y)
+		# self.inspectData(X0, X1, Y)
 
 		# Split the data into training/testing chunks
 		X0_train, X0_test, X1_train, X1_test, Y_train, Y_test = self.segregateData(X0, X1, Y)

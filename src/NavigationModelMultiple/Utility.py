@@ -23,6 +23,10 @@ class Utility:
 	def getModelDir():
 		filename = "{}.tflearn".format(const.MODEL_NAME)
 		return os.path.join(const.BASE_DIR, const.MODELS_DIR, filename)
+	@staticmethod
+	def getBestModelDir():
+		filename = "{}_BEST.tflearn".format(const.MODEL_NAME)
+		return os.path.join(const.BASE_DIR, const.MODELS_DIR, filename)
 
 	# Converts from a single action to a class vector required by the dnn model
 	# e.g. 'F' -> [1,0,0,0]
@@ -119,40 +123,87 @@ class Utility:
 # Class designed to help with detecting whether the agent is stuck in an infinite loop
 class LoopDetector:
 	# Class constructor
-	def __init__(self, max_queue_size=8):
+	def __init__(	self, 
+					use_action_strings=const.USE_ACTION_STRING, 
+					max_queue_size=const.MAX_QUEUE_SIZE,
+					max_visit_occurences=const.MAX_VISIT_OCCURENCES		):
 		"""
 		Class attributes
 		"""
 
+		# Whether to use string based loop detection method or coordinate system
+		self._use_action_strings = use_action_strings
+
 		# Maximum length of queue
 		self._max_queue_size = max_queue_size
+
+		# Maximum number of times one coordinate is allowed to occur before a loop is
+		# declared
+		self._max_visits = max_visit_occurences
 
 		print "Initialised LoopDetector"
 
 	# Reset so we can start a new instance
 	def reset(self):
 		# Queue to store past actions
-		self._actions = deque()
+		self._list = deque()
 
-	# Add an action and check the queue
-	def addCheckAction(self, action):
-		self.addActionToQueue(action)
+	# Add a position/coordinate and check the queue for a loop
+	def addCheckElement(self, action, coordinate):
+		# If we're using string-based or coordinate system
+		if self._use_action_strings: self.addElementToQueue(action)
+		else: self.addElementToQueue(coordinate)
+
 		return self.checkForLoop()
 
 	# Add an action to the queue
-	def addActionToQueue(self, action):
+	def addElementToQueue(self, action):
 		# Add the action
-		self._actions.append(action)
+		self._list.append(action)
 
 		# Check the length of the queue
-		if len(self._actions) == self._max_queue_size + 1:
+		if len(self._list) == self._max_queue_size + 1:
 			# We need to pop an older entry
-			self._actions.popleft()
+			self._list.popleft()
+
+	# Given the current action queue, detect whether a loop has occurred
+	def checkForLoop(self):
+		# If we're using string-based or coordinate system
+		if self._use_action_strings:
+			if self.checkActionSequenceSubstring("FBF"): return True
+			if self.checkActionSequenceSubstring("BFB"): return True
+			if self.checkActionSequenceSubstring("LRL"): return True
+			if self.checkActionSequenceSubstring("RLR"): return True
+			if self.checkActionSequenceRotationReverse("RBLF"): return True
+			if self.checkActionSequenceRotationReverse("RRBLLF"): return True
+			if self.checkActionSequenceRotationReverse("RBBLFF"): return True
+			if self.checkActionSequenceRotationReverse("RRFFBBLL"): return True
+		# Use alternative coordinate system
+		else:
+			if self.checkCoordinateQueue(): return True
+
+		return False
+
+	"""
+	COORDINATE-BASED functions
+	"""
+
+	# Check the coordinate queue to see whether locations have occurred multiple times
+	def checkCoordinateQueue(self):
+		for item in self._list:
+			if self._list.count(item) >= self._max_visits:
+				return True
+
+		return False
+
+	"""
+	STRING-BASED functions
+	"""
 
 	# Check for a substring in the actual sequence
 	def checkActionSequenceSubstring(self, sequence):
 		# Convert list of characters to an ordered string
-		actual = ''.join(self._actions)
+		actual = ''.join(self._list)
 
 		# Supplied substring is present in actual sequence string
 		if sequence in actual:
@@ -183,18 +234,5 @@ class LoopDetector:
 
 		# Check the reverse
 		if self.checkActionSequenceRotation(sequence_char_list): return True
-
-		return False
-
-	# Given the current action queue, detect whether a loop has occurred
-	def checkForLoop(self):
-		if self.checkActionSequenceSubstring("FBF"): return True
-		if self.checkActionSequenceSubstring("BFB"): return True
-		if self.checkActionSequenceSubstring("LRL"): return True
-		if self.checkActionSequenceSubstring("RLR"): return True
-		if self.checkActionSequenceRotationReverse("RBLF"): return True
-		if self.checkActionSequenceRotationReverse("RRBLLF"): return True
-		if self.checkActionSequenceRotationReverse("RBBLFF"): return True
-		if self.checkActionSequenceRotationReverse("RRFFBBLL"): return True
 
 		return False

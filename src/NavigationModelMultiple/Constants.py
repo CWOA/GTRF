@@ -10,7 +10,7 @@ Directory constats
 """
 BASE_DIR = "/home/will/catkin_ws/src/uav_id/tflearn"
 DATA_DIR_PICKLE = "data/multiple_nav_data_SIMULATOR.pkl"
-DATA_DIR_HDF5 = "data/TEMP.h5"
+DATA_DIR_HDF5 = "data/multiple_nav_data_SIMULATOR.h5"
 TENSORBOARD_DIR = "tensorboard"
 MODELS_DIR = "models"
 
@@ -90,4 +90,17 @@ DNN model/training constants
 """
 MODEL_NAME = "nav_model_multiple_SIMULATOR"
 DATA_RATIO = 0.9
-NUM_EPOCHS = 10
+NUM_EPOCHS = 40
+
+"""
+Loop Detector constants
+"""
+# Use the string-based method (e.g. LRL) or coordinate-based system
+USE_ACTION_STRING = False
+
+# Maximum length of loop detection queue at any one time
+MAX_QUEUE_SIZE = 20
+
+# Number of times the agent has to visit a particular coordinate (within)
+# the queue before it is deemed to be in an infinite loop
+MAX_VISIT_OCCURENCES = 3

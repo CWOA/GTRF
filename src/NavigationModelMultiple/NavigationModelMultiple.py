@@ -37,6 +37,6 @@ if __name__ == '__main__':
 	Function calls
 	"""
 
-	generateTrainingExamples(visualise, use_simulator)
+	# generateTrainingExamples(visualise, use_simulator)
 	# trainModel(use_simulator)
-	# testModel(visualise, use_simulator)
+	testModel(visualise, use_simulator)
