@@ -19,7 +19,9 @@ class NodeAttributes:
 					x,
 					y,
 					t,
-					visited			):
+					visited,
+					time_since_visit,
+					colour='red' 		):
 		"""
 		Class attributes
 		"""
@@ -38,7 +40,10 @@ class NodeAttributes:
 		self._visited = np.copy(visited)
 
 		# The number of timesteps since this node visited an un-visited target
-		self._time_since_visit
+		self._time_since_visit = time_since_visit
+
+		# Colour to render this node to
+		self._colour = colour
 
 	"""
 	Getters
@@ -59,6 +64,14 @@ class NodeAttributes:
 		return self._visited
 	def getTimeSinceVisit(self):
 		return self._time_since_visit
+	def getColour(self):
+		return self._colour
+
+	"""
+	Setters
+	"""
+	def setColour(self, colour):
+		self._colour = colour
 
 # Class is a subclass of the "Solver" superclass
 class TreeSolver(Solver):
@@ -86,7 +99,7 @@ class TreeSolver(Solver):
 		self._map_height = map_height
 
 		# Actual directed graph/tree for exploration
-		self._graph = nx.DiGraph()
+		self._graph = nx.Graph()
 
 		# Unique identifier counter for each node
 		self._id_ctr = 0
@@ -94,7 +107,7 @@ class TreeSolver(Solver):
 		# Coordinates of targets
 		self._targets = targets
 
-		self._max_no_visits = 10
+		self._max_no_visits = 5
 
 		"""
 		Class setup
@@ -105,13 +118,12 @@ class TreeSolver(Solver):
 										self._init_x, 
 										self._init_y, 
 										0, 
-										np.zeros(len(targets))		)
+										np.zeros(len(targets)),
+										0,
+										colour='blue'								)
 
 		# Create root node
-		root_id = self.addNode(			root_attr.getX(),
-										root_attr.getY(),
-										root_attr.getT(),
-										root_attr.getVisited()		)
+		root_id = self.addNode(root_attr)
 
 		# Generate the actual tree
 		self.growTree(root_attr)
@@ -122,15 +134,12 @@ class TreeSolver(Solver):
 		if action == 'L': return x-1, y
 		if action == 'R': return x+1, y
 
-	def addNode(self, x, y, t, v):
+	def addNode(self, node_attr):
 		# Unique numerical identifier we're assigning to this node
 		node_id = self._id_ctr
 
-		# Create a node attribute object with the relevant data
-		attributes = NodeAttributes(node_id, x, y, t, v)
-
 		# Create the node object, attach attributes
-		self._graph.add_node(node_id, attr=attributes)
+		self._graph.add_node(node_id, attr=node_attr)
 
 		# Increment the global node ID counter
 		self._id_ctr += 1
@@ -146,7 +155,9 @@ class TreeSolver(Solver):
 		# Find possible actions for this current position
 		possible_actions = self.possibleActionsForPosition(*parent_attr.getPos())
 
+		# Get some attributes from the parent node
 		current_time = parent_attr.getT() + 1
+		time_since_visitation = parent_attr.getTimeSinceVisit() + 1
 
 		# Loop over possible actions
 		for action in possible_actions:
@@ -154,17 +165,33 @@ class TreeSolver(Solver):
 			new_x, new_y = self.applyActionToPosition(action, *parent_attr.getPos())
 
 			# Update the store of which targets we've visited
-			visited = self.updateVisitedTargetVector(new_x, new_y, parent_attr.getVisited())
+			visited, new_target = self.updateVisitedTargetVector(new_x, new_y, np.copy(parent_attr.getVisited()))
+
+			if new_target: updated_time_since_visit = 0
+			else: updated_time_since_visit = time_since_visitation
+
+			colour = 'red'
+
+			if np.sum(visited) == visited.shape[0]:
+				colour = 'green'
+
+			node_attr = NodeAttributes(	self._id_ctr,
+										new_x,
+										new_y,
+										current_time,
+										visited,
+										updated_time_since_visit,
+										colour=colour				)
 
 			# Add a new node for this action
-			node_id = self.addNode(new_x, new_y, current_time, visited)
+			node_id = self.addNode(node_attr)
 
 			# Connect this new node to its parent
 			self.addEdge(parent_attr.getID(), node_id, action)
 
 			if np.sum(visited) != visited.shape[0] and time_since_visitation < self._max_no_visits:
 				# Recurse with this newly generated node
-				self.growTree(NodeAttributes(node_id, new_x, new_y, current_time, visited))
+				self.growTree(node_attr)
 
 	# Check whether supplied coodinates match with a target position, update the 
 	# binary visited vector at the correct index if so
@@ -176,13 +203,18 @@ class TreeSolver(Solver):
 		for i in range(len(self._targets)):
 			# If this target is unvisited
 			if not v[i]:
+				t_x = self._targets[i][0]
+				t_y = self._targets[i][1]
+
 				# Check whether the positions match
-				if x == self._targets[i][0] and y == self._targets[i][1]:
+				if x == t_x and y == t_y:
+					# print "agent=({},{}), target=({},{})".format(x, y, t_x, t_y)
+
 					# Return the updated visitation vector
 					v[i] = 1
-					break
+					return v, True
 
-		return v
+		return v, False
 
 	# For a given 2D coordinate, return actions that are possible (against map boundaries)
 	def possibleActionsForPosition(self, x, y):
@@ -199,26 +231,88 @@ class TreeSolver(Solver):
 
 		return actions
 
+	def getAllNodeAttributes(self):
+		return nx.get_node_attributes(self._graph, 'attr')
+
+	# Finds solutions with the smallest number of steps (these are the best solutions)
+	def findBestSolutions(self):
+		# Get the dictionary of node_id : attributes
+		node_attr = self.getAllNodeAttributes()
+
+		# Keep a dictionary of solutions
+		solution_nodes = dict()
+
+		# Iterate over every node
+		for node_id in node_attr:
+			# If this node visits all targets (is a solution)
+			if node_attr[node_id].getColour() == "green":
+				solution_nodes[node_id] = node_attr[node_id].getT()
+
+		# Find the best time
+		min_val = min(solution_nodes.itervalues())
+
+		# Find keys with min_val
+		best_nodes = [k for k, v in solution_nodes.iteritems() if v == min_val]
+
+		# Colour the best solutions differently
+		for node_id in best_nodes:
+			node_attr[node_id].setColour("yellow")
+		nx.set_node_attributes(self._graph, node_attr, 'attr')
+
+		return best_nodes
+
+	def generateColourMap(self):
+		node_attr = nx.get_node_attributes(self._graph, 'attr')
+
+		colour_map = [node_attr[node_id].getColour() for node_id in node_attr]
+
+		return colour_map
+
+	def drawNodeLabels(self, pos):
+		node_attr = nx.get_node_attributes(self._graph, 'attr')
+
+		node_labels = {node_attr[node_id].getID(): node_attr[node_id].getT() for node_id in node_attr}
+
+		nx.draw_networkx_labels(self._graph, pos, labels=node_labels)
+
+	def drawEdgeLabels(self, pos):
+		edge_labels = nx.get_edge_attributes(self._graph, 'action')
+
+		nx.draw_networkx_edge_labels(self._graph, pos, edge_labels=edge_labels)
+
 	# Draw the network and display it
 	def visualise(self):
-		nx.draw(self._graph)
+		print "|nodes|={}".format(len(self._graph.nodes()))
+
+		best_nodes = self.findBestSolutions()
+
+		pos = nx.spring_layout(self._graph)
+
+		colour_map = self.generateColourMap()
+
+		nx.draw(self._graph, pos, node_color=colour_map, with_labels=False)
+
+		self.drawNodeLabels(pos)
+		self.drawEdgeLabels(pos)
+
 		plt.show()
 
 # Entry method/unit testing
 if __name__ == '__main__':
 	# Initial agent coordinates
-	init_x = 1
-	init_y = 1
+	init_x = 0
+	init_y = 0
 
 	# Map width/height
 	# map_width = const.MAP_WIDTH
 	# map_height = const.MAP_HEIGHT
-	map_width = 3
-	map_height = 3
+	map_width = 2
+	map_height = 2
 
 	# Target coordinates
-	targets = [(0,0), (2,2)]
+	# targets = [(0,0), (2,2)]
+	targets = [(1,1)]
 
 	ts = TreeSolver(init_x, init_y, map_width, map_height, targets)
-	ts.growTree()
+	# ts.growTree()
 	ts.visualise()
