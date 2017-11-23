@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import random
 import numpy as np
 import networkx as nx
 import Constants as const
@@ -81,7 +82,8 @@ class TreeSolver(Solver):
 					init_y,
 					map_width,
 					map_height,
-					targets		):
+					targets,
+					max_no_visits		):
 		"""
 		Class arguments from init
 		"""
@@ -99,7 +101,7 @@ class TreeSolver(Solver):
 		self._map_height = map_height
 
 		# Actual directed graph/tree for exploration
-		self._graph = nx.Graph()
+		self._graph = nx.DiGraph()
 
 		# Unique identifier counter for each node
 		self._id_ctr = 0
@@ -107,7 +109,7 @@ class TreeSolver(Solver):
 		# Coordinates of targets
 		self._targets = targets
 
-		self._max_no_visits = 5
+		self._max_no_visits = max_no_visits
 
 		"""
 		Class setup
@@ -251,6 +253,8 @@ class TreeSolver(Solver):
 		# Find the best time
 		min_val = min(solution_nodes.itervalues())
 
+		print "Best solution = {} moves".format(min_val)
+
 		# Find keys with min_val
 		best_nodes = [k for k, v in solution_nodes.iteritems() if v == min_val]
 
@@ -259,7 +263,48 @@ class TreeSolver(Solver):
 			node_attr[node_id].setColour("yellow")
 		nx.set_node_attributes(self._graph, node_attr, 'attr')
 
+		# Construct the best sequence of actions
+		actions_list = self.findBestActionSequence(best_nodes)
+		print actions_list
+
 		return best_nodes
+
+	# Iterates from a randomly chosen best solution node until it reaches the root node
+	# storing the action taken along the way, then reverses that list
+	def findBestActionSequence(self, best_nodes):
+		# Select a random "best node"
+		rand_idx = random.randint(0, len(best_nodes)-1)
+		curr_id = best_nodes[rand_idx]
+
+		actions = []
+
+		# Loop until we're at the root node (with ID=0)
+		while curr_id != 0:
+			# Get the list of predecessors for the current node
+			predecessor = self._graph.predecessors(curr_id)
+
+			# Construct list of predecessor IDs
+			pred_id = [i for i in predecessor]
+
+			# Make sure there's only one
+			assert(len(pred_id) == 1)
+
+			# Extract the id
+			pred_id = pred_id[0]
+
+			# Get attributes for edge connecting the current and parent node
+			edge_attr = self._graph.get_edge_data(pred_id, curr_id)
+
+			# Extract the action for this edge
+			action = edge_attr['action']
+
+			# Add edge action at the front of the list (so ordering is correct)
+			actions.insert(0, action)
+
+			# Update the node IDs
+			curr_id = pred_id
+
+		return actions
 
 	def generateColourMap(self):
 		node_attr = nx.get_node_attributes(self._graph, 'attr')
@@ -281,38 +326,69 @@ class TreeSolver(Solver):
 		nx.draw_networkx_edge_labels(self._graph, pos, edge_labels=edge_labels)
 
 	# Draw the network and display it
-	def visualise(self):
+	def visualise(self, visualise=False):
 		print "|nodes|={}".format(len(self._graph.nodes()))
 
 		best_nodes = self.findBestSolutions()
 
-		pos = nx.spring_layout(self._graph)
+		if visualise:
+			pos = nx.spring_layout(self._graph)
 
-		colour_map = self.generateColourMap()
+			colour_map = self.generateColourMap()
 
-		nx.draw(self._graph, pos, node_color=colour_map, with_labels=False)
+			nx.draw(self._graph, pos, node_color=colour_map, with_labels=False)
 
-		self.drawNodeLabels(pos)
-		self.drawEdgeLabels(pos)
+			self.drawNodeLabels(pos)
+			self.drawEdgeLabels(pos)
 
-		plt.show()
+			plt.show()
+
+def generateTargets(num_targets, a_x, a_y, map_width, map_height):
+	targets = []
+
+	while len(targets) != num_targets:
+		# Generate a position within bounds
+		rand_x = random.randint(0, map_width-1)
+		rand_y = random.randint(0, map_height-1)
+
+		ok = True
+
+		# Check agent position
+		if rand_x == a_x and rand_y == a_y:
+			ok = False
+		else:
+			# Check other targets
+			for pos in targets:
+				if rand_x == pos[0] and rand_y == pos[1]:
+					ok = False
+					break
+
+		if ok: targets.append((rand_x, rand_y))
+
+	return targets
 
 # Entry method/unit testing
 if __name__ == '__main__':
-	# Initial agent coordinates
-	init_x = 0
-	init_y = 0
-
 	# Map width/height
 	# map_width = const.MAP_WIDTH
 	# map_height = const.MAP_HEIGHT
 	map_width = 2
 	map_height = 2
 
-	# Target coordinates
-	# targets = [(0,0), (2,2)]
-	targets = [(1,1)]
+	num_targets = 2
 
-	ts = TreeSolver(init_x, init_y, map_width, map_height, targets)
-	# ts.growTree()
-	ts.visualise()
+	max_no_visits = 3
+
+	# Initial agent coordinates
+	init_x = random.randint(0, map_width-1)
+	init_y = random.randint(0, map_height-1)
+
+	# Target coordinates
+	# targets = [(2,2)]
+	targets = generateTargets(num_targets, init_x, init_y, map_width, map_height)
+
+	print "agent=({},{})".format(init_x, init_y)
+	print "targets={}".format(targets)
+
+	ts = TreeSolver(init_x, init_y, map_width, map_height, targets, max_no_visits)
+	ts.visualise(visualise=True)
