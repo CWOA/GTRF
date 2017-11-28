@@ -1,16 +1,11 @@
 #!/usr/bin/env python
 
+import copy
 import random
 import numpy as np
 import networkx as nx
 import Constants as const
 import matplotlib.pyplot as plt
-
-class Solver:
-	# Class constructor
-	def __init__(	self,
-					):
-		pass
 
 # Attribute container object that each node contains
 class NodeAttributes:
@@ -47,6 +42,13 @@ class NodeAttributes:
 		self._colour = colour
 
 	"""
+	Class Methods
+	"""
+	# Returns a DEEP copy of the given object (which should be of type NodeAttributes)
+	def deepCopy(self, obj):
+		return copy.deepcopy(obj)
+
+	"""
 	Getters
 	"""
 	def getID(self):
@@ -75,7 +77,7 @@ class NodeAttributes:
 		self._colour = colour
 
 # Class is a subclass of the "Solver" superclass
-class TreeSolver(Solver):
+class TreeSolver:
 	# Class constructor
 	def __init__(	self,
 					init_x,
@@ -101,7 +103,7 @@ class TreeSolver(Solver):
 		self._map_height = map_height
 
 		# Actual directed graph/tree for exploration
-		self._graph = nx.DiGraph()
+		self._graph = nx.Graph()
 
 		# Unique identifier counter for each node
 		self._id_ctr = 0
@@ -264,8 +266,8 @@ class TreeSolver(Solver):
 		nx.set_node_attributes(self._graph, node_attr, 'attr')
 
 		# Construct the best sequence of actions
-		actions_list = self.findBestActionSequence(best_nodes)
-		print actions_list
+		# actions_list = self.findBestActionSequence(best_nodes)
+		# print actions_list
 
 		return best_nodes
 
@@ -372,8 +374,8 @@ if __name__ == '__main__':
 	# Map width/height
 	# map_width = const.MAP_WIDTH
 	# map_height = const.MAP_HEIGHT
-	map_width = 2
-	map_height = 2
+	map_width = 3
+	map_height = 3
 
 	num_targets = 2
 
