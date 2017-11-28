@@ -17,8 +17,8 @@ MODELS_DIR = "models"
 """
 FieldMap constants
 """
-MAP_WIDTH = 10
-MAP_HEIGHT = 10
+MAP_WIDTH = 2
+MAP_HEIGHT = 2
 ACTIONS = ['F', 'B', 'L', 'R']
 AGENT_START_COORDS = (0, 0)
 
@@ -26,7 +26,7 @@ AGENT_START_COORDS = (0, 0)
 MOVE_DIST = 1
 
 # Number of targets to generate if random number of targets is disabled
-NUM_TARGETS = 5
+NUM_TARGETS = 1
 
 # Range of random numbers of targets
 NUM_TARGETS_RANGE = (2, 10)
@@ -104,3 +104,16 @@ MAX_QUEUE_SIZE = 20
 # Number of times the agent has to visit a particular coordinate (within)
 # the queue before it is deemed to be in an infinite loop
 MAX_VISIT_OCCURENCES = 3
+
+"""
+Tree Solver constants
+"""
+
+# Colour strings for node visualisation in networkx
+ROOT_NODE_COLOUR = "blue"
+BEST_NODE_COLOUR = "yellow"
+SOLUTION_NODE_COLOUR = "green"
+DEFAULT_NODE_COLOUR = "red"
+
+# Maximum number of moves since visiting a target before recursion is halted
+MAX_TIME_SINCE_VISIT = 3

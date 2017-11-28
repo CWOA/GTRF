@@ -14,10 +14,7 @@ class NodeAttributes:
 					node_id,
 					x,
 					y,
-					t,
-					visited,
-					time_since_visit,
-					colour='red' 		):
+					colour=const.DEFAULT_NODE_COLOUR 		):
 		"""
 		Class attributes
 		"""
@@ -30,13 +27,13 @@ class NodeAttributes:
 		self._y = y
 
 		# Timestep (number of moves made) for this node
-		self._t = t
-
-		# A binary vector describing which targets have been visited
-		self._visited = np.copy(visited)
+		self._t = 0
 
 		# The number of timesteps since this node visited an un-visited target
-		self._time_since_visit = time_since_visit
+		self._tsv = 0
+
+		# A binary vector describing which targets have been visited
+		self._v = np.zeros(const.NUM_TARGETS)
 
 		# Colour to render this node to
 		self._colour = colour
@@ -44,9 +41,110 @@ class NodeAttributes:
 	"""
 	Class Methods
 	"""
-	# Returns a DEEP copy of the given object (which should be of type NodeAttributes)
-	def deepCopy(self, obj):
-		return copy.deepcopy(obj)
+
+	# Returns a child instance of the current object with attributes copied across
+	# and respective attributes updated to reflect the enacted action/timestep/etc.
+	def newUpdatedInstance(self, action, ID):
+		# Make a copy of the current instance
+		child = self.copy()
+
+		# Update the child's unique identifier
+		child.setID(ID)
+
+		# Set child's node colour to red (we can't be the root node here)
+		child.setColour(const.DEFAULT_NODE_COLOUR)
+
+		# Enact the given action
+		child.enactAction(action)
+
+		# Increment time (distance) and "time since visit" counter
+		child.incrementTimeCounters()
+
+		return child
+
+	# Given an action, the position of the agent is updated here
+	def enactAction(self, action):
+		# Get the agent's current position
+		x, y = self.getPos()
+
+		# Enact actions
+		if action == 'F': self.setPos(x, y-1)
+		if action == 'B': self.setPos(x, y+1)
+		if action == 'L': self.setPos(x-1, y)
+		if action == 'R': self.setPos(x+1, y)
+
+	# For a the current agent 2D coordinate, return actions that are possible 
+	# (against map boundaries)
+	def possibleActions(self):
+		# Make a copy of all actions
+		actions = list(const.ACTIONS)
+
+		# Get the agent's current position
+		x, y = self.getPos()
+
+		# x-dimension
+		if x == 0: actions.remove('L')
+		elif x == const.MAP_WIDTH - 1: actions.remove('R')
+
+		# y-dimension
+		if y == 0: actions.remove('F')
+		elif y == const.MAP_HEIGHT - 1: actions.remove('B')
+
+		return actions
+
+	# Check whether agent coodinates match with a target position, update the 
+	# binary visited vector at the correct index if so
+	# Returns a bool if all targets have now been visited
+	def checkTargets(self, targets):
+		# Quick sanity checks
+		assert(len(targets) == self._v.shape[0])
+		assert(const.NUM_TARGETS == len(targets))
+
+		# Get the agent's current position
+		x, y = self.getPos()
+
+		# Iterate over each target
+		for i in range(const.NUM_TARGETS):
+			# If this target is unvisited
+			if not self._v[i]:
+				t_x = targets[i][0]
+				t_y = targets[i][1]
+
+				# Check whether the positions match
+				if x == t_x and y == t_y:
+					# Update visitation vector
+					self._v[i] = 1
+
+					# Reset the time since visitation counter
+					self.resetTimeSinceVisitation()
+
+					# Check whether we've now visited all targets
+					if self.allVisited():
+						# Set this node's colour as a solution
+						self.setColour(const.SOLUTION_NODE_COLOUR)
+
+						# Signify that all targets have been visited
+						return True
+
+		# All targets have not been visited
+		return False
+
+	# Returns true if all targets have been visited, false otherwise
+	def allVisited(self):
+		if np.sum(self._v) == const.NUM_TARGETS:
+			return True
+		return False
+
+	# Returns a DEEP copy of this object
+	def copy(self):
+		return copy.deepcopy(self)
+
+	# Methods to retrieve the name of the current class (NodeAttributes)
+	@classmethod
+	def getClassname(cls):
+		return cls.__name__
+	def useClassname(self):
+		return self.get_classname()
 
 	"""
 	Getters
@@ -64,28 +162,32 @@ class NodeAttributes:
 	def getT(self):
 		return self._t
 	def getVisited(self):
-		return self._visited
+		return self._v
 	def getTimeSinceVisit(self):
-		return self._time_since_visit
+		return self._tsv
 	def getColour(self):
 		return self._colour
 
 	"""
-	Setters
+	Setters / attribute editors
 	"""
+	def setID(self, ID):
+		self._id = ID
 	def setColour(self, colour):
 		self._colour = colour
+	def setPos(self, x, y):
+		self._x = x
+		self._y = y
+	def incrementTimeCounters(self):
+		self._t += 1
+		self._tsv += 1
+	def resetTimeSinceVisitation(self):
+		self._tsv = 0
 
 # Class is a subclass of the "Solver" superclass
 class TreeSolver:
 	# Class constructor
-	def __init__(	self,
-					init_x,
-					init_y,
-					map_width,
-					map_height,
-					targets,
-					max_no_visits		):
+	def __init__(	self	):
 		"""
 		Class arguments from init
 		"""
@@ -95,146 +197,93 @@ class TreeSolver:
 		"""
 
 		# Initial agent coordinates
-		self._init_x = init_x
-		self._init_y = init_y
+		self._init_x, self._init_y = self.generateMapPosition()
 
-		# Map constraints
-		self._map_width = map_width
-		self._map_height = map_height
+		# Randomly generate target positions
+		self._targets = self.generateTargets(self._init_x, self._init_y)
 
 		# Actual directed graph/tree for exploration
-		self._graph = nx.Graph()
+		self._graph = nx.DiGraph()
 
 		# Unique identifier counter for each node
 		self._id_ctr = 0
-
-		# Coordinates of targets
-		self._targets = targets
-
-		self._max_no_visits = max_no_visits
 
 		"""
 		Class setup
 		"""
 
+		# Print some stats
+		print "Map dimensions = {}*{}".format(const.MAP_WIDTH, const.MAP_HEIGHT)
+		print "Agent position = ({},{})".format(self._init_x, self._init_y)
+		print "Target positions = {}".format(self._targets)
+
+	"""
+	Tree construction methods
+	"""
+
+	# Create the root node and begin growing the tree recursively
+	def beginGrowingTree(self):
 		# Create root node attributes
 		root_attr = NodeAttributes(		self._id_ctr, 
 										self._init_x, 
 										self._init_y, 
-										0, 
-										np.zeros(len(targets)),
-										0,
-										colour='blue'								)
+										colour=const.ROOT_NODE_COLOUR	)
 
-		# Create root node
-		root_id = self.addNode(root_attr)
+		# Create root node within the graph
+		self._graph.add_node(self._id_ctr, attr=root_attr)
+
+		# Increment the node ID counter
+		self._id_ctr += 1
 
 		# Generate the actual tree
 		self.growTree(root_attr)
 
-	def applyActionToPosition(self, action, x, y):
-		if action == 'F': return x, y-1
-		if action == 'B': return x, y+1
-		if action == 'L': return x-1, y
-		if action == 'R': return x+1, y
-
-	def addNode(self, node_attr):
-		# Unique numerical identifier we're assigning to this node
-		node_id = self._id_ctr
-
-		# Create the node object, attach attributes
-		self._graph.add_node(node_id, attr=node_attr)
-
-		# Increment the global node ID counter
-		self._id_ctr += 1
-
-		return node_id
-
-	def addEdge(self, parent_id, child_id, action):
-		self._graph.add_edge(parent_id, child_id, action=action)
-
-	# def checkPositionTargetMatch(self, ):
-
+	# Recursive method for growing the tree/graph
 	def growTree(self, parent_attr):
-		# Find possible actions for this current position
-		possible_actions = self.possibleActionsForPosition(*parent_attr.getPos())
-
-		# Get some attributes from the parent node
-		current_time = parent_attr.getT() + 1
-		time_since_visitation = parent_attr.getTimeSinceVisit() + 1
+		# Find possible actions for the parent node's current position
+		possible_actions = parent_attr.possibleActions()
 
 		# Loop over possible actions
 		for action in possible_actions:
-			# Compute new position based on this action			
-			new_x, new_y = self.applyActionToPosition(action, *parent_attr.getPos())
+			# Create a child attribute with the action enacted
+			curr_attr = parent_attr.newUpdatedInstance(action, self._id_ctr)
 
-			# Update the store of which targets we've visited
-			visited, new_target = self.updateVisitedTargetVector(new_x, new_y, np.copy(parent_attr.getVisited()))
+			# Increment the node counter
+			self._id_ctr += 1
 
-			if new_target: updated_time_since_visit = 0
-			else: updated_time_since_visit = time_since_visitation
+			# Create node in the graph
+			self.addNode(parent_attr, curr_attr, action)
 
-			colour = 'red'
+			# See whether this new position visits unvisited targets
+			all_visited = curr_attr.checkTargets(self._targets)
 
-			if np.sum(visited) == visited.shape[0]:
-				colour = 'green'
+			# See how many timesteps this child has made without visiting a new target
+			tsv = curr_attr.getTimeSinceVisit()
 
-			node_attr = NodeAttributes(	self._id_ctr,
-										new_x,
-										new_y,
-										current_time,
-										visited,
-										updated_time_since_visit,
-										colour=colour				)
+			# If this child hasn't visited all targets and hasn't made too many moves
+			# without visiting a new target
+			if not all_visited and tsv < const.MAX_TIME_SINCE_VISIT:
+				# Recurse with the child node as the new parent
+				self.growTree(curr_attr)
 
-			# Add a new node for this action
-			node_id = self.addNode(node_attr)
+	# Add a node with given attributes to the graph
+	def addNode(self, parent_attr, node_attr, action):
+		# Create the node object, attach node attributes
+		self._graph.add_node(node_attr.getID(), attr=node_attr)
 
-			# Connect this new node to its parent
-			self.addEdge(parent_attr.getID(), node_id, action)
+		# Add an edge between the newly created node and its parent
+		self.addEdge(parent_attr.getID(), node_attr.getID(), action)
 
-			if np.sum(visited) != visited.shape[0] and time_since_visitation < self._max_no_visits:
-				# Recurse with this newly generated node
-				self.growTree(node_attr)
+	# Add an edge between a child and parent ID with a given action attribute
+	def addEdge(self, parent_id, child_id, action):
+		self._graph.add_edge(parent_id, child_id, action=action)
 
-	# Check whether supplied coodinates match with a target position, update the 
-	# binary visited vector at the correct index if so
-	def updateVisitedTargetVector(self, x, y, v):
-		# Quick sanity check
-		assert(len(self._targets) == v.shape[0])
+	"""
+	Tree analysis methods
+	"""
 
-		# Iterate over each target
-		for i in range(len(self._targets)):
-			# If this target is unvisited
-			if not v[i]:
-				t_x = self._targets[i][0]
-				t_y = self._targets[i][1]
-
-				# Check whether the positions match
-				if x == t_x and y == t_y:
-					# print "agent=({},{}), target=({},{})".format(x, y, t_x, t_y)
-
-					# Return the updated visitation vector
-					v[i] = 1
-					return v, True
-
-		return v, False
-
-	# For a given 2D coordinate, return actions that are possible (against map boundaries)
-	def possibleActionsForPosition(self, x, y):
-		# Make a copy of all actions
-		actions = list(const.ACTIONS)
-
-		# x-dimension
-		if x == 0: actions.remove('L')
-		elif x == self._map_width - 1: actions.remove('R')
-
-		# y-dimension
-		if y == 0: actions.remove('F')
-		elif y == self._map_height - 1: actions.remove('B')
-
-		return actions
-
+	# Returns a dictionary of node_id : attributes (NodeAttributes) for all nodes
+	# in the graph
 	def getAllNodeAttributes(self):
 		return nx.get_node_attributes(self._graph, 'attr')
 
@@ -266,8 +315,8 @@ class TreeSolver:
 		nx.set_node_attributes(self._graph, node_attr, 'attr')
 
 		# Construct the best sequence of actions
-		# actions_list = self.findBestActionSequence(best_nodes)
-		# print actions_list
+		actions_list = self.findBestActionSequence(best_nodes)
+		print actions_list
 
 		return best_nodes
 
@@ -345,52 +394,43 @@ class TreeSolver:
 
 			plt.show()
 
-def generateTargets(num_targets, a_x, a_y, map_width, map_height):
-	targets = []
+	"""
+	Utility methods
+	"""
 
-	while len(targets) != num_targets:
+	# Given map boundaries, randomly generate a x,y coordinate
+	def generateMapPosition(self):
 		# Generate a position within bounds
-		rand_x = random.randint(0, map_width-1)
-		rand_y = random.randint(0, map_height-1)
+		rand_x = random.randint(0, const.MAP_WIDTH-1)
+		rand_y = random.randint(0, const.MAP_HEIGHT-1)
+		return rand_x, rand_y
 
-		ok = True
+	# Given agent starting coordinates, generate target coordinates
+	def generateTargets(self, a_x, a_y):
+		targets = []
 
-		# Check agent position
-		if rand_x == a_x and rand_y == a_y:
-			ok = False
-		else:
-			# Check other targets
-			for pos in targets:
-				if rand_x == pos[0] and rand_y == pos[1]:
-					ok = False
-					break
+		while len(targets) != const.NUM_TARGETS:
+			# Generate a position within bounds
+			rand_x, rand_y = self.generateMapPosition()
 
-		if ok: targets.append((rand_x, rand_y))
+			ok = True
 
-	return targets
+			# Check agent position
+			if rand_x == a_x and rand_y == a_y:
+				ok = False
+			else:
+				# Check other targets
+				for pos in targets:
+					if rand_x == pos[0] and rand_y == pos[1]:
+						ok = False
+						break
+
+			if ok: targets.append((rand_x, rand_y))
+
+		return targets
 
 # Entry method/unit testing
 if __name__ == '__main__':
-	# Map width/height
-	# map_width = const.MAP_WIDTH
-	# map_height = const.MAP_HEIGHT
-	map_width = 3
-	map_height = 3
-
-	num_targets = 2
-
-	max_no_visits = 3
-
-	# Initial agent coordinates
-	init_x = random.randint(0, map_width-1)
-	init_y = random.randint(0, map_height-1)
-
-	# Target coordinates
-	# targets = [(2,2)]
-	targets = generateTargets(num_targets, init_x, init_y, map_width, map_height)
-
-	print "agent=({},{})".format(init_x, init_y)
-	print "targets={}".format(targets)
-
-	ts = TreeSolver(init_x, init_y, map_width, map_height, targets, max_no_visits)
+	ts = TreeSolver()
+	ts.beginGrowingTree()
 	ts.visualise(visualise=True)
