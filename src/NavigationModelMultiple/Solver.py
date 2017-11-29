@@ -7,7 +7,7 @@ import networkx as nx
 import Constants as const
 import matplotlib.pyplot as plt
 
-# Attribute container object that each node contains
+# Attribute container object that each node in the graph/tree contains
 class NodeAttributes:
 	# Class constructor
 	def __init__(	self,
@@ -187,11 +187,7 @@ class NodeAttributes:
 # Class is a subclass of the "Solver" superclass
 class TreeSolver:
 	# Class constructor
-	def __init__(	self	):
-		"""
-		Class arguments from init
-		"""
-
+	def __init__(self):
 		"""
 		Class attributes
 		"""
@@ -248,23 +244,31 @@ class TreeSolver:
 			# Create a child attribute with the action enacted
 			curr_attr = parent_attr.newUpdatedInstance(action, self._id_ctr)
 
-			# Increment the node counter
-			self._id_ctr += 1
-
 			# Create node in the graph
 			self.addNode(parent_attr, curr_attr, action)
 
-			# See whether this new position visits unvisited targets
-			all_visited = curr_attr.checkTargets(self._targets)
+			# Check whether the agent has already visited this new position/coordinate
+			# don't continue if so
+			if self.checkPredecessorCoordinates(curr_attr):
+				# Remove the newly created node and associated edge
+				self._graph.remove_node(curr_attr.getID())
+			else:
+				# Increment the node counter
+				self._id_ctr += 1
 
-			# See how many timesteps this child has made without visiting a new target
-			tsv = curr_attr.getTimeSinceVisit()
+				print self._id_ctr
 
-			# If this child hasn't visited all targets and hasn't made too many moves
-			# without visiting a new target
-			if not all_visited and tsv < const.MAX_TIME_SINCE_VISIT:
-				# Recurse with the child node as the new parent
-				self.growTree(curr_attr)
+				# See whether this new position visits unvisited targets
+				all_visited = curr_attr.checkTargets(self._targets)
+
+				# See how many timesteps this child has made without visiting a new target
+				tsv = curr_attr.getTimeSinceVisit()
+
+				# If this child hasn't visited all targets and hasn't made too many moves
+				# without visiting a new target
+				if not all_visited and tsv < const.MAX_TIME_SINCE_VISIT:
+					# Recurse with the child node as the new parent
+					self.growTree(curr_attr)
 
 	# Add a node with given attributes to the graph
 	def addNode(self, parent_attr, node_attr, action):
@@ -279,13 +283,62 @@ class TreeSolver:
 		self._graph.add_edge(parent_id, child_id, action=action)
 
 	"""
-	Tree analysis methods
+	Tree utility methods
 	"""
-
 	# Returns a dictionary of node_id : attributes (NodeAttributes) for all nodes
 	# in the graph
 	def getAllNodeAttributes(self):
 		return nx.get_node_attributes(self._graph, 'attr')
+
+	# Returns true if the given attribute has position equal to any of its
+	# predecessors, false otherwise
+	# Essentially, has the agent been in this position before?
+	def checkPredecessorCoordinates(self, attr):
+		# Get the current node ID
+		curr_id = attr.getID()
+
+		# Get the node's position
+		a_x, a_y = attr.getPos()
+
+		# Get the dictionary of all node attributes
+		all_attr = self.getAllNodeAttributes()
+
+		# Loop until we're at the root node
+		while curr_id != 0:
+			# Find its parent's ID
+			parent_id = self.getPredecessorID(curr_id)
+
+			# Get the parent's position
+			t_x, t_y = all_attr[parent_id].getPos()
+
+			# Check whether positions match
+			if a_x == t_x and a_y == t_y:
+				# A match, the agent has been before
+				return True
+
+			# Update node IDs
+			curr_id = parent_id
+
+		# No match, the agent hasn't been here before
+		return False
+
+	# Get the node ID of the given node's predecessor (parent), ensures that there's
+	# only one parent
+	def getPredecessorID(self, node_id):
+		# Get the list of predecessors for the current node
+		predecessor = self._graph.predecessors(node_id)
+
+		# Construct list of predecessor IDs
+		pred_id = [i for i in predecessor]
+
+		# Make sure there's only one
+		assert(len(pred_id) == 1)
+
+		return pred_id[0]
+
+	"""
+	Tree analysis methods
+	"""
 
 	# Finds solutions with the smallest number of steps (these are the best solutions)
 	def findBestSolutions(self):
@@ -331,17 +384,8 @@ class TreeSolver:
 
 		# Loop until we're at the root node (with ID=0)
 		while curr_id != 0:
-			# Get the list of predecessors for the current node
-			predecessor = self._graph.predecessors(curr_id)
-
-			# Construct list of predecessor IDs
-			pred_id = [i for i in predecessor]
-
-			# Make sure there's only one
-			assert(len(pred_id) == 1)
-
-			# Extract the id
-			pred_id = pred_id[0]
+			# Get the single parent node ID
+			pred_id = self.getPredecessorID(curr_id)
 
 			# Get attributes for edge connecting the current and parent node
 			edge_attr = self._graph.get_edge_data(pred_id, curr_id)
@@ -356,6 +400,10 @@ class TreeSolver:
 			curr_id = pred_id
 
 		return actions
+
+	"""
+	Visualisation methods
+	"""
 
 	def generateColourMap(self):
 		node_attr = nx.get_node_attributes(self._graph, 'attr')

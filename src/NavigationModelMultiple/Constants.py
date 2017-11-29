@@ -17,8 +17,8 @@ MODELS_DIR = "models"
 """
 FieldMap constants
 """
-MAP_WIDTH = 2
-MAP_HEIGHT = 2
+MAP_WIDTH = 3
+MAP_HEIGHT = 3
 ACTIONS = ['F', 'B', 'L', 'R']
 AGENT_START_COORDS = (0, 0)
 
@@ -116,4 +116,4 @@ SOLUTION_NODE_COLOUR = "green"
 DEFAULT_NODE_COLOUR = "red"
 
 # Maximum number of moves since visiting a target before recursion is halted
-MAX_TIME_SINCE_VISIT = 3
+MAX_TIME_SINCE_VISIT = 10
