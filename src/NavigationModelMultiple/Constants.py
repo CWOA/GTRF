@@ -17,8 +17,8 @@ MODELS_DIR = "models"
 """
 FieldMap constants
 """
-MAP_WIDTH = 3
-MAP_HEIGHT = 3
+MAP_WIDTH = 8
+MAP_HEIGHT = 8
 ACTIONS = ['F', 'B', 'L', 'R']
 AGENT_START_COORDS = (0, 0)
 
@@ -26,7 +26,7 @@ AGENT_START_COORDS = (0, 0)
 MOVE_DIST = 1
 
 # Number of targets to generate if random number of targets is disabled
-NUM_TARGETS = 1
+NUM_TARGETS = 5
 
 # Range of random numbers of targets
 NUM_TARGETS_RANGE = (2, 10)
@@ -116,4 +116,8 @@ SOLUTION_NODE_COLOUR = "green"
 DEFAULT_NODE_COLOUR = "red"
 
 # Maximum number of moves since visiting a target before recursion is halted
-MAX_TIME_SINCE_VISIT = 10
+MAX_TIME_SINCE_VISIT = 20
+
+# Whether Solver.py uses manually defined initial starting positions (for agent, targets)
+# useful for keeping episode conditions across episodes and therefore for bug fixing, etc.
+MANUAL_SOLVER_POSITIONS = True

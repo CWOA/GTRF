@@ -1,10 +1,13 @@
 #!/usr/bin/env python
 
+import sys
 import copy
+import time
 import random
 import numpy as np
 import networkx as nx
 import Constants as const
+from Utility import Utility
 import matplotlib.pyplot as plt
 
 # Attribute container object that each node in the graph/tree contains
@@ -14,6 +17,8 @@ class NodeAttributes:
 					node_id,
 					x,
 					y,
+					m_w,
+					m_h
 					colour=const.DEFAULT_NODE_COLOUR 		):
 		"""
 		Class attributes
@@ -37,6 +42,15 @@ class NodeAttributes:
 
 		# Colour to render this node to
 		self._colour = colour
+
+		# Store environment dimensions
+		self._map_w = m_w
+		self._map_h = m_h
+
+		# Visitation grid (memory of previously visited grid coordinates/positions)
+		self._mem = np.zeros((self._map_w, self._map_h))
+		self._mem.fill(const.UNVISITED_VAL)
+		self._mem[y, x] = const.VISITED_VAL
 
 	"""
 	Class Methods
@@ -73,6 +87,9 @@ class NodeAttributes:
 		if action == 'L': self.setPos(x-1, y)
 		if action == 'R': self.setPos(x+1, y)
 
+		# Update the vistation map
+		self.updateVisitMap()
+
 	# For a the current agent 2D coordinate, return actions that are possible 
 	# (against map boundaries)
 	def possibleActions(self):
@@ -84,11 +101,15 @@ class NodeAttributes:
 
 		# x-dimension
 		if x == 0: actions.remove('L')
-		elif x == const.MAP_WIDTH - 1: actions.remove('R')
+		elif x == self._map_w - 1: actions.remove('R')
 
 		# y-dimension
 		if y == 0: actions.remove('F')
-		elif y == const.MAP_HEIGHT - 1: actions.remove('B')
+		elif y == self._map_h - 1: actions.remove('B')
+
+		# Further remove actions that are not possible if the agent has already
+		# visited particular locations
+		# actions = self.possibleActionsForVistationMap(x, y, actions)
 
 		return actions
 
@@ -128,6 +149,86 @@ class NodeAttributes:
 
 		# All targets have not been visited
 		return False
+
+	# Given possible actions for boundary cases, remove actions that lead to the 
+	# agent visiting a location it has already visited
+	def possibleActionsForVistationMap(self, a_x, a_y, actions):
+		valid_actions = []
+
+		# Iterate over supplied actions list
+		for action in actions:
+			if action == 'F' and self._mem[a_y-1, a_x] == const.UNVISITED_VAL:
+				valid_actions.append(action)
+			elif action == 'B' and self._mem[a_y+1, a_x] == const.UNVISITED_VAL:
+				valid_actions.append(action)
+			elif action == 'L' and self._mem[a_y, a_x-1] == const.UNVISITED_VAL:
+				valid_actions.append(action)
+			elif action == 'R' and self._mem[a_y, a_x+1] == const.UNVISITED_VAL:
+				valid_actions.append(action)
+
+		return valid_actions
+
+	# Given a list of actions, order them such that the first element is the best action
+	# towards visiting the closest unvisited target
+	def reorderActions(self, actions, targets):
+		ordered_actions = []
+
+		u_d, o_keys = self.orderUnvisitedTargets(targets)
+
+		# Iterate over the ordered list of keys by distance from this agent
+		for k in o_keys:
+			# Extract the position of the closest unvisited target
+			curr_t = u_d[k]
+
+			# Get the best action for this target (may return multiple actions for cases
+			# where the relative angle is for example 45 degrees)
+			choices = Utility.possibleActionsForAngle(	self.getX(), 
+														self.getY(), 
+														curr_t[0],
+														curr_t[1]		)
+
+			# Make sure something funky hasn't happened (2 for diagonal movement case)
+			assert(len(choices) <= 2)
+
+			# Shuffle the list
+			random.shuffle(choices)
+
+			# Add choices as long as they're in the list of input possible actions and
+			# are NOT a duplicate
+			for c in choices:
+				if c in actions and c not in ordered_actions:
+					ordered_actions.append(c)
+
+		# Append remaining actions to the ordered list
+		for action in actions:
+			if action not in ordered_actions:
+				ordered_actions.append(action)
+
+		# Make sure we're still returning the same number of targets
+		assert(len(ordered_actions) == len(actions))
+
+		return ordered_actions
+
+	# Given a list of targets, return an ordered dictionary of unvisited, closest targets
+	def orderUnvisitedTargets(self, targets):
+		# First construct a list of all unvisited targets
+		u = []
+		for i in range(len(targets)):
+			if not self.getVisited()[i]:
+				u.append(targets[i])
+		# u = [i for i in range(len(targets)) if not self.getVisited()[i]]
+
+		# Construct dictionary of distance from agent : unvisited target positions
+		u_d = {Utility.distanceBetweenPoints(t, self.getPosTuple()) : t for t in u}
+
+		# Ordered list of keys (by distance from agent)
+		keylist = sorted(u_d.keys())
+
+		return u_d, keylist
+
+	# Marks the agent's current position in the memory map
+	def updateVisitMap(self):
+		self._mem[self.getY(), self.getX()] = const.VISITED_VAL
 
 	# Returns true if all targets have been visited, false otherwise
 	def allVisited(self):
@@ -187,16 +288,46 @@ class NodeAttributes:
 # Class is a subclass of the "Solver" superclass
 class TreeSolver:
 	# Class constructor
-	def __init__(self):
+	def __init__(	self,
+					m_w,
+					m_h
+					manual_position=False):
+		"""
+		Class setup
+		"""
+
+		# Setup class parameters/attributes
+		self.reset(m_w, m_h)
+
+		# Print some stats
+		print "Map dimensions = {}*{}".format(self._map_w, self._map_h)
+		print "Agent position = ({},{})".format(self._init_x, self._init_y)
+		print "Target positions = {}".format(self._targets)
+
+
+	def reset(self):
 		"""
 		Class attributes
 		"""
 
-		# Initial agent coordinates
-		self._init_x, self._init_y = self.generateMapPosition()
+		# We want to manually specify starting conditions (mostly for bug fixing)
+		if manual_position:
+			self._map_w = 8
+			self._map_h = 8
+			self._init_x = 6
+			self._init_y = 7
+			self._targets = [(2, 6), (7, 4), (4, 2), (4, 1), (7, 0)]
+			const.NUM_TARGETS = len(self._targets)
+		else:
+			# Environment dimensions
+			self._map_w = m_w
+			self._map_h = m_h
 
-		# Randomly generate target positions
-		self._targets = self.generateTargets(self._init_x, self._init_y)
+			# Initial agent coordinates
+			self._init_x, self._init_y = self.generateMapPosition()
+
+			# Randomly generate target positions
+			self._targets = self.generateTargets(self._init_x, self._init_y)
 
 		# Actual directed graph/tree for exploration
 		self._graph = nx.DiGraph()
@@ -204,14 +335,8 @@ class TreeSolver:
 		# Unique identifier counter for each node
 		self._id_ctr = 0
 
-		"""
-		Class setup
-		"""
-
-		# Print some stats
-		print "Map dimensions = {}*{}".format(const.MAP_WIDTH, const.MAP_HEIGHT)
-		print "Agent position = ({},{})".format(self._init_x, self._init_y)
-		print "Target positions = {}".format(self._targets)
+		# Stores the current best number of timesteps
+		self._best_depth = sys.maxint
 
 	"""
 	Tree construction methods
@@ -222,7 +347,9 @@ class TreeSolver:
 		# Create root node attributes
 		root_attr = NodeAttributes(		self._id_ctr, 
 										self._init_x, 
-										self._init_y, 
+										self._init_y,
+										self._map_w,
+										self._map_h,
 										colour=const.ROOT_NODE_COLOUR	)
 
 		# Create root node within the graph
@@ -232,43 +359,61 @@ class TreeSolver:
 		self._id_ctr += 1
 
 		# Generate the actual tree
+		tic = time.clock()
 		self.growTree(root_attr)
+		toc = time.clock()
+
+		print "Time required = {} seconds".format(toc - tic)
 
 	# Recursive method for growing the tree/graph
 	def growTree(self, parent_attr):
 		# Find possible actions for the parent node's current position
-		possible_actions = parent_attr.possibleActions()
+		actions = parent_attr.possibleActions()
+
+		# Only perform this if there's more than one possible action in this state
+		if len(actions) > 1:
+			# Re-order actions by closest unvisited targets to encourage finding solutions
+			# early and avoiding unnecessary recursion in the future
+			actions = parent_attr.reorderActions(actions, self._targets)
 
 		# Loop over possible actions
-		for action in possible_actions:
+		for action in actions:
 			# Create a child attribute with the action enacted
 			curr_attr = parent_attr.newUpdatedInstance(action, self._id_ctr)
 
 			# Create node in the graph
 			self.addNode(parent_attr, curr_attr, action)
 
-			# Check whether the agent has already visited this new position/coordinate
-			# don't continue if so
-			if self.checkPredecessorCoordinates(curr_attr):
-				# Remove the newly created node and associated edge
-				self._graph.remove_node(curr_attr.getID())
+			# Increment the node counter
+			self._id_ctr += 1
+
+			# print self._id_ctr
+
+			# print action
+			# raw_input()
+
+			# See whether this new position visits unvisited targets
+			all_visited = curr_attr.checkTargets(self._targets)
+
+			# See how many timesteps this child has made without visiting a new target
+			tsv = curr_attr.getTimeSinceVisit()
+
+			# If this child hasn't visited all targets and hasn't made too many moves
+			# without visiting a new target
+			if not all_visited:
+				# Only recurse if this path has visited a new target in the near past
+				if tsv < const.MAX_TIME_SINCE_VISIT:
+					# Recurse if it hasn't exceeded the depth of the current best solution
+					if curr_attr.getT() < self._best_depth:
+						# Recurse with the child node as the new parent
+						self.growTree(curr_attr)
+			# This node has visited all targets
 			else:
-				# Increment the node counter
-				self._id_ctr += 1
-
-				print self._id_ctr
-
-				# See whether this new position visits unvisited targets
-				all_visited = curr_attr.checkTargets(self._targets)
-
-				# See how many timesteps this child has made without visiting a new target
-				tsv = curr_attr.getTimeSinceVisit()
-
-				# If this child hasn't visited all targets and hasn't made too many moves
-				# without visiting a new target
-				if not all_visited and tsv < const.MAX_TIME_SINCE_VISIT:
-					# Recurse with the child node as the new parent
-					self.growTree(curr_attr)
+				# If this solution is better, keep track of its length (number of moves)
+				if curr_attr.getT() < self._best_depth:
+					self._best_depth = curr_attr.getT()
+					print "Current best solution = {} moves".format(self._best_depth)
+					# raw_input()
 
 	# Add a node with given attributes to the graph
 	def addNode(self, parent_attr, node_attr, action):
@@ -339,6 +484,10 @@ class TreeSolver:
 	"""
 	Tree analysis methods
 	"""
+
+	# Analyses grid-sizes, max moves without visit and timings
+	def analyseParameterTimings(self):
+		grid_init = 2
 
 	# Finds solutions with the smallest number of steps (these are the best solutions)
 	def findBestSolutions(self):
@@ -449,8 +598,8 @@ class TreeSolver:
 	# Given map boundaries, randomly generate a x,y coordinate
 	def generateMapPosition(self):
 		# Generate a position within bounds
-		rand_x = random.randint(0, const.MAP_WIDTH-1)
-		rand_y = random.randint(0, const.MAP_HEIGHT-1)
+		rand_x = random.randint(0, self._map_w-1)
+		rand_y = random.randint(0, self._map_h-1)
 		return rand_x, rand_y
 
 	# Given agent starting coordinates, generate target coordinates
@@ -479,6 +628,8 @@ class TreeSolver:
 
 # Entry method/unit testing
 if __name__ == '__main__':
-	ts = TreeSolver()
+	ts = TreeSolver(	const.MAP_WIDTH, 
+						const.MAP_HEIGHT, 
+						manual_position=const.MANUAL_SOLVER_POSITIONS	)
 	ts.beginGrowingTree()
-	ts.visualise(visualise=True)
+	ts.visualise(visualise=False)
