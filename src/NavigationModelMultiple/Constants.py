@@ -116,7 +116,7 @@ SOLUTION_NODE_COLOUR = "green"
 DEFAULT_NODE_COLOUR = "red"
 
 # Maximum number of moves since visiting a target before recursion is halted
-MAX_TIME_SINCE_VISIT = 20
+MAX_TIME_SINCE_VISIT = 10
 
 # Whether Solver.py uses manually defined initial starting positions (for agent, targets)
 # useful for keeping episode conditions across episodes and therefore for bug fixing, etc.

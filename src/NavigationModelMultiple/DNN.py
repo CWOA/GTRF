@@ -3,7 +3,7 @@
 import cv2
 from Utility import Utility
 import tflearn
-import numpy as np
+import numpy as np#!/usr/bin/env python
 import Constants as const
 import datetime
 from sklearn.model_selection import train_test_split
