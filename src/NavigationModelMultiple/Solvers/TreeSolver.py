@@ -10,8 +10,15 @@ import Constants as const
 from Utility import Utility
 import matplotlib.pyplot as plt
 
+"""
+Globally-optimal solution constructs a directed tree of all possible moves for a given
+agent starting position. The issue is the combinatorial explosion that occurs when 
+increasing the size of the grid to anything reasonable. The complexity of this solution
+is therefore dependent on the size of the grid (amongst other parameters)
+"""
+
 # Class is a subclass of the "Solver" superclass
-class TreeSolver:
+class TreeSolver(Solver):
 	# Class constructor
 	def __init__(	self,
 					m_w,
