@@ -17,8 +17,8 @@ MODELS_DIR = "models"
 """
 FieldMap constants
 """
-MAP_WIDTH = 8
-MAP_HEIGHT = 8
+MAP_WIDTH = 10
+MAP_HEIGHT = 10
 ACTIONS = ['F', 'B', 'L', 'R']
 AGENT_START_COORDS = (0, 0)
 
@@ -58,7 +58,7 @@ TARGET_COLOUR = (64,30,162)
 VISIBLE_COLOUR = (247,242,236)
 
 GRID_PIXELS = 1
-WAIT_AMOUNT = 1
+WAIT_AMOUNT = 0
 
 """
 SimulatorBridge constants
@@ -106,6 +106,20 @@ MAX_QUEUE_SIZE = 20
 MAX_VISIT_OCCURENCES = 3
 
 """
+Solver constants
+"""
+
+SEQUENCE_SOLVER = 0
+CLOSEST_SOLVER = 1
+TREE_SOLVER = 2
+
+# Which solver to use
+# 0: Sequence solver
+# 1: Closest solver
+# 2: Tree solver
+SOLVER_METHOD = SEQUENCE_SOLVER
+
+"""
 Tree Solver constants
 """
 
@@ -121,3 +135,8 @@ MAX_TIME_SINCE_VISIT = 10
 # Whether Solver.py uses manually defined initial starting positions (for agent, targets)
 # useful for keeping episode conditions across episodes and therefore for bug fixing, etc.
 MANUAL_SOLVER_POSITIONS = True
+
+"""
+Sequence Solver constants
+"""
+

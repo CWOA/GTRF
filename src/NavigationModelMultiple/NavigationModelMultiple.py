@@ -30,13 +30,13 @@ if __name__ == '__main__':
 	visualise = True
 
 	# Whether or not to use ROS/Gazebo simulator for synthesised visual input
-	use_simulator = True
+	use_simulator = False
 
 
 	"""
 	Function calls
 	"""
 
-	# generateTrainingExamples(visualise, use_simulator)
+	generateTrainingExamples(visualise, use_simulator)
 	# trainModel(use_simulator)
-	testModel(visualise, use_simulator)
+	# testModel(visualise, use_simulator)

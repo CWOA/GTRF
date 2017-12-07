@@ -1,56 +1,9 @@
 #!/usr/bin/env python
 
-from Utility import Utility
+import copy
 import random
+from Solvers.Solver import EpisodeSolver
 import Constants as const
-
-class Object:
-	# Class constructor
-	def __init__(	self, 
-					is_agent, 
-					x=const.AGENT_START_COORDS[0], 
-					y=const.AGENT_START_COORDS[1]	):
-		### Class attributes/properties
-
-		# Am I the agent or a target?
-		self._agent = is_agent
-
-		# Object position (x, y) coordinates
-		self._x = x 
-		self._y = y
-
-		# Variables depending on whetherh we're the agent
-		if self._agent:
-			# Colour to render for visualisation
-			self._colour = const.AGENT_COLOUR
-		else:
-			# As a target, have we been visited before
-			self._visited = False
-
-			# Colour to render for visualisation
-			self._colour = const.TARGET_COLOUR
-
-	def getVisited(self):
-		return self._visited
-
-	def setVisited(self, visited):
-		self._visited = visited
-
-	def getPos(self):
-		return self._x, self._y
-
-	def getPosTuple(self):
-		return (self._x, self._y)
-
-	def setPos(self, x, y):
-		if self._agent:
-			self._x = x
-			self._y = y
-		else:
-			Utility.die("Trying to directly set position of non-agent")
-		
-	def getColour(self):
-		return self._colour
 
 class ObjectHandler:
 	# Class constructor
@@ -71,6 +24,10 @@ class ObjectHandler:
 		Class attributes
 		"""
 
+		# Class responsible for selecting agent actions towards solving a given episode
+		self._solver = EpisodeSolver()
+
+		# Pointers to agent and list of targets
 		self._agent = None
 		self._targets = None
 
@@ -78,13 +35,19 @@ class ObjectHandler:
 
 	# Reset this handler so we can go again
 	def reset(self):
+		# Unique identifier (ID) counter for objects (both agent and targets)
+		self._id_ctr = 0
+
 		# Generate a random starting agent coordinate if we're supposed to
 		if self._random_agent_pos:
 			a_x = random.randint(0, const.MAP_WIDTH-1)
 			a_y = random.randint(0, const.MAP_HEIGHT-1)
-			self._agent = Object(True, x=a_x, y=a_y)
+			self._agent = Object(self._id_ctr, True, x=a_x, y=a_y)
 		# Default agent starting coordinates
-		else: self._agent = Object(True)
+		else: self._agent = Object(self._id_ctr, True)
+
+		# Increment the ID counter
+		self._id_ctr += 1
 
 		# Number of target objects to generate
 		num_targets = const.NUM_TARGETS
@@ -99,9 +62,29 @@ class ObjectHandler:
 		# Generate the targets
 		for i in range(num_targets):
 			t_x, t_y = self.generateUnoccupiedPosition()
-			self._targets.append(Object(False, x=t_x, y=t_y))
+			self._targets.append(Object(self._id_ctr, False, x=t_x, y=t_y))
+			self._id_ctr += 1
+
+		# Give generated agent and target objects to the solver
+		self._solver.reset(copy.deepcopy(self._agent), copy.deepcopy(self._targets))
 
 		return self.getAgentPos(), self.getTargetPositions()
+
+	"""
+	Episode Solver methods
+	"""
+
+	# Simply signal the solver to solve this episode
+	def solveEpisode(self):
+		self._solver.solveEpisode()
+
+	# Simply get the next action from the solver
+	def nextSolverAction(self):
+		return self._solver.getNextAction()
+
+	"""
+	Object-centric methods
+	"""
 
 	# Generate a random position within the grid that isn't already occupied
 	def generateUnoccupiedPosition(self):
@@ -202,6 +185,79 @@ class ObjectHandler:
 			positions.append(target.getPosTuple())
 
 		return positions
+
+class Object:
+	# Class constructor
+	def __init__(	self,
+					ID,
+					is_agent, 
+					x=const.AGENT_START_COORDS[0], 
+					y=const.AGENT_START_COORDS[1]	):
+		"""
+		Class attributes/properties
+		"""
+
+		# Unique object ID (for both agent and targets)
+		self._ID = ID
+
+		# Am I the agent or a target?
+		self._agent = is_agent
+
+		# Object position (x, y) coordinates
+		self._x = x 
+		self._y = y
+
+		# Variables depending on whetherh we're the agent
+		if self._agent:
+			# Colour to render for visualisation
+			self._colour = const.AGENT_COLOUR
+		else:
+			# As a target, have we been visited before
+			self._visited = False
+
+			# Colour to render for visualisation
+			self._colour = const.TARGET_COLOUR
+
+	# Class to string method
+	def __str__(self):
+		if self._agent:
+			obj_type = "Agent"
+		else:
+			obj_type = "Target"
+
+		return "{}: ({},{})".format(obj_type, self._x, self._y)
+
+	# Returns a DEEP copy of this object
+	def copy(self):
+		return copy.deepcopy(self)
+
+	"""
+	Getters
+	"""
+	def getID(self):
+		return self._ID
+	def getVisited(self):
+		return self._visited
+	def getPos(self):
+		return self._x, self._y
+	def getPosTuple(self):
+		return (self._x, self._y)
+	def getColour(self):
+		return self._colour
+	def isAgent(self):
+		return self._agent
+
+	"""
+	Setters
+	"""
+	def setVisited(self, visited):
+		self._visited = visited
+	def setPos(self, x, y):
+		if self._agent:
+			self._x = x
+			self._y = y
+		else:
+			Utility.die("Trying to directly set position of non-agent")
 
 # Entry method for unit testing
 if __name__ == '__main__':

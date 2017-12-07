@@ -42,7 +42,7 @@ class FieldMap:
 		Class attributes
 		"""
 
-		# Don't initialise the Visualiser (and ROS node) if we're just training
+		# Don't initialise the Visualiser (and ROS node) if we're just training the DNN
 		if not self._training_model:
 			# Class in charge of handling agent/targets
 			self._object_handler = Object.ObjectHandler()
@@ -62,15 +62,6 @@ class FieldMap:
 
 		# Deep Neural Network class for model prediction, training, etc.
 		self._dnn = DNN.DNNModel(self._use_simulator)
-
-		"""
-		Class setup
-		"""
-
-		# Don't initialise this class if we're just training
-		if not self._training_model:
-			# Initialise all the necessary elements
-			self.reset()
 
 	# Reset the map (agent position, target positions, memory, etc.)
 	def reset(self):
@@ -168,7 +159,12 @@ class FieldMap:
 		if self._visualise: self._visualiser.display(wait_amount)
 
 		# Indicator of whether the agent is stuck in an infinite loop
-		if testing: agent_stuck = False
+		if testing: 
+			agent_stuck = False
+		# We're producing training examples
+		else:
+			# Indicate to the solver to solve this episode/instance
+			self._object_handler.solveEpisode()
 
 		# Loop until we've visited all the target objects
 		while not self._object_handler.allTargetsVisited():
@@ -195,14 +191,8 @@ class FieldMap:
 
 			# We're just producing training instances
 			else:
-				# Find the coordinates of the closest target to the current agent position
-				agent_pos, closest_target = self._object_handler.findClosestTarget()
-
-				# Find the best action for the closest target
-				chosen_action = Utility.bestActionForAngle(	agent_pos[0],
-															agent_pos[1],
-															closest_target[0],
-															closest_target[1]	)
+				# Get the next selected action from the solver
+				chosen_action = self._object_handler.nextSolverAction()
 
 				# Save the subimage, memory map and action (class)
 				if self._save_output:
@@ -298,8 +288,8 @@ class FieldMap:
 		pbar = tqdm(total=num_episodes)
 
 		for i in range(num_episodes):
-			self.beginInstance(False, wait_amount=const.WAIT_AMOUNT)
 			self.reset()
+			self.beginInstance(False, wait_amount=const.WAIT_AMOUNT)
 
 			pbar.update()
 
@@ -323,8 +313,8 @@ class FieldMap:
 
 		# Do some testing episodes
 		for i in range(num_episodes):
-			num_moves = self.beginInstance(True, wait_amount=const.WAIT_AMOUNT)
 			self.reset()
+			num_moves = self.beginInstance(True, wait_amount=const.WAIT_AMOUNT)
 
 			if num_moves < upper_num_moves: num_under += 1
 

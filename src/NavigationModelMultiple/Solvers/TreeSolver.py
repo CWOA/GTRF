@@ -18,12 +18,15 @@ is therefore dependent on the size of the grid (amongst other parameters)
 """
 
 # Class is a subclass of the "Solver" superclass
-class TreeSolver(Solver):
+class TreeSolver:
 	# Class constructor
 	def __init__(	self,
 					m_w,
 					m_h,
 					manual_position=False):
+		# Initialise superclass
+
+
 		"""
 		Class setup
 		"""
@@ -289,7 +292,7 @@ class TreeSolver(Solver):
 
 		# Colour the best solutions differently
 		for node_id in best_nodes:
-			node_attr[node_id].setColour("yellow")
+			node_attr[node_id].setColour(n_a)
 		nx.set_node_attributes(self._graph, node_attr, 'attr')
 
 		# Construct the best sequence of actions

@@ -1,5 +1,11 @@
 #!/usr/bin/env python
 
+import TreeSolver
+import ClosestSolver
+import SequenceSolver
+import Constants as const
+from Utility import Utility
+
 """
 Classes that inherit this superclass provide some form of solution to the problem of
 navigating the given environment and visiting targets. Each subclass utilises its own
@@ -7,8 +13,35 @@ strategy in order to solve the problem
 """
 
 # Solver superclass
-class Solver:
+class EpisodeSolver:
+	# Class constructor
 	def __init__(self):
+		"""
+		Class attributes
+		"""
+
+		# The actual solver method we're going to use
+		if const.SOLVER_METHOD == const.SEQUENCE_SOLVER:
+			self._solver = SequenceSolver.SequenceSolver()
+		elif const.SOLVER_METHOD == const.CLOSEST_SOLVER:
+			self._solver = ClosestSolver.ClosestSolver()
+		elif const.SOLVER_METHOD == const.TREE_SOLVER:
+			self._solver = TreeSolver.TreeSolver()
+		else:
+			Utility.die("Solver method not recognised")
+
+	# Giving initial conditions to this episode to the solver
+	def reset(self, agent, targets):
+		self._solver.reset(agent, targets)
+
+	# Solve the given episode using the designated method
+	def solveEpisode(self):
+		self._solver.solve()
+
+	# Get the next action to perform for the solved episode
+	def getNextAction(self):
+		return self._solver.nextAction()
 
 # Entry method/unit testing
 if __name__ == '__main__':
+	pass
