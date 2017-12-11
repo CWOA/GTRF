@@ -50,6 +50,7 @@ class SequenceSolver:
 	def solve(self):
 		self.growTree()
 		self._actions = self.findBestSolutions()
+		return len(self._actions)
 
 	def nextAction(self):
 		return self._actions.pop(0)
@@ -72,14 +73,14 @@ class SequenceSolver:
 		self._id_ctr += 1
 
 		# Grow the tree recursively
-		tic = time.clock()
+		# tic = time.clock()
 		self.growTreeRecursive(root)
-		toc = time.clock()
+		# toc = time.clock()
 
 		# Total time required (seconds)
-		total = toc - tic
+		# total = toc - tic
 
-		print "Time to grow tree = {} seconds".format(total)
+		# print "Time to grow tree = {} seconds".format(total)
 
 		if self._visualise:
 			self.visualiseTree()
@@ -397,24 +398,7 @@ class EdgeAttributes:
 		c_x, c_y = self._parent_pos
 		e_x, e_y = self._child_pos
 
-		# Loop until we're at the ending position
-		while (c_x, c_y) != (e_x, e_y):
-			# Find possible actions for the current-end relative vector
-			possible_actions = Utility.possibleActionsForAngle(c_x, c_y, e_x, e_y)
-
-			# Randomly select an action
-			rand_idx = random.randint(0, len(possible_actions)-1)
-			choice = possible_actions[rand_idx]
-
-			# Perform the chosen action
-			if choice == 'F': 	c_y -= const.MOVE_DIST
-			elif choice == 'B': c_y += const.MOVE_DIST
-			elif choice == 'L': c_x -= const.MOVE_DIST
-			elif choice == 'R': c_x += const.MOVE_DIST
-			else: Utility.die("Action: {} not recognised!".format(choice))
-
-			# Store the chosen action in the list of actions
-			self._actions.append(choice)
+		self._actions = Utility.actionSequenceBetweenCoordinates(c_x, c_y, e_x, e_y)
 
 	"""
 	Getters

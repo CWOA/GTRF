@@ -15,17 +15,17 @@ strategy in order to solve the problem
 # Solver superclass
 class EpisodeSolver:
 	# Class constructor
-	def __init__(self):
+	def __init__(self, solver_method):
 		"""
 		Class attributes
 		"""
 
 		# The actual solver method we're going to use
-		if const.SOLVER_METHOD == const.SEQUENCE_SOLVER:
+		if solver_method == const.SEQUENCE_SOLVER:
 			self._solver = SequenceSolver.SequenceSolver()
-		elif const.SOLVER_METHOD == const.CLOSEST_SOLVER:
+		elif solver_method == const.CLOSEST_SOLVER:
 			self._solver = ClosestSolver.ClosestSolver()
-		elif const.SOLVER_METHOD == const.TREE_SOLVER:
+		elif solver_method == const.TREE_SOLVER:
 			self._solver = TreeSolver.TreeSolver()
 		else:
 			Utility.die("Solver method not recognised")

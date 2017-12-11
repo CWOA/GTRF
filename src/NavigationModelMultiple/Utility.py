@@ -3,9 +3,11 @@
 import os
 import sys
 import math
+import random
 import numpy as np
 import Constants as const
 from collections import deque
+import matplotlib.pyplot as plt
 
 # Utility class for static methods
 class Utility:
@@ -27,6 +29,35 @@ class Utility:
 	def getBestModelDir():
 		filename = "{}_BEST.tflearn".format(const.MODEL_NAME)
 		return os.path.join(const.BASE_DIR, const.MODELS_DIR, filename)
+	@staticmethod
+	def getICIPDataDir():
+		return os.path.join(const.BASE_DIR, const.ICIP_DATA_DIR)
+
+	# Compute the shortest path action sequence from a -> b
+	@staticmethod
+	def actionSequenceBetweenCoordinates(a_x, a_y, b_x, b_y):
+		actions = []
+
+		# Loop until we're at the ending position
+		while (a_x, a_y) != (b_x, b_y):
+			# Find possible actions for the current-end relative vector
+			possible_actions = Utility.possibleActionsForAngle(a_x, a_y, b_x, b_y)
+
+			# Randomly select an action
+			rand_idx = random.randint(0, len(possible_actions)-1)
+			choice = possible_actions[rand_idx]
+
+			# Perform the chosen action
+			if choice == 'F': 	a_y -= const.MOVE_DIST
+			elif choice == 'B': a_y += const.MOVE_DIST
+			elif choice == 'L': a_x -= const.MOVE_DIST
+			elif choice == 'R': a_x += const.MOVE_DIST
+			else: Utility.die("Action: {} not recognised!".format(choice))
+
+			# Store the chosen action in the list of actions
+			actions.append(choice)
+
+		return actions
 
 	# Converts from a single action to a class vector required by the dnn model
 	# e.g. 'F' -> [1,0,0,0]
@@ -119,6 +150,25 @@ class Utility:
 	def die(message):
 		print "{}\nExiting..".format(message)
 		sys.exit(0)
+
+	"""
+	Graph drawing utility methods
+	"""
+
+	@staticmethod
+	def drawGenerationTimeGraph(t_s, t_c, s_t, e_t):
+		# Construct size of targets vector
+		T = np.arange(s_t, e_t)
+
+		# Plot vectors
+		plt.plot(T, np.average(t_s, axis=1), label="Sequence")
+		plt.plot(T, np.average(t_c, axis=1), label="Closest")
+
+		# Graph parameters
+		plt.xlabel('|R|')
+		plt.ylabel('time(s)')
+		plt.legend(loc="center right")
+		plt.show()
 
 # Class designed to help with detecting whether the agent is stuck in an infinite loop
 class LoopDetector:
@@ -236,3 +286,7 @@ class LoopDetector:
 		if self.checkActionSequenceRotation(sequence_char_list): return True
 
 		return False
+
+# Entry method/unit testing
+if __name__ == '__main__':
+	pass

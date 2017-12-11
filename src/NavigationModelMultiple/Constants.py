@@ -11,6 +11,7 @@ Directory constats
 BASE_DIR = "/home/will/catkin_ws/src/uav_id/tflearn"
 DATA_DIR_PICKLE = "data/multiple_nav_data_SIMULATOR.pkl"
 DATA_DIR_HDF5 = "data/multiple_nav_data_SIMULATOR.h5"
+ICIP_DATA_DIR = "ICIP2018/data"
 TENSORBOARD_DIR = "tensorboard"
 MODELS_DIR = "models"
 
@@ -117,7 +118,8 @@ TREE_SOLVER = 2
 # 0: Sequence solver
 # 1: Closest solver
 # 2: Tree solver
-SOLVER_METHOD = SEQUENCE_SOLVER
+# SOLVER_METHOD = SEQUENCE_SOLVER
+SOLVER_METHOD = CLOSEST_SOLVER
 
 """
 Tree Solver constants

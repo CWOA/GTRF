@@ -1,9 +1,14 @@
 #!/usr/bin/env python
 
+import time
 import copy
 import random
-from Solvers.Solver import EpisodeSolver
+import numpy as np
+from tqdm import tqdm
 import Constants as const
+from Utility import Utility
+from Solvers.Solver import EpisodeSolver
+
 
 class ObjectHandler:
 	# Class constructor
@@ -25,7 +30,7 @@ class ObjectHandler:
 		"""
 
 		# Class responsible for selecting agent actions towards solving a given episode
-		self._solver = EpisodeSolver()
+		self._solver = EpisodeSolver(const.SOLVER_METHOD)
 
 		# Pointers to agent and list of targets
 		self._agent = None
@@ -82,6 +87,86 @@ class ObjectHandler:
 	def nextSolverAction(self):
 		return self._solver.getNextAction()
 
+	# Method for comparing the performance of solver methods
+	# 
+	# This particular one is for comparing time required to generate solutions
+	# as well as the number of moves
+	def determineSolverStats(self, load=False):
+		# Initialise instances of different solver methods
+		seq_solver = EpisodeSolver(const.SEQUENCE_SOLVER)
+		clo_solver = EpisodeSolver(const.CLOSEST_SOLVER)
+
+		# Number of instances to run per change of the number of targets
+		inst = 10
+
+		# Number of targets to start and end with
+		start_num_targets = 2
+		end_num_targets = 100
+
+		# Difference
+		dif_num_targets = end_num_targets - start_num_targets
+
+		# Get base directory(folder) to save numpy arrays to
+		base = Utility.getICIPDataDir()
+
+		# Need to generate data
+		if not load:
+			# Intialise progress bar (TQDM)
+			pbar = tqdm(total=inst*dif_num_targets)
+
+			# Numpy data arrays for time required and number of moves
+			time_seq = np.zeros((dif_num_targets, inst))
+			time_clo = np.zeros((dif_num_targets, inst))
+			moves_seq = np.zeros((dif_num_targets, inst))
+			moves_clo = np.zeros((dif_num_targets, inst))
+
+			for i in range(dif_num_targets):
+				for j in range(inst):
+					# Generate a random new instance and give to solvers
+					self.reset()
+					seq_solver.reset(copy.deepcopy(self._agent), copy.deepcopy(self._targets))
+					clo_solver.reset(copy.deepcopy(self._agent), copy.deepcopy(self._targets))
+
+					# Time the sequence solver
+					tic = time.clock()
+					m0 = seq_solver.solveEpisode()
+					t0 = time.clock() - tic
+
+					# Time the closest solver
+					tic = time.clock()
+					m1 = clo_solver.solveEpisode()
+					t1 = time.clock() - tic
+
+					# Add values to data matrices
+					time_seq[i, j] = t0
+					time_clo[i, j] = t1
+					moves_seq[i, j] = m0
+					moves_clo[i, j] = m1
+
+					# Update the progress bar
+					pbar.update()
+
+			pbar.close()
+
+			# Save numpy data arrays to file
+			np.save("{}/time_seq".format(base), time_seq)
+			np.save("{}/time_clo".format(base), time_clo)
+			np.save("{}/moves_seq".format(base), moves_seq)
+			np.save("{}/moves_clo".format(base), moves_clo)
+
+		# Just load data
+		else:
+			time_seq = np.load("{}/time_seq.npy".format(base))
+			time_clo = np.load("{}/time_clo.npy".format(base))
+			moves_seq = np.load("{}/moves_seq.npy".format(base))
+			moves_clo = np.load("{}/moves_clo.npy".format(base))
+
+		# Use utility functions to draw the graph
+		Utility.drawGenerationTimeGraph(	time_seq, 
+											time_clo, 
+											start_num_targets, 
+											end_num_targets			)
+
 	"""
 	Object-centric methods
 	"""
@@ -126,37 +211,6 @@ class ObjectHandler:
 	def updateAgentPos(self, x, y):
 		self._agent.setPos(x, y)
 
-	# Returns the coordinates of the closest target to the current agent position that
-	# hasn't already been visited
-	def findClosestTarget(self):
-		# Get the current agent position
-		a_x, a_y = self._agent.getPos()
-
-		best_dist = float("inf")
-		best_coords = (-1,-1)
-
-		# Iterate over each target
-		for target in self._targets:
-			# Check that we haven't already visited this target
-			if not target.getVisited():
-				# Find the distance
-				distance = Utility.distanceBetweenPoints((a_x, a_y), target.getPosTuple())
-
-				# Is the current distance better
-				if distance < best_dist:
-					best_dist = distance
-					best_coords = target
-
-		return (a_x, a_y), best_coords.getPosTuple()
-
-	# Returns True if all targets have been visited
-	def allTargetsVisited(self):
-		for target in self._targets:
-			if not target.getVisited():
-				return False
-
-		return True
-
 	# Simply returns the position of the agent
 	def getAgentPos(self):
 		return self._agent.getPos()
@@ -185,6 +239,14 @@ class ObjectHandler:
 			positions.append(target.getPosTuple())
 
 		return positions
+
+	# Returns True if all targets have been visited
+	def allTargetsVisited(self):
+		for target in self._targets:
+			if not target.getVisited():
+				return False
+
+		return True
 
 class Object:
 	# Class constructor
@@ -262,4 +324,4 @@ class Object:
 # Entry method for unit testing
 if __name__ == '__main__':
 	object_handler = ObjectHandler()
-	object_handler.printObjectCoordinates()
+	object_handler.determineSolverStats(load=False)
