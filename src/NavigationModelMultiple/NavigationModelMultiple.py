@@ -18,7 +18,7 @@ def trainModel(use_simulator):
 # Testing trained model on real example/problem
 def testModel(visualise, use_simulator):
 	fm = FieldMap(visualise=visualise, use_simulator=use_simulator)
-	fm.startTestingEpisodes(1000)
+	fm.startTestingEpisodes(20000)
 
 # Entry method
 if __name__ == '__main__':
@@ -30,8 +30,7 @@ if __name__ == '__main__':
 	visualise = True
 
 	# Whether or not to use ROS/Gazebo simulator for synthesised visual input
-	use_simulator = False
-
+	use_simulator = True
 
 	"""
 	Function calls

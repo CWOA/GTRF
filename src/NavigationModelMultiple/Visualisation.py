@@ -72,6 +72,10 @@ class Visualiser:
 					# Render this square as have being visited
 					img = self.renderGridPosition(x, y, img, const.VISITED_COLOUR)
 
+		# Render target locations
+		for target in state[1]:
+			img = self.renderGridPosition(target[0], target[1], img, const.TARGET_COLOUR)
+
 		# Render current agent position to both images
 		img = self.renderGridPosition(		a_x, 
 											a_y, 

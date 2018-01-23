@@ -38,6 +38,8 @@ class FieldMap:
 		# If we're just training the DNN
 		self._training_model = training_model
 
+		self.ctr = 0
+
 		"""
 		Class attributes
 		"""
@@ -155,6 +157,9 @@ class FieldMap:
 		# Number of moves the agent has made
 		num_moves = 0
 
+		# Number of loops detected
+		num_loops = 0
+
 		# Display if we're supposed to
 		if self._visualise: self._visualiser.display(wait_amount)
 
@@ -163,8 +168,10 @@ class FieldMap:
 			agent_stuck = False
 		# We're producing training examples
 		else:
-			# Indicate to the solver to solve this episode/instance
-			self._object_handler.solveEpisode()
+			pass
+
+		# Indicate to the solver to solve this episode/instance
+		sol_length = self._object_handler.solveEpisode()
 
 		# Loop until we've visited all the target objects
 		while not self._object_handler.allTargetsVisited():
@@ -183,7 +190,8 @@ class FieldMap:
 				# stuck in a loop, act accordingly
 				if not agent_stuck and self._loop_detector.addCheckElement(chosen_action, (a_x, a_y)):
 					agent_stuck = True
-					print "Agent stuck, entering unstucking mode"
+					# print "Agent stuck, entering unstucking mode"
+					num_loops += 1
 
 				# Agent is stuck, move towards nearest unvisited location
 				if agent_stuck:
@@ -211,10 +219,13 @@ class FieldMap:
 				# Indicate that the agent is no longer stuck
 				agent_stuck = False
 
-				print "Agent is no longer stuck!"
+				# print "Agent is no longer stuck!"
 
 			# Increment the move counter
 			num_moves += 1
+
+			# cv2.imwrite("/home/will/Pictures/temp/{}_{}.jpg".format(self.ctr, chosen_action), subview)
+			# self.ctr += 1
 
 			# Render the updated views (for input into the subsequent iteration)
 			_, subview = self._visualiser.update(self.retrieveStates())
@@ -222,7 +233,9 @@ class FieldMap:
 			# Display if we're supposed to
 			if self._visualise: self._visualiser.display(wait_amount)
 
-		return num_moves
+		# Return the number of moves taken by the model and the solution
+		# Also return the number of times loop detection is found
+		return num_moves, sol_length, num_loops
 
 	# For some timestep, append data to the big list
 	def recordData(self, subview, visit_map, action_vector):
@@ -240,8 +253,11 @@ class FieldMap:
 
 			print "Saving data using h5py"
 
+			# file_str = Utility.getHDF5DataDir()
+			file_str = "{}/simulator_SEQUENCE.h5".format(Utility.getICIPDataDir())
+
 			# Open the dataset file (may overwrite an existing file!!)
-			dataset = h5py.File(Utility.getHDF5DataDir(), 'w')
+			dataset = h5py.File(file_str, 'w')
 
 			# The number of training instances generated
 			num_instances = len(self._training_output)
@@ -250,9 +266,14 @@ class FieldMap:
 			num_classes = len(const.ACTIONS)
 
 			# Image dimensions
-			img_width = const.IMG_DOWNSAMPLED_WIDTH
-			img_height = const.IMG_DOWNSAMPLED_HEIGHT
-			channels = const.NUM_CHANNELS
+			if self._use_simulator:
+				img_width = const.IMG_DOWNSAMPLED_WIDTH
+				img_height = const.IMG_DOWNSAMPLED_HEIGHT
+				channels = const.NUM_CHANNELS
+			else:
+				img_width = const.GRID_PIXELS * 3
+				img_height = const.GRID_PIXELS * 3
+				channels = const.NUM_CHANNELS
 
 			# Create three datasets within the file with the correct shapes:
 			# X0: agent visual subview
@@ -300,32 +321,101 @@ class FieldMap:
 
 	# Do a given number of testing episodes
 	def startTestingEpisodes(self, num_episodes):
+		print "Beginning testing on generated examples"
+
 		# Load the DNN model from file
 		self._dnn.loadSaveModel()
 
-		# The exhaustive number of moves to visit every location with this map size
-		upper_num_moves = const.MAP_WIDTH * const.MAP_HEIGHT
+		# Place to store testing data to in numpy form
+		base = Utility.getICIPDataDir()
 
-		# Number of testing instances with the number of moves below the exhaustive amount
-		num_under = 0
+		# Numpy array for testing data, consists of:
+		# 0: number of moves required by the model
+		# 1: number of moves required by employed solver (closest, target ordering)
+		# 2: number of times loop detection is triggered
+		test_data = np.zeros((num_episodes, 3))
 
-		print "Beginning testing on generated examples"
+		# Initialise progress bar (TQDM) object
+		pbar = tqdm(total=num_episodes)
 
 		# Do some testing episodes
 		for i in range(num_episodes):
+			# Reset (generate a new episode)
 			self.reset()
-			num_moves = self.beginInstance(True, wait_amount=const.WAIT_AMOUNT)
 
-			if num_moves < upper_num_moves: num_under += 1
+			# Go ahead and solve this instance using model & solver for comparison
+			num_moves, sol_length, num_loops = self.beginInstance(True, wait_amount=const.WAIT_AMOUNT)
 
-			print "Solving example {}/{} took {} moves".format(i+1, num_episodes, num_moves)
+			# Store statistics to numpy array
+			test_data[i,0] = num_moves
+			test_data[i,1] = sol_length
+			test_data[i,2] = num_loops
 
-		# Print some more stats
-		percent_correct = float(num_under/num_episodes) * 100
-		print "{}/{} under {} moves, or {}% success".format(	num_under,
-																num_episodes,
-																upper_num_moves,
-																percent_correct		)
+			# Update progress bar
+			pbar.update()
+
+		# Close up
+		pbar.close()
+
+		# Save data to file
+		np.save("{}/test_data_SIMULATOR_clo".format(base), test_data)
+
+	# Generate solutions to randomly-generated episodes using trained model and output
+	# visualisation of agent path to file if the difference between the generated
+	# and globally-optimal solution are within a defined range
+	def generateVisualisations(self, dif_range, num_images=25):
+		print "Beginning generating visualisations to episodes"
+		print "Trying to generate {} images in range {}".format(num_images, dif_range)
+
+		# Load the DNN model from file
+		self._dnn.loadSaveModel()
+
+		# Place to store images to
+		base = os.path.join(Utility.getICIPFigureDir(), "raw_instances")
+
+		# Initialise progress bar (TQDM) object
+		pbar = tqdm(total=num_images)
+
+		# Image scale factor
+		sf = 10
+
+		# File counter
+		i = 0
+
+		# Loop until we've created enough images
+		while i < num_images:
+			# Reset (generate a new episode)
+			self.reset()
+
+			# Solve this instance
+			moves, sol_length, _ = self.beginInstance(True, wait_amount=1)
+
+			# Get the difference in solution lengths
+			dif = moves - sol_length
+
+			# Check the difference is in range
+			if dif >= dif_range[0] and dif <= dif_range[1]:
+				# Get the final image for this instance
+				img = self._visualiser._render_img
+
+				# Resize image to something reasonable
+				img = cv2.resize(img, None, fx=sf, fy=sf, interpolation=cv2.INTER_NEAREST)
+
+				# Construct save string (file to save to)
+				file_path = os.path.join(base, "{}.jpg".format(i))
+
+				# Save it
+				cv2.imwrite(file_path, img)
+
+				# Update progress bar
+				pbar.update()
+
+				# Increment the counter
+				i += 1
+
+		# Close up
+		pbar.close()
+
 
 	# Signifies DNN class to train model on data at a given directory
 	def trainModel(self):
@@ -333,4 +423,6 @@ class FieldMap:
 
 # Entry method/unit testing
 if __name__ == '__main__':
-	pass	
+	# Generate visualisations of runs for ICIP/thesis
+	fm = FieldMap(visualise=True, use_simulator=False)
+	fm.generateVisualisations((40, 50), num_images=25)

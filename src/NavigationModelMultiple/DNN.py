@@ -3,10 +3,12 @@
 import cv2
 from Utility import Utility
 import tflearn
-import numpy as np#!/usr/bin/env python
+import numpy as np
 import Constants as const
 import datetime
 from sklearn.model_selection import train_test_split
+from sklearn import cross_validation
+import tensorflow as tf
 from tflearn.layers.core import input_data, dropout, fully_connected
 from tflearn.layers.conv import conv_2d, max_pool_2d
 from tflearn.layers.normalization import local_response_normalization
@@ -34,6 +36,9 @@ class DNNModel:
 			self._img_width = const.GRID_PIXELS * 3
 			self._img_height = const.GRID_PIXELS * 3
 
+		# Results from training model and evaluation
+		self._eval_results = {}
+
 		"""
 		Class setup
 		"""
@@ -41,10 +46,10 @@ class DNNModel:
 		# Network architecture
 		self._network = self.defineDNN()
 
-		# Model declaration
+		# # Model declaration
 		self._model = tflearn.DNN(	self._network,
 									tensorboard_verbose=0,
-									tensorboard_dir=Utility.getTensorboardDir(),
+									tensorboard_dir=Utility.getICIPTensorboardDir(),
 									best_checkpoint_path=Utility.getBestModelDir()	)
 
 		print "Initialised DNN"
@@ -58,8 +63,15 @@ class DNNModel:
 		if const.USE_HDF5:
 			import h5py
 
+			# Load location
+			# load_loc = Utility.getHDF5DataDir()
+			load_loc = "{}/training_data_SEQUENCE.h5".format(Utility.getICIPDataDir())
+			# load_loc = "{}/training_data_CLOSEST.h5".format(Utility.getICIPDataDir())
+
 			# Load the data
-			dataset = h5py.File(Utility.getHDF5DataDir(), 'r')
+			dataset = h5py.File(load_loc, 'r')
+
+			print "Loaded data at: {}".format(load_loc)
 
 			# Extract the datasets contained within the file as numpy arrays, simple :)
 			X0 = dataset['X0'][()]
@@ -124,36 +136,113 @@ class DNNModel:
 		return X0_train, X0_test, X1_train, X1_test, Y_train, Y_test
 
 	# Construct a unique RunID (for tensorboard) for this training run
-	def constructRunID(self):
+	def constructRunID(self, fold_id=0):
+		# Get a date string
 		date_str = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
-		return "{}_{}".format(const.MODEL_NAME, date_str)
+
+		run_id = "{}_{}".format(const.MODEL_NAME, date_str)
+
+		# If we're cross-validating, include the current fold id
+		if const.CROSS_VALIDATE:
+			run_id = "{}_CROSS_VALIDATE_{}".format(run_id, fold_id)
+
+		return run_id
 
 	# Complete function which loads the appropriate training data, trains the model,
 	# saves it to file and evaluates the trained model's performance
 	def trainModel(self):
+		print "Training model"
+
 		# Load the data
 		X0, X1, Y = self.loadData()
 
 		# Sanity checking
 		# self.inspectData(X0, X1, Y)
 
-		# Split the data into training/testing chunks
-		X0_train, X0_test, X1_train, X1_test, Y_train, Y_test = self.segregateData(X0, X1, Y)
+		# If we're supposed to cross-validate results
+		if const.CROSS_VALIDATE:
+			print "{}-fold cross validation is enabled".format(const.NUM_FOLDS)
 
-		# Train the model
-		self._model.fit(	[X0_train, X1_train],
-							Y_train,
-							validation_set=([X0_test, X1_test], Y_test),
-							n_epoch=const.NUM_EPOCHS,
-							batch_size=64,
-							run_id=self.constructRunID(),
-							show_metric=True								)
+			# Extract the number of training instances (previously verified to be
+			# consistent across training variables)
+			num_instances = X0.shape[0]
 
-		# Save the trained model
-		self.loadSaveModel(load=False)
+			# Create the cross validation object that randomly shuffles too
+			kf = cross_validation.KFold(num_instances, n_folds=const.NUM_FOLDS, shuffle=True)
 
-		# Evaluate how we did
-		self.evaluateModel(X0_test, X1_test, Y_test)
+			# Current fold number
+			fold_number = 0
+
+			# Iterate num folds times
+			for train_idx, test_idx in kf:
+				print "Beginning fold {}/{} complete.".format(fold_number+1, const.NUM_FOLDS)
+
+				# Split the data for this fold
+				X0_train, X0_test = X0[train_idx], X0[test_idx]
+				X1_train, X1_test = X1[train_idx], X1[test_idx]
+				Y_train, Y_test = Y[train_idx], Y[test_idx]
+
+				# Construct a run_id
+				run_id = self.constructRunID(fold_id=fold_number)
+
+				# Network architecture
+				self._network = self.defineDNN()
+
+				print Utility.getICIPBestModelDir()
+
+				# Init the model
+				self._model = tflearn.DNN(	self._network,
+											tensorboard_verbose=0,
+											tensorboard_dir=Utility.getICIPTensorboardDir(),
+											best_checkpoint_path=Utility.getICIPBestModelDir()	)
+
+				# Train the model
+				self._model.fit(	[X0_train, X1_train],
+									Y_train,
+									validation_set=([X0_test, X1_test], Y_test),
+									n_epoch=const.NUM_EPOCHS,
+									batch_size=64,
+									run_id=run_id,
+									show_metric=True								)
+
+				# Save the trained model
+				self.loadSaveModel(load=False, run_id=run_id)
+
+				# Evaluate
+				self.evaluateModel(X0_test, X1_test, Y_test, fold_id=fold_number)
+
+				# Delete variables/reset DNN
+				tf.reset_default_graph()
+				del self._network
+				del self._model
+
+				# Increment
+				fold_number += 1
+
+				print "Fold {}/{} complete.".format(fold_number, const.NUM_FOLDS)
+
+			# Print all results
+			print self._eval_results
+
+		# Cross validation not enabled, just split, train and evaluate
+		else:
+			# Split the data into training/testing chunks
+			X0_train, X0_test, X1_train, X1_test, Y_train, Y_test = self.segregateData(X0, X1, Y)
+
+			# Train the model
+			self._model.fit(	[X0_train, X1_train],
+								Y_train,
+								validation_set=([X0_test, X1_test], Y_test),
+								n_epoch=const.NUM_EPOCHS,
+								batch_size=64,
+								run_id=self.constructRunID(),
+								show_metric=True								)
+
+			# Save the trained model
+			self.loadSaveModel(load=False)
+
+			# Evaluate how we did
+			self.evaluateModel(X0_test, X1_test, Y_test)
 
 	# Just iteratively inspect the data so it appears to make sense (figuratively)
 	def inspectData(self, X0, X1, Y):
@@ -186,18 +275,32 @@ class DNNModel:
 		# Predict on given img and map
 		return self._model.predict([np_img, np_map])
 
-	def evaluateModel(self, X0_test, X1_test, Y_test):
-		print self._model.evaluate([X0_test, X1_test], Y_test)
+	def evaluateModel(self, X0_test, X1_test, Y_test, fold_id=0):
+		# Evaluate and get the result
+		result = self._model.evaluate([X0_test, X1_test], Y_test)
 
-	def loadSaveModel(self, load=True):
+		# Print it out
+		print result
+
+		# Save result to a {fold number: evaluation result} dict
+		self._eval_results[fold_id] = result
+
+	def loadSaveModel(self, load=True, run_id=None):
 		model_dir = Utility.getModelDir()
+		# model_dir = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/models/model_CLOSEST_2017-12-14_20:04:09_CROSS_VALIDATE_5.tflearn"
+		# model_dir = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/models/model_SEQUENCE_2017-12-15_15:51:08_CROSS_VALIDATE_4.tflearn"
 
 		if load:
 			self._model.load(model_dir)
 			string = "Loaded"
-		else: 
-			self._model.save(model_dir)
+		else:
 			string = "Saved"
+
+			if run_id is not None:
+				model_dir = Utility.getICIPModelDir()
+				model_dir = "{}/{}.tflearn".format(model_dir, run_id)
+
+			self._model.save(model_dir)
 
 		print "{} TFLearn model at directory:{}".format(string, model_dir)
 
@@ -242,7 +345,11 @@ class DNNModel:
 
 		# Merge the networks
 		net = tflearn.merge([net0, net1], "concat", axis=1)
+
+		# Softmax layer
 		net = fully_connected(net, self._num_classes, activation='softmax')
+
+		# Optimiser
 		net = regression(		net, 
 								optimizer='momentum',
 								loss='categorical_crossentropy',

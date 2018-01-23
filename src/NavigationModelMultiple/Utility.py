@@ -8,6 +8,7 @@ import numpy as np
 import Constants as const
 from collections import deque
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 
 # Utility class for static methods
 class Utility:
@@ -29,9 +30,24 @@ class Utility:
 	def getBestModelDir():
 		filename = "{}_BEST.tflearn".format(const.MODEL_NAME)
 		return os.path.join(const.BASE_DIR, const.MODELS_DIR, filename)
+	"""
+	ICIP 2018 directory methods
+	"""
 	@staticmethod
 	def getICIPDataDir():
 		return os.path.join(const.BASE_DIR, const.ICIP_DATA_DIR)
+	@staticmethod
+	def getICIPFigureDir():
+		return os.path.join(const.BASE_DIR, const.ICIP_FIGURE_DIR)
+	@staticmethod
+	def getICIPModelDir():
+		return os.path.join(const.BASE_DIR, const.ICIP_MODELS_DIR)
+	@staticmethod
+	def getICIPBestModelDir():
+		return os.path.join(const.BASE_DIR, const.ICIP_MODELS_DIR, "best/")
+	@staticmethod
+	def getICIPTensorboardDir():
+		return os.path.join(const.BASE_DIR, const.ICIP_TENSORBOARD_DIR)
 
 	# Compute the shortest path action sequence from a -> b
 	@staticmethod
@@ -170,6 +186,123 @@ class Utility:
 		plt.legend(loc="center right")
 		plt.show()
 
+	@staticmethod
+	def drawGenerationLengthGraph(m_s, m_c, s_t, e_t):
+		# Construct size of targets vector
+		T = np.arange(s_t, e_t)
+
+		seq_avg = np.average(m_s, axis=1)
+		clo_avg = np.average(m_c, axis=1)
+
+		# print seq_avg
+		# print clo_avg
+
+		hist_vec = (m_c - m_s).flatten()
+
+		# print hist_vec
+
+		N, bins, patches = plt.hist(hist_vec, bins=13, normed=True)
+
+		# Plot vectors
+		# plt.plot(T, seq_avg, label="Sequence")
+		# plt.plot(T, clo_avg, label="Closest")
+
+		# Graph parameters
+		plt.xlabel('Difference in solution length')
+		# plt.ylabel('moves')
+		plt.legend(loc="center right")
+		plt.savefig("{}/solution-generation-hist.pdf".format(Utility.getICIPFigureDir()))
+		plt.show()
+
+	@staticmethod
+	def drawGenerationGraphs(m_s, m_c, t_s, t_c, num_targets):
+		fig, axs = plt.subplots(1, 2, sharey=False, tight_layout=True)
+
+		# Number of targets array
+		R = np.asarray(num_targets)
+
+		# Average results
+		m_seq_avg = np.average(m_s, axis=1)
+		m_clo_avg = np.average(m_c, axis=1)
+		t_seq_avg = np.average(t_s, axis=1)
+		t_clo_avg = np.average(t_c, axis=1)
+
+		axs[0].plot(R, m_seq_avg, 'b', label="Target Ordering")
+		axs[0].plot(R, m_clo_avg, 'r', label="Closest Unvisited")
+		axs[1].plot(R, t_seq_avg, 'b', label="Target Ordering")
+		axs[1].plot(R, t_clo_avg, 'r', label="Closest Unvisited")
+
+		axs[0].set_ylabel("|Moves|")
+		axs[0].set_xlabel("|R|")
+		axs[1].set_ylabel("Time (s)")
+		axs[1].set_xlabel("|R|")
+
+		plt.legend(loc="upper left")
+
+		plt.savefig("{}/solution-generation.pdf".format(Utility.getICIPFigureDir()))
+		plt.show()
+
+	@staticmethod
+	def drawModelLengthHistogram():
+		base = Utility.getICIPDataDir()
+		data_seq = np.load("{}/test_data_seq.npy".format(base))
+		data_clo = np.load("{}/test_data_clo.npy".format(base))
+
+		assert(data_seq.shape == data_clo.shape)
+
+		num_inst = data_seq.shape[0]
+
+		# Find stats about how many times loop detection was triggered
+		loop_seq = np.where(data_seq[:,2] > 0)[0].shape[0]
+		loop_clo = np.where(data_clo[:,2] > 0)[0].shape[0]
+		print "SEQUENCE, loop detected: {}%".format((float(loop_seq)/num_inst)*100)
+		print "ClOSEST, loop detected: {}%".format((float(loop_clo)/num_inst)*100)
+
+		# Find stats about how many times loop detection is triggered again once it 
+		# has already been triggered
+		doub_seq = np.where(data_seq[:,2] > 1)[0].shape[0]
+		doub_clo = np.where(data_clo[:,2] > 1)[0].shape[0]
+		print "SEQUENCE, multiple (>1) loop detected: {}%".format((float(doub_seq)/loop_seq)*100)
+		print "ClOSEST, multiple (>1) loop detected: {}%".format((float(doub_clo)/loop_clo)*100)
+
+		# Find stats about % of time model generates over 100 moves
+		over_seq = np.where(data_seq[:,0] > 100)[0].shape[0]
+		over_clo = np.where(data_clo[:,0] > 100)[0].shape[0]
+		print "SEQUENCE, over 100 moves: {}%".format((float(over_seq)/num_inst)*100)
+		print "ClOSEST, over 100 moves: {}%".format((float(over_clo)/num_inst)*100)
+
+		hist_vec_seq = data_seq[:,0] - data_seq[:,1]
+		hist_vec_clo = data_clo[:,0] - data_clo[:,1]
+
+		# Find stats about % of time model generates globally-optimal solution
+		opt_seq = np.where(hist_vec_seq == 0)[0].shape[0]
+		opt_clo = np.where(hist_vec_clo == 0)[0].shape[0]
+		print "SEQUENCE, Optimal: {}%".format((float(opt_seq)/num_inst)*100)
+		print "ClOSEST, Optimal: {}%".format((float(opt_clo)/num_inst)*100)
+
+		# Find stats about % of time model generates <10 difference than globally-optimal solution
+		dif_seq = np.where(hist_vec_seq < 10)[0].shape[0]
+		dif_clo = np.where(hist_vec_clo < 10)[0].shape[0]
+		print "SEQUENCE, <10 Difference: {}%".format((float(dif_seq)/num_inst)*100)
+		print "ClOSEST, <10 Difference: {}%".format((float(dif_clo)/num_inst)*100)
+
+		hist_vec = np.zeros((data_seq.shape[0], 2))
+
+		hist_vec[:,0] = data_seq[:,0] - data_seq[:,1]
+		hist_vec[:,1] = data_clo[:,0] - data_clo[:,1]
+
+		N, bins, patches = plt.hist(hist_vec, bins=70, normed=True, histtype='step',
+									color=['blue', 'red'],
+									label=['Target ordering', 'Closest Unvisited'], stacked=False)
+
+		plt.xlabel("Difference in solution length")
+		plt.ylabel("Probability")
+		plt.axis([0, 300, 0, 0.022])
+		plt.legend()
+
+		plt.savefig("{}/model-solution-length.pdf".format(Utility.getICIPFigureDir()))
+		plt.show()
+
 # Class designed to help with detecting whether the agent is stuck in an infinite loop
 class LoopDetector:
 	# Class constructor
@@ -289,4 +422,4 @@ class LoopDetector:
 
 # Entry method/unit testing
 if __name__ == '__main__':
-	pass
+	Utility.drawModelLengthHistogram()

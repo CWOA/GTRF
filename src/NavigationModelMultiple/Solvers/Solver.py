@@ -36,7 +36,7 @@ class EpisodeSolver:
 
 	# Solve the given episode using the designated method
 	def solveEpisode(self):
-		self._solver.solve()
+		return self._solver.solve()
 
 	# Get the next action to perform for the solved episode
 	def getNextAction(self):
