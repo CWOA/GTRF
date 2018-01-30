@@ -3,6 +3,7 @@
 import TreeSolver
 import ClosestSolver
 import SequenceSolver
+import NaiveSolver
 import Constants as const
 from Utility import Utility
 
@@ -27,6 +28,8 @@ class EpisodeSolver:
 			self._solver = ClosestSolver.ClosestSolver()
 		elif solver_method == const.TREE_SOLVER:
 			self._solver = TreeSolver.TreeSolver()
+		elif solver_method == const.NAIVE_SOLVER:
+			self._solver = NaiveSolver.NaiveSolver()
 		else:
 			Utility.die("Solver method not recognised")
 

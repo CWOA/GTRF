@@ -65,7 +65,7 @@ class DNNModel:
 
 			# Load location
 			# load_loc = Utility.getHDF5DataDir()
-			load_loc = "{}/training_data_SEQUENCE.h5".format(Utility.getICIPDataDir())
+			load_loc = "{}/simulator_CLOSEST.h5".format(Utility.getICIPDataDir())
 			# load_loc = "{}/training_data_CLOSEST.h5".format(Utility.getICIPDataDir())
 
 			# Load the data
@@ -158,6 +158,8 @@ class DNNModel:
 
 		# Sanity checking
 		# self.inspectData(X0, X1, Y)
+
+		tf.reset_default_graph()
 
 		# If we're supposed to cross-validate results
 		if const.CROSS_VALIDATE:
@@ -286,9 +288,10 @@ class DNNModel:
 		self._eval_results[fold_id] = result
 
 	def loadSaveModel(self, load=True, run_id=None):
-		model_dir = Utility.getModelDir()
+		# model_dir = Utility.getModelDir()
 		# model_dir = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/models/model_CLOSEST_2017-12-14_20:04:09_CROSS_VALIDATE_5.tflearn"
 		# model_dir = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/models/model_SEQUENCE_2017-12-15_15:51:08_CROSS_VALIDATE_4.tflearn"
+		model_dir = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/models/sequence_SIMULATOR_2018-01-24_13:40:00_CROSS_VALIDATE_2.tflearn"
 
 		if load:
 			self._model.load(model_dir)

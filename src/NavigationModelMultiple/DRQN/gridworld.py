@@ -4,6 +4,8 @@ solver_path = os.path.abspath(os.path.join(__file__,'..','..','Solvers'))
 sys.path.append(const_path)
 sys.path.append(solver_path)
 
+import cv2
+import copy
 import numpy as np
 import random
 import itertools
@@ -11,31 +13,16 @@ import scipy.misc
 import matplotlib.pyplot as plt
 import SequenceSolver
 import Constants as const
-
-class gameOb():
-    def __init__(   self,
-                    coordinates,
-                    color,
-                    is_agent,
-                    reward=1.0            ):
-        self._x = coordinates[0]
-        self._y = coordinates[1]
-        self._color = color
-
-        if is_agent:
-            self._is_agent = True
-        else:
-            self._is_agent = False
-            self._visited = False
-            self._reward = reward
+from Object import Object
         
 class gameEnv():
     def __init__(   self,
                     partial,
                     size,
                     num_targets        ):
+
         # Epsidoe solver method
-        self._solver = SequenceSolver()
+        self._solver = SequenceSolver.SequenceSolver()
 
         # Square dimensions
         self._sizeX = size
@@ -48,31 +35,39 @@ class gameEnv():
         self._num_targets = num_targets
 
         # Penalty per-move
-        self._move_penalty = -0.01
+        self._move_penalty = -0.00
 
         a = self.reset()
-        plt.imshow(a,interpolation="nearest")
+        #plt.imshow(a,interpolation="nearest")
         
     def reset(self):
+        # Unique identifier counter
+        id_ctr = 0
+
         # Add the agent
-        rand_agent_x = random.randint(0, self._sizeX)
-        rand_agent_y = random.randint(0, self._sizeY)
-        self._agent = gameOb((rand_agent_x, rand_agent_y), constants.AGENT_COLOUR, True)
+        rand_agent_x = random.randint(0, self._sizeX-1)
+        rand_agent_y = random.randint(0, self._sizeY-1)
+        self._agent = Object(id_ctr, True, x=rand_agent_x, y=rand_agent_y)
+
+        # Increment unique identifier counter
+        id_ctr += 1
 
         # Reset and add targets
         self._targets = []
         for i in range(self._num_targets):
-            target = gameOb(self.newPosition(), constants.TARGET_COLOUR, False)
+            t_x, t_y = self.newPosition()
+            target = Object(id_ctr, False, x=t_x, y=t_y)
             self._targets.append(target)
+            id_ctr += 1
 
         # Solve the episode using the globally-optimal sequence solver
-        self.solver.reset(self._agent, self._targets)
-        min_actions = self.solver.solve()
+        self._solver.reset(self._agent, self._targets)
+        min_actions = self._solver.solve()
 
         # Create the current state
         self._state = self.renderEnv()
 
-        return self._state
+        return self._state, min_actions
 
     def moveChar(self, direction):
         # 0 - up, 1 - down, 2 - left, 3 - right
@@ -109,8 +104,8 @@ class gameEnv():
         # Loop until we've generated a valid position
         while True:
             # Generate a position within bounds
-            rand_x = random.randint(0, self._sizeX)
-            rand_y = random.randint(0, self._sizeY)
+            rand_x = random.randint(0, self._sizeX-1)
+            rand_y = random.randint(0, self._sizeY-1)
 
             ok = True
 
@@ -123,22 +118,14 @@ class gameEnv():
             if ok: return (rand_x, rand_y)
 
     def checkGoal(self):
-        # Get game objects that aren't the agent (just targets)
-        targets = []
-        for obj in self.objects:
-            if obj.name == 'hero':
-                hero = obj
-            else:
-                targets.append(obj)
-
         reward = 0
 
         # Iterate over all targets
         for target in self._targets:
             # If the agent is over an unvisited target
             if self._agent._x == target._x and self._agent._y == target._y and not target._visited:
-                reward = target._reward
-                target._visited = True
+                reward = 1
+                target.setVisited(True)
 
         # Check whether all targets have now been visited
         for target in self._targets:
@@ -149,28 +136,37 @@ class gameEnv():
         return reward, True
 
     def renderEnv(self):
-        #a = np.zeros([self.sizeY,self.sizeX,3])
-        a = np.ones([self._sizeY+2, self.size_X+2, 3])
-        a[1:-1,1:-1,:] = 0
-    
-        for item in self._targets:
-            a[  item.y+1:item.y+item.size+1,
-                item.x+1:item.x+item.size+1,
-                :                               ] = item._color
+        # Create the image with a one pixel border
+        a = np.zeros((self._sizeY+2, self._sizeX+2, 3), np.uint8)
+
+        # Set the border colour to white
+        a[:,:,:] = 255
+
+        # Set the background colour
+        a[1:-1,1:-1,:] = const.BACKGROUND_COLOUR
+
+        # Render targets
+        for t in self._targets:
+            if not t._visited:
+                a[t._y+1:t._y+2, t._x+1:t._x+2, :] = t._colour
+            else:
+                a[t._y+1:t._y+2, t._x+1:t._x+2, :] = const.VISITED_COLOUR
 
         # Get the agent position
         a_x = self._agent._x
         a_y = self._agent._y
 
+        # Render the agent
+        a[a_y+1:a_y+2, a_x+1:a_x+2, :] = self._agent._colour
+
+        # If we're only supposed to have a partial view of the environment
         if self._partial == True:
             a = a[a_y:a_y+3, a_x:a_x+3,:]
 
-        b = scipy.misc.imresize(a[:,:,0],[84,84,1],interp='nearest')
-        c = scipy.misc.imresize(a[:,:,1],[84,84,1],interp='nearest')
-        d = scipy.misc.imresize(a[:,:,2],[84,84,1],interp='nearest')
+        # Scale the image up to 84x84 pixels
+        scaled = cv2.resize(a, (84, 84), interpolation=cv2.INTER_NEAREST)
 
-        a = np.stack([b,c,d], axis=2)
-        return a
+        return scaled
 
     def step(self, action):
         penalty = self.moveChar(action)
@@ -183,3 +179,9 @@ class gameEnv():
             return state,(reward+penalty),done
         else:
             return state,(reward+penalty),done
+
+# Entry method/unit testing
+if __name__ == '__main__':
+    env = gameEnv(partial=False,size=10,num_targets=5)
+    render = env.renderEnv()
+    plt.show(render)

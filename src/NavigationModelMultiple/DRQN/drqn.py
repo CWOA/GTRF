@@ -11,6 +11,7 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 import scipy.misc
 import os
+from tqdm import tqdm
 import csv
 import itertools
 import tensorflow.contrib.slim as slim
@@ -22,8 +23,12 @@ from helper import *
 from gridworld import gameEnv
 
 # Whether to jump straight to testing and load the model from file
-TRAIN_NETWORK = True
-# TRAIN_NETWORK = False
+# TRAIN_NETWORK = True
+TRAIN_NETWORK = False
+
+# Whether or not to test after training
+TEST_NETWORK = True
+# TEST_NETWORK = False
 
 """
 Feel free to adjust the size of the gridworld. 
@@ -36,8 +41,8 @@ The agent controls the blue square, and can move up, down, left, or right.
 The goal is to move to the green squares (for +1 reward) and avoid the red squares (for -1 reward). 
 When the agent moves through a green or red square, it is randomly moved to a new place in the environment.
 """
-# env = gameEnv(partial=False,size=10)
-env = gameEnv(partial=True,size=10)
+env = gameEnv(partial=True,size=10,num_targets=5)
+# env = gameEnv(partial=True,size=10,num_targets=5)
 
 # Network definition
 class Qnetwork():
@@ -141,13 +146,13 @@ if TRAIN_NETWORK:
     startE = 1 #Starting chance of random action
     endE = 0.1 #Final chance of random action
     anneling_steps = 10000 #How many steps of training to reduce startE to endE.
-    num_episodes = 10000 #How many episodes of game environment to train network with.
+    num_episodes = 20000 #How many episodes of game environment to train network with.
     pre_train_steps = 10000 #How many steps of random actions before training begins.
     load_model = False #Whether to load a saved model.
     path = "./drqn" #The path to save our model to.
     h_size = 512 #The size of the final convolutional layer before splitting it into Advantage and Value streams.
-    max_epLength = 50 #The max allowed length of our episode.
-    time_per_step = 1 #Length of each step used in gif creation
+    max_epLength = 300 #The max allowed length of our episode.
+    time_per_step = 0.25 #Length of each step used in gif creation
     summaryLength = 100 #Number of epidoes to periodically save for analysis
     tau = 0.001
 
@@ -185,7 +190,6 @@ if TRAIN_NETWORK:
     with open('./Center/log.csv', 'w') as myfile:
         wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
         wr.writerow(['Episode','Length','Reward','IMG','LOG','SAL'])    
-      
 
     with tf.Session() as sess:
         if load_model == True:
@@ -193,7 +197,9 @@ if TRAIN_NETWORK:
             ckpt = tf.train.get_checkpoint_state(path)
             saver.restore(sess,ckpt.model_checkpoint_path)
         sess.run(init)
-       
+        
+        pbar = tqdm(total=num_episodes)
+
         updateTarget(targetOps,sess) #Set the target network to be equal to the primary network.
         for i in range(num_episodes):
             episodeBuffer = []
@@ -265,105 +271,145 @@ if TRAIN_NETWORK:
                 saver.save(sess,path+'/model-'+str(i)+'.cptk')
                 print ("Saved Model")
             if len(rList) % summaryLength == 0 and len(rList) != 0:
-                print (total_steps,np.mean(rList[-summaryLength:]), e)
+                print (i, total_steps, np.mean(rList[-summaryLength:]), e)
                 saveToCenter(i,rList,jList,np.reshape(np.array(episodeBuffer),[len(episodeBuffer),5]),\
                     summaryLength,h_size,sess,mainQN,time_per_step)
+
+            pbar.update()
+
         saver.save(sess,path+'/model-'+str(i)+'.cptk')
+
+        pbar.close()
 
 ##################################################################################################################
 ### Network testing ##############################################################################################
 ##################################################################################################################
 
-print "TESTING NETWORK"
+if TEST_NETWORK:
+    print "TESTING NETWORK"
 
-# Parameters
-e = 0.01 #The chance of chosing a random action
-num_episodes = 10000 #How many episodes of game environment to train network with.
-load_model = True #Whether to load a saved model.
-path = "./drqn" #The path to save/load our model to/from.
-h_size = 512 #The size of the final convolutional layer before splitting it into Advantage and Value streams.
-h_size = 512 #The size of the final convolutional layer before splitting it into Advantage and Value streams.
-max_epLength = 50 #The max allowed length of our episode.
-time_per_step = 1 #Length of each step used in gif creation
-summaryLength = 100 #Number of epidoes to periodically save for analysis
+    # Parameters
+    e = 0.01 #The chance of chosing a random action
+    num_episodes = 20000 #How many episodes of game environment to test network with.
+    load_model = True #Whether to load a saved model.
+    path = "./drqn" #The path to save/load our model to/from.
+    h_size = 512 #The size of the final convolutional layer before splitting it into Advantage and Value streams.
+    h_size = 512 #The size of the final convolutional layer before splitting it into Advantage and Value streams.
+    max_epLength = 300 #The max allowed length of our episode.
+    time_per_step = 0.25 #Length of each step used in gif creation
+    summaryLength = 100 #Number of epidoes to periodically save for analysis
 
-tf.reset_default_graph()
-cell = tf.contrib.rnn.BasicLSTMCell(num_units=h_size,state_is_tuple=True)
-cellT = tf.contrib.rnn.BasicLSTMCell(num_units=h_size,state_is_tuple=True)
-mainQN = Qnetwork(h_size,cell,'main')
-targetQN = Qnetwork(h_size,cellT,'target')
+    tf.reset_default_graph()
+    cell = tf.contrib.rnn.BasicLSTMCell(num_units=h_size,state_is_tuple=True)
+    cellT = tf.contrib.rnn.BasicLSTMCell(num_units=h_size,state_is_tuple=True)
+    mainQN = Qnetwork(h_size,cell,'main')
+    targetQN = Qnetwork(h_size,cellT,'target')
 
-init = tf.global_variables_initializer()
+    init = tf.global_variables_initializer()
 
-saver = tf.train.Saver(max_to_keep=2)
+    saver = tf.train.Saver(max_to_keep=2)
 
-#create lists to contain total rewards and steps per episode
-jList = []
-rList = []
-total_steps = 0
+    #create lists to contain total rewards and steps per episode
+    jList = []
+    rList = []
+    total_steps = 0
 
-#Make a path for our model to be saved in.
-if not os.path.exists(path):
-    os.makedirs(path)
+    # Numpy data to save to file
+    test_data = np.zeros((num_episodes, 3))
 
-##Write the first line of the master log-file for the Control Center
-with open('./Center/log.csv', 'w') as myfile:
-    wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
-    wr.writerow(['Episode','Length','Reward','IMG','LOG','SAL'])    
-    
-    #wr = csv.writer(open('./Center/log.csv', 'a'), quoting=csv.QUOTE_ALL)
-with tf.Session() as sess:
-    if load_model == True:
-        ckpt = tf.train.get_checkpoint_state(path)
-        print ('Loading Model from {}'.format(ckpt.model_checkpoint_path))
-        saver.restore(sess,ckpt.model_checkpoint_path)
-        print ('Loaded model.')
-    else:
-        sess.run(init)
+    # Statistic keeping variables
+    over_100 = 0
+    optimal = 0
+    dif_10 = 0
 
-    print ('Beginning testing.')
+    #Make a path for our model to be saved in.
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+    ##Write the first line of the master log-file for the Control Center
+    with open('./Center/log.csv', 'w') as myfile:
+        wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+        wr.writerow(['Episode','Length','Reward','IMG','LOG','SAL'])    
         
-    for i in range(num_episodes):
-        episodeBuffer = []
-        #Reset environment and get first new observation
-        sP = env.reset()
-        s = processState(sP)
-        d = False
-        rAll = 0
-        j = 0
-        state = (np.zeros([1,h_size]),np.zeros([1,h_size]))
-        #The Q-Network
-        while j < max_epLength: #If the agent takes longer than 200 moves to reach either of the blocks, end the trial.
-            j+=1
-            #Choose an action by greedily (with e chance of random action) from the Q-network
-            if np.random.rand(1) < e:
-                state1 = sess.run(mainQN.rnn_state,\
-                    feed_dict={mainQN.scalarInput:[s/255.0],mainQN.trainLength:1,mainQN.state_in:state,mainQN.batch_size:1})
-                a = np.random.randint(0,4)
-            else:
-                a, state1 = sess.run([mainQN.predict,mainQN.rnn_state],\
-                    feed_dict={mainQN.scalarInput:[s/255.0],mainQN.trainLength:1,\
-                    mainQN.state_in:state,mainQN.batch_size:1})
-                a = a[0]
-            s1P,r,d = env.step(a)
-            s1 = processState(s1P)
-            total_steps += 1
-            episodeBuffer.append(np.reshape(np.array([s,a,r,s1,d]),[1,5])) #Save the experience to our episode buffer.
-            rAll += r
-            s = s1
-            sP = s1P
-            state = state1
-            if d == True:
-                
-                break
+        #wr = csv.writer(open('./Center/log.csv', 'a'), quoting=csv.QUOTE_ALL)
+    with tf.Session() as sess:
+        if load_model == True:
+            ckpt = tf.train.get_checkpoint_state(path)
+            print ('Loading Model from {}'.format(ckpt.model_checkpoint_path))
+            saver.restore(sess,ckpt.model_checkpoint_path)
+            print ('Loaded model.')
+        else:
+            sess.run(init)
 
-        bufferArray = np.array(episodeBuffer)
-        jList.append(j)
-        rList.append(rAll)
+        print ('Beginning testing.')
+            
+        pbar = tqdm(total=num_episodes)
 
-        #Periodically save the model. 
-        if len(rList) % summaryLength == 0 and len(rList) != 0:
-            print ((i/num_episodes)*100,total_steps,np.mean(rList[-summaryLength:]), e)
-            saveToCenter(i,rList,jList,np.reshape(np.array(episodeBuffer),[len(episodeBuffer),5]),\
-                summaryLength,h_size,sess,mainQN,time_per_step)
-print ("Percent of succesful episodes: " + str(sum(rList)/num_episodes) + "%")
+        for i in range(num_episodes):
+            episodeBuffer = []
+            #Reset environment and get first new observation
+            sP, min_actions = env.reset()
+            s = processState(sP)
+            d = False
+            rAll = 0
+            j = 0
+            state = (np.zeros([1,h_size]),np.zeros([1,h_size]))
+            #The Q-Network
+            while j < max_epLength: #If the agent takes longer than 200 moves to reach either of the blocks, end the trial.
+                j+=1
+                #Choose an action by greedily (with e chance of random action) from the Q-network
+                if np.random.rand(1) < e:
+                    state1 = sess.run(mainQN.rnn_state,\
+                        feed_dict={mainQN.scalarInput:[s/255.0],mainQN.trainLength:1,mainQN.state_in:state,mainQN.batch_size:1})
+                    a = np.random.randint(0,4)
+                else:
+                    a, state1 = sess.run([mainQN.predict,mainQN.rnn_state],\
+                        feed_dict={mainQN.scalarInput:[s/255.0],mainQN.trainLength:1,\
+                        mainQN.state_in:state,mainQN.batch_size:1})
+                    a = a[0]
+                s1P,r,d = env.step(a)
+                s1 = processState(s1P)
+                total_steps += 1
+                episodeBuffer.append(np.reshape(np.array([s,a,r,s1,d]),[1,5])) #Save the experience to our episode buffer.
+                rAll += r
+                s = s1
+                sP = s1P
+                state = state1
+                if d == True:
+                    
+                    break
+
+            # Store statistics to numpy array
+            test_data[i,0] = j
+            test_data[i,1] = min_actions
+            test_data[i,2] = 0
+
+            bufferArray = np.array(episodeBuffer)
+            jList.append(j)
+            rList.append(rAll)
+
+            #Periodically save the GIF. 
+            if len(rList) % summaryLength == 0 and len(rList) != 0:
+                print ((i/num_episodes)*100,total_steps,np.mean(rList[-summaryLength:]), e)
+                saveToCenter(i,rList,jList,np.reshape(np.array(episodeBuffer),[len(episodeBuffer),5]),\
+                    summaryLength,h_size,sess,mainQN,time_per_step)
+
+            # Work out and print statistics about testing
+            dif = j - min_actions
+
+            if j > 100: over_100 += 1
+            if dif == 0: optimal += 1
+            if dif < 10: dif_10 += 1
+
+            stat_1 = (float(over_100)/(i+1))*100
+            stat_2 = (float(optimal)/(i+1))*100
+            stat_3 = (float(dif_10)/(i+1))*100
+
+            print(">100 {}%, optimal {}%, <10 dif {}%".format(stat_1, stat_2, stat_3))
+
+            pbar.update()
+
+        pbar.close()
+
+    # Save numpy test data out
+    np.save("./test_data_DRQN", test_data)

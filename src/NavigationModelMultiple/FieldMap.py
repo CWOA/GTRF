@@ -18,7 +18,8 @@ class FieldMap:
 						use_simulator=True,
 						random_agent_pos=True,
 						training_model=False,
-						save=False						):
+						save=False,
+						second_solver=False		):
 		"""
 		Class arguments from init
 		"""
@@ -47,7 +48,7 @@ class FieldMap:
 		# Don't initialise the Visualiser (and ROS node) if we're just training the DNN
 		if not self._training_model:
 			# Class in charge of handling agent/targets
-			self._object_handler = Object.ObjectHandler()
+			self._object_handler = Object.ObjectHandler(second_solver=second_solver)
 
 			# Class in charge of visitation map
 			self._map_handler = VisitationMap.MapHandler()
@@ -358,7 +359,46 @@ class FieldMap:
 		pbar.close()
 
 		# Save data to file
-		np.save("{}/test_data_SIMULATOR_clo".format(base), test_data)
+		np.save("{}/test_data_SIMULATOR_seq".format(base), test_data)
+
+	# Compare solver performance over a number of testing episodes
+	def compareSolvers(self, num_episodes):
+		print "Beginning comparing solvers"
+
+		# Place to store testing data to in numpy form
+		base = Utility.getICIPDataDir()
+
+		# Numpy array for testing data, consists of:
+		# 0: number of moves required by the model
+		# 1: number of moves required by employed solver (closest, target ordering)
+		# 2: number of times loop detection is triggered
+		test_data = np.zeros((num_episodes, 3))
+
+		# Initialise progress bar (TQDM) object
+		pbar = tqdm(total=num_episodes) 
+
+		# Do some comparisons
+		for i in range(num_episodes):
+			# Reset (generate a new episode)
+			self.reset()
+
+			# Get solution lengths (NS: naive solver, GO: globally-optimal)
+			NS_length = self._object_handler.secondSolveEpisode()
+			GO_length = self._object_handler.solveEpisode()
+
+			# Store statistics to numpy array
+			test_data[i,0] = NS_length
+			test_data[i,1] = GO_length
+			test_data[i,2] = 0	# There's no loop detection here
+
+			# Update progress bar
+			pbar.update()
+
+		# Close up
+		pbar.close()
+
+		# Save data to file
+		np.save("{}/test_data_NAIVE".format(base), test_data)
 
 	# Generate solutions to randomly-generated episodes using trained model and output
 	# visualisation of agent path to file if the difference between the generated

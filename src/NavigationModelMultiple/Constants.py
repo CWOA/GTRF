@@ -28,7 +28,6 @@ FieldMap constants
 MAP_WIDTH = 10
 MAP_HEIGHT = 10
 ACTIONS = ['F', 'B', 'L', 'R']
-AGENT_START_COORDS = (0, 0)
 
 # Unit to move the agent by each step
 MOVE_DIST = 1
@@ -43,6 +42,33 @@ NUM_TARGETS_RANGE = (2, 10)
 # When true, it uses HDF5 (which is suitable for larger databases)
 # when false, uses pickle (not sure what it's good for...)
 USE_HDF5 = True
+
+"""
+Object class consants
+"""
+
+# Default agent starting position if random is disabled
+AGENT_START_COORDS = (0, 0)
+
+# Spatial distribution method for generating agent/target positions
+PRNG_DIST = 0	# Uses "random" python class (which uses Mersenne Twister PRNG)
+EQUI_DIST = 1	# Equidistant target spacing
+GAUS_DIST = 2	# Gaussian distribution
+
+# OBJECT_DIST_METHOD = PRNG_DIST
+# OBJECT_DIST_METHOD = EQUI_DIST
+OBJECT_DIST_METHOD = GAUS_DIST
+
+# Unsure whether this should be constant?! Should it somewhat vary per episode?
+GAUS_MU_X = 3
+GAUS_MU_Y = 5
+GAUS_SIGMA_X = 2
+GAUS_SIGMA_Y = 3
+
+# Again, unsure whether this should be constant..
+EQUI_START_X = 2 # Where equidistant grid starts from
+EQUI_START_Y = 3
+EQUI_SPACING = 2 # Spacing between equidistant targets
 
 """
 VisitationMap constants
@@ -66,7 +92,7 @@ TARGET_COLOUR = (64,30,162)
 VISIBLE_COLOUR = (247,242,236)
 
 GRID_PIXELS = 1
-WAIT_AMOUNT = 1
+WAIT_AMOUNT = 0
 
 """
 SimulatorBridge constants
@@ -96,7 +122,7 @@ BASE_TARGET_NAME = "cow"
 """
 DNN model/training constants
 """
-MODEL_NAME = "nav_model_multiple_SIMULATOR"
+MODEL_NAME = "closest_SIMULATOR"
 DATA_RATIO = 0.9
 NUM_EPOCHS = 50
 CROSS_VALIDATE = True
@@ -122,6 +148,7 @@ Solver constants
 SEQUENCE_SOLVER = 0
 CLOSEST_SOLVER = 1
 TREE_SOLVER = 2
+NAIVE_SOLVER = 3
 
 # Which solver to use
 # 0: Sequence solver
@@ -129,6 +156,7 @@ TREE_SOLVER = 2
 # 2: Tree solver
 SOLVER_METHOD = SEQUENCE_SOLVER
 # SOLVER_METHOD = CLOSEST_SOLVER
+# SOLVER_METHOD = NAIVE_SOLVER
 
 """
 Tree Solver constants

@@ -14,7 +14,10 @@ class ObjectHandler:
 	# Class constructor
 	def __init__(	self,
 					random_agent_pos=True,
-					random_num_targets=False	):
+					random_num_targets=False,
+					solver_method=const.SOLVER_METHOD,
+					dist_methood=const.OBJECT_DIST_METHOD,
+					second_solver=False				 		):
 		"""
 		Class arguments from init
 		"""
@@ -25,12 +28,22 @@ class ObjectHandler:
 		# Should we randomise the number of targets or not
 		self._random_num_targets = random_num_targets
 
+		# How should object's be initialised spatially?
+		self._object_dist_method = dist_methood
+
 		"""
 		Class attributes
 		"""
 
 		# Class responsible for selecting agent actions towards solving a given episode
-		self._solver = EpisodeSolver(const.SOLVER_METHOD)
+		self._solver = EpisodeSolver(solver_method)
+
+		# Are we initialising another solver
+		self._use_second_solver = second_solver
+
+		# Second solver class (for comparisons between solution methods)
+		if self._use_second_solver:
+			self._second_solver = EpisodeSolver(const.NAIVE_SOLVER)
 
 		# Pointers to agent and list of targets
 		self._agent = None
@@ -45,6 +58,8 @@ class ObjectHandler:
 
 		# Generate a random starting agent coordinate if we're supposed to
 		if self._random_agent_pos:
+			# MIGHT NEED CHANGING: based on object distribution method
+			# possible incorporate within "generateUnoccupiedPosition()" below? 
 			a_x = random.randint(0, const.MAP_WIDTH-1)
 			a_y = random.randint(0, const.MAP_HEIGHT-1)
 			self._agent = Object(self._id_ctr, True, x=a_x, y=a_y)
@@ -73,6 +88,10 @@ class ObjectHandler:
 		# Give generated agent and target objects to the solver
 		self._solver.reset(copy.deepcopy(self._agent), copy.deepcopy(self._targets))
 
+		# Initialise the second solver if we're supposed to
+		if self._use_second_solver:
+			self._second_solver.reset(copy.deepcopy(self._agent), copy.deepcopy(self._targets))
+
 		return self.getAgentPos(), self.getTargetPositions()
 
 	"""
@@ -90,21 +109,53 @@ class ObjectHandler:
 			for target in self._targets:
 				occupied.append(target.getPosTuple())
 
+		# If targets should be equidistant
+		if self._object_dist_method == const.EQUI_DIST:
+			# x, y array with boundaries and spacing
+			x = np.arange(const.EQUI_START_X, const.MAP_WIDTH, const.EQUI_SPACING)
+			y = np.arange(const.EQUI_START_Y, const.MAP_HEIGHT, const.EQUI_SPACING)
+
+			# Create two coordinate arrays with this
+			equi_x, equi_y = np.meshgrid(x, y)
+
+			# Convert to python list
+			equi_x = equi_x.tolist()
+			equi_y = equi_y.tolist()
+
 		# Loop until we've generated a valid position
 		while True:
-			# Generate a position within bounds
-			rand_x = random.randint(0, const.MAP_WIDTH-1)
-			rand_y = random.randint(0, const.MAP_HEIGHT-1)
+			# Python "random" class uses PRNG Mersenne Twister
+			if self._object_dist_method == const.PRNG_DIST:
+				# Generate a position within bounds
+				x = random.randint(0, const.MAP_WIDTH-1)
+				y = random.randint(0, const.MAP_HEIGHT-1)
+			# Equidistant targets
+			elif self._object_dist_method == const.EQUI_DIST:
+				# Pop the next x,y coordinates from the list
+				x = equi_x.pop(0)
+				y = equi_y.pop(0)
+			# Use a Gaussian distribution
+			elif self._object_dist_method == const.GAUS_DIST:
+				# Gaussian parameters are constant, is this ok?
+				x = random.gauss(const.GAUS_MU_X, const.GAUS_SIGMA_X)
+				y = random.gauss(const.GAUS_MU_Y, const.GAUS_SIGMA_Y)
+			else:
+				Utility.die("Object distribution method not recognised", __file__)
 
+			# Generated position is valid
 			ok = True
 
 			# Check the generated position isn't already in use
 			for pos in occupied:
-				if rand_x == pos[0] and rand_y == pos[1]:
+				if x == pos[0] and y == pos[1]:
 					ok = False
 					break
 
-			if ok: return rand_x, rand_y
+			# Check the generated position is within the map bounds
+			if x < 0 or y < 0 or x >= const.MAP_WIDTH or y >= const.MAP_HEIGHT:
+				ok = False
+
+			if ok: return x, y
 
 	# Print coordinates of the agent and all targets
 	def printObjectCoordinates(self):
@@ -163,6 +214,10 @@ class ObjectHandler:
 	# Simply signal the solver to solve this episode, returns the length of the solution
 	def solveEpisode(self):
 		return self._solver.solveEpisode()
+
+	# Solve episode using second solver method
+	def secondSolveEpisode(self):
+		return self._second_solver.solveEpisode()
 
 	# Simply get the next action from the solver
 	def nextSolverAction(self):
@@ -308,6 +363,15 @@ class Object:
 	def copy(self):
 		return copy.deepcopy(self)
 
+	def performAction(self, action):
+		if self._agent:
+			if action == 'F': 	self._y -= const.MOVE_DIST
+			elif action == 'B': self._y += const.MOVE_DIST
+			elif action == 'L': self._x -= const.MOVE_DIST
+			elif action == 'R': self._x += const.MOVE_DIST
+		else:
+			Utility.die("Trying to perform action on a non-agent")		
+
 	"""
 	Getters
 	"""
@@ -328,7 +392,11 @@ class Object:
 	Setters
 	"""
 	def setVisited(self, visited):
-		self._visited = visited
+		if not self._agent:
+			self._visited = visited
+		else:
+			Utility.die("Trying to set agent visitation")
+
 	def setPos(self, x, y):
 		if self._agent:
 			self._x = x
