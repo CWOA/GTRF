@@ -255,7 +255,7 @@ class FieldMap:
 			print "Saving data using h5py"
 
 			# file_str = Utility.getHDF5DataDir()
-			file_str = "{}/simulator_SEQUENCE.h5".format(Utility.getICIPDataDir())
+			file_str = "{}/gaussian_SEQUENCE.h5".format(Utility.getICIPDataDir())
 
 			# Open the dataset file (may overwrite an existing file!!)
 			dataset = h5py.File(file_str, 'w')
@@ -359,7 +359,7 @@ class FieldMap:
 		pbar.close()
 
 		# Save data to file
-		np.save("{}/test_data_SIMULATOR_seq".format(base), test_data)
+		np.save("{}/test_data_GAUS_SEQ".format(base), test_data)
 
 	# Compare solver performance over a number of testing episodes
 	def compareSolvers(self, num_episodes):

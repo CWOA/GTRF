@@ -33,19 +33,19 @@ if __name__ == '__main__':
 	"""
 
 	# Whether to visualise visual input/map via OpenCV imshow
-	visualise = True
+	visualise = False
 
 	# Whether or not to use ROS/Gazebo simulator for synthesised visual input
 	use_simulator = False
 
 	# Number of iterations/episodes to generate
-	iterations = 20000
+	iterations = 10000
 
 	"""
 	Function calls
 	"""
 
-	generateTrainingExamples(iterations, visualise, use_simulator)
+	# generateTrainingExamples(iterations, visualise, use_simulator)
 	# trainModel(iterations, use_simulator)
-	# testModel(iterations, visualise, use_simulator)
+	testModel(iterations, visualise, use_simulator)
 	# compareSolvers(iterations, visualise)

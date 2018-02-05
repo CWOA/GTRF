@@ -62,13 +62,13 @@ OBJECT_DIST_METHOD = GAUS_DIST
 # Unsure whether this should be constant?! Should it somewhat vary per episode?
 GAUS_MU_X = 3
 GAUS_MU_Y = 5
-GAUS_SIGMA_X = 2
-GAUS_SIGMA_Y = 3
+GAUS_SIGMA_X = 1
+GAUS_SIGMA_Y = 1
 
 # Again, unsure whether this should be constant..
 EQUI_START_X = 2 # Where equidistant grid starts from
 EQUI_START_Y = 3
-EQUI_SPACING = 2 # Spacing between equidistant targets
+EQUI_SPACING = 3 # Spacing between equidistant targets
 
 """
 VisitationMap constants
@@ -92,7 +92,7 @@ TARGET_COLOUR = (64,30,162)
 VISIBLE_COLOUR = (247,242,236)
 
 GRID_PIXELS = 1
-WAIT_AMOUNT = 0
+WAIT_AMOUNT = 1
 
 """
 SimulatorBridge constants
@@ -122,7 +122,7 @@ BASE_TARGET_NAME = "cow"
 """
 DNN model/training constants
 """
-MODEL_NAME = "closest_SIMULATOR"
+MODEL_NAME = "gaussian_SEQUENCE"
 DATA_RATIO = 0.9
 NUM_EPOCHS = 50
 CROSS_VALIDATE = True
@@ -135,6 +135,7 @@ Loop Detector constants
 USE_ACTION_STRING = False
 
 # Maximum length of loop detection queue at any one time
+# MAX_QUEUE_SIZE = 40
 MAX_QUEUE_SIZE = 20
 
 # Number of times the agent has to visit a particular coordinate (within)

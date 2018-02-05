@@ -65,8 +65,7 @@ class DNNModel:
 
 			# Load location
 			# load_loc = Utility.getHDF5DataDir()
-			load_loc = "{}/simulator_CLOSEST.h5".format(Utility.getICIPDataDir())
-			# load_loc = "{}/training_data_CLOSEST.h5".format(Utility.getICIPDataDir())
+			load_loc = "{}/gaussian_SEQUENCE.h5".format(Utility.getICIPDataDir())
 
 			# Load the data
 			dataset = h5py.File(load_loc, 'r')
@@ -231,17 +230,20 @@ class DNNModel:
 			# Split the data into training/testing chunks
 			X0_train, X0_test, X1_train, X1_test, Y_train, Y_test = self.segregateData(X0, X1, Y)
 
+			# Run ID
+			run_id = self.constructRunID()
+
 			# Train the model
 			self._model.fit(	[X0_train, X1_train],
 								Y_train,
 								validation_set=([X0_test, X1_test], Y_test),
 								n_epoch=const.NUM_EPOCHS,
 								batch_size=64,
-								run_id=self.constructRunID(),
+								run_id=run_id,
 								show_metric=True								)
 
 			# Save the trained model
-			self.loadSaveModel(load=False)
+			self.loadSaveModel(load=False, run_id=run_id)
 
 			# Evaluate how we did
 			self.evaluateModel(X0_test, X1_test, Y_test)
@@ -291,7 +293,7 @@ class DNNModel:
 		# model_dir = Utility.getModelDir()
 		# model_dir = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/models/model_CLOSEST_2017-12-14_20:04:09_CROSS_VALIDATE_5.tflearn"
 		# model_dir = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/models/model_SEQUENCE_2017-12-15_15:51:08_CROSS_VALIDATE_4.tflearn"
-		model_dir = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/models/sequence_SIMULATOR_2018-01-24_13:40:00_CROSS_VALIDATE_2.tflearn"
+		model_dir = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/models/gaussian_SEQUENCE_2018-01-31_15:31:02_CROSS_VALIDATE_0.tflearn"
 
 		if load:
 			self._model.load(model_dir)

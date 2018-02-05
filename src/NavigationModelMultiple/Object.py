@@ -118,9 +118,17 @@ class ObjectHandler:
 			# Create two coordinate arrays with this
 			equi_x, equi_y = np.meshgrid(x, y)
 
+			# Offset odd rows of x by half the spacing size to yield equidistant spacing
+			half_spacing = round(const.EQUI_SPACING/2)
+			for i in range(equi_x.shape[0]):
+				for j in range(equi_x.shape[1]):
+					# If i is odd
+					if i % 2 == 1:
+						equi_x[i,j] += half_spacing
+
 			# Convert to python list
-			equi_x = equi_x.tolist()
-			equi_y = equi_y.tolist()
+			equi_x = equi_x.flatten().tolist()
+			equi_y = equi_y.flatten().tolist()
 
 		# Loop until we've generated a valid position
 		while True:
@@ -137,8 +145,8 @@ class ObjectHandler:
 			# Use a Gaussian distribution
 			elif self._object_dist_method == const.GAUS_DIST:
 				# Gaussian parameters are constant, is this ok?
-				x = random.gauss(const.GAUS_MU_X, const.GAUS_SIGMA_X)
-				y = random.gauss(const.GAUS_MU_Y, const.GAUS_SIGMA_Y)
+				x = int(round(random.gauss(const.GAUS_MU_X, const.GAUS_SIGMA_X)))
+				y = int(round(random.gauss(const.GAUS_MU_Y, const.GAUS_SIGMA_Y)))
 			else:
 				Utility.die("Object distribution method not recognised", __file__)
 
