@@ -13,7 +13,6 @@ navigating the given environment and visiting targets. Each subclass utilises it
 strategy in order to solve the problem
 """
 
-# Solver superclass
 class EpisodeSolver:
 	# Class constructor
 	def __init__(self, solver_method):

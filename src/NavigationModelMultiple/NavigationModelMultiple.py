@@ -29,21 +29,22 @@ def compareSolvers(iterations, visualise):
 # Entry method
 if __name__ == '__main__':
 	"""
-	Runtime argument definitions
+	Function calls
+
+	Constant arguments to functions can be overidden here, by default run-time
+	arguments are located in the class "Constants.py"
+
 	"""
 
-	# Whether to visualise visual input/map via OpenCV imshow
-	visualise = False
+	# Whether to visualise visual input/map via OpenCV imshow for debugging purposes
+	visualise = const.VISUALISE
 
 	# Whether or not to use ROS/Gazebo simulator for synthesised visual input
-	use_simulator = False
+	use_simulator = const.USE_SIMULATOR
 
-	# Number of iterations/episodes to generate
-	iterations = 10000
+	# Number of episodes to test on or generate training examples
+	iterations = const.ITERATIONS
 
-	"""
-	Function calls
-	"""
 
 	# generateTrainingExamples(iterations, visualise, use_simulator)
 	# trainModel(iterations, use_simulator)

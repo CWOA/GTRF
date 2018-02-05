@@ -10,6 +10,7 @@ import Visualisation
 import VisitationMap
 from tqdm import tqdm
 import Constants as const
+from Algorithms.Algorithm import Algorithm
 
 class FieldMap:
 	# Class constructor
@@ -38,8 +39,6 @@ class FieldMap:
 
 		# If we're just training the DNN
 		self._training_model = training_model
-
-		self.ctr = 0
 
 		"""
 		Class attributes
@@ -224,9 +223,6 @@ class FieldMap:
 
 			# Increment the move counter
 			num_moves += 1
-
-			# cv2.imwrite("/home/will/Pictures/temp/{}_{}.jpg".format(self.ctr, chosen_action), subview)
-			# self.ctr += 1
 
 			# Render the updated views (for input into the subsequent iteration)
 			_, subview = self._visualiser.update(self.retrieveStates())

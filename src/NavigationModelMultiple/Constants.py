@@ -6,6 +6,30 @@ Constants.py
 """
 
 """
+Run-time arguments
+"""
+
+# Whether to visualise visual input/map via OpenCV imshow for debugging purposes
+VISUALISE = False
+
+# Whether or not to use ROS/Gazebo simulator for synthesised visual input
+USE_SIMULATOR = False
+
+# Number of episodes to test on or generate training examples
+ITERATIONS = 10000
+
+"""
+Algorithm class constants
+"""
+
+ALGORITHM_DUAL_INPUT_CNN = 0
+ALGORITHM_YOUR_ALGORITHM = 1
+# Add your extra algorithm definition here or change the one above
+
+ALGORITHM_METHOD = ALGORITHM_DUAL_INPUT_CNN
+# ALGORITHM_METHOD = ALGORITHM_YOUR_ALGORITHM
+
+"""
 Directory constats
 """
 BASE_DIR = "/home/will/catkin_ws/src/uav_id/tflearn"
