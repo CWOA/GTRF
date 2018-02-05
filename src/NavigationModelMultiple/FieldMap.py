@@ -46,6 +46,10 @@ class FieldMap:
 
 		# Don't initialise the Visualiser (and ROS node) if we're just training the DNN
 		if not self._training_model:
+			# Algorithm class for selecting agent actions based on the environment state
+			# You can override the algorithm method here
+			self._algorithm = Algorithm(const.ALGORITHM_METHOD, self._use_simulator)
+
 			# Class in charge of handling agent/targets
 			self._object_handler = Object.ObjectHandler(second_solver=second_solver)
 
@@ -55,15 +59,9 @@ class FieldMap:
 			# Class in charge of visualisation (for both model input and our viewing benefit)
 			self._visualiser = Visualisation.Visualiser(self._use_simulator)
 
-			# Initialise the agent loop detection module
-			self._loop_detector = LoopDetector()
-
-			# Training data list to pickle upon completion (if we're supposed to be
-			# saving output)
+			# Training data list to save upon completion (if we're even supposed to be
+			# saving output at all)
 			self._training_output = []
-
-		# Deep Neural Network class for model prediction, training, etc.
-		self._dnn = DNN.DNNModel(self._use_simulator)
 
 	# Reset the map (agent position, target positions, memory, etc.)
 	def reset(self):
@@ -77,11 +75,11 @@ class FieldMap:
 		if self._use_simulator:
 			self._visualiser.resetAgentTargets(a_x, a_y, target_poses)
 
-		# Reset the visit map
+		# Reset the visitation map
 		self._map_handler.reset(a_x, a_y)
 
-		# Reset loop detection
-		self._loop_detector.reset()
+		# Reset the algorithm
+		self._algorithm.reset()
 
 	# Perform a given action
 	def performAction(self, action):
@@ -100,7 +98,7 @@ class FieldMap:
 		else: Utility.die("Action: {} not recognised!".format(action))
 
 		# Requested position is in bounds
-		if self._map_handler.checkPositionInBounds(req_x, req_y):
+		if Utility.checkPositionInBounds(req_x, req_y):
 			# Set the new agent position
 			self._object_handler.setAgentPos(req_x, req_y)
 		# Agent tried to move out of bounds, select a random valid action instead
@@ -134,68 +132,32 @@ class FieldMap:
 
 		return (pos, targets_pos, visit_map)
 
-	# Given the current agent subview and visit map, use the trained DNN model to predict
-	# the best possible action in this circumstance
-	def predictBestAction(self, subview, visit_map):
-		# Predict using DNN, returns probabilty score list for each class
-		probability_vec = self._dnn.testModelSingle(subview, visit_map)
-
-		# Find index of max value
-		max_idx = np.argmax(probability_vec)
-
-		# Create a new probability vector with the max index = 1
-		choice_vec = np.zeros(len(const.ACTIONS))
-		choice_vec[max_idx] = 1
-
-		# Convert to action
-		return Utility.classVectorToAction(choice_vec)
-
-	def beginInstance(self, testing, wait_amount=0):
-		# Render the initial game state
+	# Begin this episode whether we're generating training data, testing, etc.
+	def beginEpisode(self, testing, wait_amount=0):
+		# Render the initial episode state
 		_, subview = self._visualiser.update(self.retrieveStates())
 
 		# Number of moves the agent has made
 		num_moves = 0
 
-		# Number of loops detected
-		num_loops = 0
-
 		# Display if we're supposed to
 		if self._visualise: self._visualiser.display(wait_amount)
 
-		# Indicator of whether the agent is stuck in an infinite loop
-		if testing: 
-			agent_stuck = False
-		# We're producing training examples
-		else:
-			pass
-
-		# Indicate to the solver to solve this episode/instance
+		# Indicate to the solver to solve this episode/instance, returns the length
+		# of the generated solution using the selected solver method
+		# This is typically used for extracting the global optimum solution to a 
+		# particular episode configuration
 		sol_length = self._object_handler.solveEpisode()
 
 		# Loop until we've visited all the target objects
 		while not self._object_handler.allTargetsVisited():
-			# Use the DNN model to make action decisions
+			# Use the selected Algorithm to choose actions based on the given input
 			if testing:
-				# Get the map
-				visit_map = self._map_handler.getMap()
+				# Get the current state of the occupancy map
+				occupancy_map = self._map_handler.getMap()
 
-				# Use DNN model to predict correct action
-				chosen_action = self.predictBestAction(subview, visit_map)
-
-				# Get the current agent position
-				a_x, a_y = self._object_handler.getAgentPos()
-
-				# Add the suggested action and check history, check if the agent is
-				# stuck in a loop, act accordingly
-				if not agent_stuck and self._loop_detector.addCheckElement(chosen_action, (a_x, a_y)):
-					agent_stuck = True
-					# print "Agent stuck, entering unstucking mode"
-					num_loops += 1
-
-				# Agent is stuck, move towards nearest unvisited location
-				if agent_stuck:
-					chosen_action = self._map_handler.findUnvisitedDirection(a_x, a_y)
+				# Use Algorithm to choose an action
+				chosen_action = self._algorithm.iterate(subview, occupancy_map)
 
 			# We're just producing training instances
 			else:
@@ -209,17 +171,7 @@ class FieldMap:
 										Utility.actionToClassVector(chosen_action)	)
 
 			# Make the move
-			is_new_location = self.performAction(chosen_action)
-
-			# Check whether the agent is still stuck
-			if testing and agent_stuck and is_new_location:
-				# Delete elements in the loop detector
-				self._loop_detector.reset()
-
-				# Indicate that the agent is no longer stuck
-				agent_stuck = False
-
-				# print "Agent is no longer stuck!"
+			_ = self.performAction(chosen_action)
 
 			# Increment the move counter
 			num_moves += 1
@@ -229,6 +181,9 @@ class FieldMap:
 
 			# Display if we're supposed to
 			if self._visualise: self._visualiser.display(wait_amount)
+
+		# Retrieve the number of loops detected. 0 for algorithms that don't use it
+		num_loops = self._algorithm.getNumLoops()
 
 		# Return the number of moves taken by the model and the solution
 		# Also return the number of times loop detection is found
@@ -307,7 +262,7 @@ class FieldMap:
 
 		for i in range(num_episodes):
 			self.reset()
-			self.beginInstance(False, wait_amount=const.WAIT_AMOUNT)
+			self.beginEpisode(False, wait_amount=const.WAIT_AMOUNT)
 
 			pbar.update()
 
@@ -319,9 +274,6 @@ class FieldMap:
 	# Do a given number of testing episodes
 	def startTestingEpisodes(self, num_episodes):
 		print "Beginning testing on generated examples"
-
-		# Load the DNN model from file
-		self._dnn.loadSaveModel()
 
 		# Place to store testing data to in numpy form
 		base = Utility.getICIPDataDir()
@@ -341,7 +293,7 @@ class FieldMap:
 			self.reset()
 
 			# Go ahead and solve this instance using model & solver for comparison
-			num_moves, sol_length, num_loops = self.beginInstance(True, wait_amount=const.WAIT_AMOUNT)
+			num_moves, sol_length, num_loops = self.beginEpisode(True, wait_amount=const.WAIT_AMOUNT)
 
 			# Store statistics to numpy array
 			test_data[i,0] = num_moves
@@ -424,7 +376,7 @@ class FieldMap:
 			self.reset()
 
 			# Solve this instance
-			moves, sol_length, _ = self.beginInstance(True, wait_amount=1)
+			moves, sol_length, _ = self.beginEpisode(True, wait_amount=1)
 
 			# Get the difference in solution lengths
 			dif = moves - sol_length

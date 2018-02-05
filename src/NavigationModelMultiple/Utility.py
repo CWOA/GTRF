@@ -162,6 +162,27 @@ class Utility:
 	def distanceBetweenPoints(a, b):
 		return math.sqrt((b[0] - a[0])**2 + (b[1] - a[1])**2)
 
+	# Given the current state of the occupancy map, extract the x,y grid coordinates
+	# of the agent and ensure there's only one
+	@staticmethod
+	def getAgentCoordinatesFromMap(occupancy_map):
+		# Find the current agent position
+		index = np.where(occupancy_map == const.AGENT_VAL)
+
+		# Ensure we only found one position
+		if index[0].shape[0] > 1 and index[1].shape[0] > 1:
+			Utility.die("Found more than one agent location!")
+
+		return index[1][0], index[0][0]
+
+	# Check whether the supplied position is out of map bounds
+	@staticmethod
+	def checkPositionInBounds(x, y):
+		if x < 0 or y < 0 or x >= const.MAP_WIDTH or y >= const.MAP_HEIGHT:
+			return False
+
+		return True
+
 	@staticmethod
 	def die(message):
 		print "{}\nExiting..".format(message)
@@ -337,123 +358,6 @@ class Utility:
 
 		plt.savefig("{}/model-solution-length.pdf".format(Utility.getICIPFigureDir()))
 		plt.show()
-
-# Class designed to help with detecting whether the agent is stuck in an infinite loop
-class LoopDetector:
-	# Class constructor
-	def __init__(	self, 
-					use_action_strings=const.USE_ACTION_STRING, 
-					max_queue_size=const.MAX_QUEUE_SIZE,
-					max_visit_occurences=const.MAX_VISIT_OCCURENCES		):
-		"""
-		Class attributes
-		"""
-
-		# Whether to use string based loop detection method or coordinate system
-		self._use_action_strings = use_action_strings
-
-		# Maximum length of queue
-		self._max_queue_size = max_queue_size
-
-		# Maximum number of times one coordinate is allowed to occur before a loop is
-		# declared
-		self._max_visits = max_visit_occurences
-
-		print "Initialised LoopDetector"
-
-	# Reset so we can start a new instance
-	def reset(self):
-		# Queue to store past actions
-		self._list = deque()
-
-	# Add a position/coordinate and check the queue for a loop
-	def addCheckElement(self, action, coordinate):
-		# If we're using string-based or coordinate system
-		if self._use_action_strings: self.addElementToQueue(action)
-		else: self.addElementToQueue(coordinate)
-
-		return self.checkForLoop()
-
-	# Add an action to the queue
-	def addElementToQueue(self, action):
-		# Add the action
-		self._list.append(action)
-
-		# Check the length of the queue
-		if len(self._list) == self._max_queue_size + 1:
-			# We need to pop an older entry
-			self._list.popleft()
-
-	# Given the current action queue, detect whether a loop has occurred
-	def checkForLoop(self):
-		# If we're using string-based or coordinate system
-		if self._use_action_strings:
-			if self.checkActionSequenceSubstring("FBF"): return True
-			if self.checkActionSequenceSubstring("BFB"): return True
-			if self.checkActionSequenceSubstring("LRL"): return True
-			if self.checkActionSequenceSubstring("RLR"): return True
-			if self.checkActionSequenceRotationReverse("RBLF"): return True
-			if self.checkActionSequenceRotationReverse("RRBLLF"): return True
-			if self.checkActionSequenceRotationReverse("RBBLFF"): return True
-			if self.checkActionSequenceRotationReverse("RRFFBBLL"): return True
-		# Use alternative coordinate system
-		else:
-			if self.checkCoordinateQueue(): return True
-
-		return False
-
-	"""
-	COORDINATE-BASED functions
-	"""
-
-	# Check the coordinate queue to see whether locations have occurred multiple times
-	def checkCoordinateQueue(self):
-		for item in self._list:
-			if self._list.count(item) >= self._max_visits:
-				return True
-
-		return False
-
-	"""
-	STRING-BASED functions
-	"""
-
-	# Check for a substring in the actual sequence
-	def checkActionSequenceSubstring(self, sequence):
-		# Convert list of characters to an ordered string
-		actual = ''.join(self._list)
-
-		# Supplied substring is present in actual sequence string
-		if sequence in actual:
-			return True
-
-		return False
-
-	# Check actual sequence for given sequence with all possible rotations (shifts)
-	# e.g. RBLF, FRBL, LFRB, ...
-	def checkActionSequenceRotation(self, sequence):
-		for i in range(len(sequence)):
-			rotated = Utility.rotateList(sequence, i)
-			if self.checkActionSequenceSubstring(''.join(rotated)):
-				return True
-
-		return False
-
-	# *** Also check the reverse of the given sequence
-	def checkActionSequenceRotationReverse(self, sequence):
-		# Convert to list of characters
-		sequence_char_list = list(sequence)
-
-		# Check forwards
-		if self.checkActionSequenceRotation(sequence_char_list): return True
-
-		# Reverse the list
-		sequence_char_list.reverse()
-
-		# Check the reverse
-		if self.checkActionSequenceRotation(sequence_char_list): return True
-
-		return False
 
 # Entry method/unit testing
 if __name__ == '__main__':

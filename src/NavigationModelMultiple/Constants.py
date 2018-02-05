@@ -10,7 +10,7 @@ Run-time arguments
 """
 
 # Whether to visualise visual input/map via OpenCV imshow for debugging purposes
-VISUALISE = False
+VISUALISE = True
 
 # Whether or not to use ROS/Gazebo simulator for synthesised visual input
 USE_SIMULATOR = False
@@ -116,7 +116,7 @@ TARGET_COLOUR = (64,30,162)
 VISIBLE_COLOUR = (247,242,236)
 
 GRID_PIXELS = 1
-WAIT_AMOUNT = 1
+WAIT_AMOUNT = 0
 
 """
 SimulatorBridge constants

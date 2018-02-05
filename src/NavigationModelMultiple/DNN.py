@@ -289,25 +289,24 @@ class DNNModel:
 		# Save result to a {fold number: evaluation result} dict
 		self._eval_results[fold_id] = result
 
-	def loadSaveModel(self, load=True, run_id=None):
+	def loadModel(self):
 		# model_dir = Utility.getModelDir()
 		# model_dir = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/models/model_CLOSEST_2017-12-14_20:04:09_CROSS_VALIDATE_5.tflearn"
 		# model_dir = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/models/model_SEQUENCE_2017-12-15_15:51:08_CROSS_VALIDATE_4.tflearn"
 		model_dir = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/models/gaussian_SEQUENCE_2018-01-31_15:31:02_CROSS_VALIDATE_0.tflearn"
 
-		if load:
-			self._model.load(model_dir)
-			string = "Loaded"
-		else:
-			string = "Saved"
+		self._model.load(model_dir)
 
-			if run_id is not None:
-				model_dir = Utility.getICIPModelDir()
-				model_dir = "{}/{}.tflearn".format(model_dir, run_id)
+		print "Loaded TFLearn model at directory:{}".format(model_dir)
 
-			self._model.save(model_dir)
+	def saveModel(self, run_id=None):
+		if run_id is not None:
+			model_dir = Utility.getICIPModelDir()
+			model_dir = "{}/{}.tflearn".format(model_dir, run_id)
 
-		print "{} TFLearn model at directory:{}".format(string, model_dir)
+		self._model.save(model_dir)
+
+		print "Saved TFLearn model at directory:{}".format(model_dir)
 
 	# Normalise all given instances with a given value (255 in most cases)
 	def normaliseInstances(self, array, value):
