@@ -10,9 +10,14 @@ from collections import deque
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 
-# Utility class for static methods
+"""
+Utility class for static methods
+"""
+
 class Utility:
-	### Directory functions
+	"""
+	Directory generation methods
+	"""
 	@staticmethod
 	def getPickleDataDir():
 		return os.path.join(const.BASE_DIR, const.DATA_DIR_PICKLE)
@@ -48,6 +53,10 @@ class Utility:
 	@staticmethod
 	def getICIPTensorboardDir():
 		return os.path.join(const.BASE_DIR, const.ICIP_TENSORBOARD_DIR)
+
+	"""
+	General utility functions
+	"""
 
 	# Compute the shortest path action sequence from a -> b
 	@staticmethod
@@ -128,15 +137,12 @@ class Utility:
 		# Compute angle between given points
 		angle = Utility.angleBetweenPoints(a_x, a_y, b_x, b_y)
 
-		# Pi!
-		p = math.pi
-
 		# If the angle is exactly diagonal (in 45 degree increments)
 		# top left 
-		if angle == p/4: return ['F', 'L']
-		elif angle == 3*p/4: return ['L', 'B']
-		elif angle == -3*p/4: return ['B', 'R']
-		elif angle == -p/4: return ['R', 'F']
+		if angle == math.pi/4: return ['F', 'L']
+		elif angle == 3*math.pi/4: return ['L', 'B']
+		elif angle == -3*math.pi/4: return ['B', 'R']
+		elif angle == -math.pi/4: return ['R', 'F']
 		else: return Utility.bestActionForAngle(a_x, a_y, b_x, b_y) 
 
 	@staticmethod
@@ -189,7 +195,7 @@ class Utility:
 		sys.exit(0)
 
 	"""
-	Graph drawing utility methods
+	Graph drawing utility methods for evaluating algorithm performance
 	"""
 
 	@staticmethod

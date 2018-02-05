@@ -2,7 +2,7 @@
 # encoding: utf-8
 
 """
-Constants.py
+This file contains all parameters that remain constant throughout execution
 """
 
 """

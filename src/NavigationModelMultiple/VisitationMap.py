@@ -5,14 +5,16 @@ import numpy as np
 import Constants as const
 import random
 
+"""
+This class manages the occupancy map
+"""
+
 class MapHandler:
 	# Class constructor
 	def __init__(self):
 		"""
 		Class attributes/properties
 		"""
-
-		print "Initialised MapHandler"
 
 	# Reset the map itself, mark the agent's initial position
 	def reset(self, a_x, a_y):

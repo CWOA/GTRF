@@ -39,9 +39,9 @@ class YourAlgorithm:
 
 		# Just randomly select an action
 		action = const.ACTIONS[random.randint(0, len(const.ACTIONS)-1)]
-
 		return action
 
 # Entry method/unit testing
 if __name__ == '__main__':
 	pass
+	

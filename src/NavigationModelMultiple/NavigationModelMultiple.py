@@ -3,6 +3,11 @@
 import Constants as const
 from FieldMap import FieldMap
 
+"""
+This class forms the principal entry point for selecting experimentation,
+see the main function below
+"""
+
 # Generating training data
 def generateTrainingExamples(iterations, visualise, use_simulator):
 	fm = FieldMap(visualise=visualise, use_simulator=use_simulator, save=True)
@@ -32,7 +37,7 @@ if __name__ == '__main__':
 	Function calls
 
 	Constant arguments to functions can be overidden here, by default run-time
-	arguments are located in the class "Constants.py"
+	arguments are located at the top of the "Constants.py" file
 
 	"""
 

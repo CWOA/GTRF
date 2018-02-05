@@ -14,6 +14,10 @@ from tflearn.layers.conv import conv_2d, max_pool_2d
 from tflearn.layers.normalization import local_response_normalization
 from tflearn.layers.estimator import regression
 
+"""
+TBC
+"""
+
 class DNNModel:
 	# Class constructor
 	def __init__(self, use_simulator=True):

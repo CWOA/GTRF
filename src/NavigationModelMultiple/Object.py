@@ -9,6 +9,9 @@ import Constants as const
 from Utility import Utility
 from Solvers.Solver import EpisodeSolver
 
+"""
+TBC
+"""
 
 class ObjectHandler:
 	# Class constructor
@@ -48,8 +51,6 @@ class ObjectHandler:
 		# Pointers to agent and list of targets
 		self._agent = None
 		self._targets = None
-
-		print "Initialised ObjectHandler"
 
 	# Reset this handler so we can go again
 	def reset(self):

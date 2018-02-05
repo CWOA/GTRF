@@ -5,7 +5,7 @@ import YourAlgorithm
 import Constants as const
 
 """
-TBC
+This class simply passes input and output to and from the selected algorithm
 """
 
 class Algorithm:

@@ -12,6 +12,11 @@ from tqdm import tqdm
 import Constants as const
 from Algorithms.Algorithm import Algorithm
 
+"""
+This class forms the principal managerial component of this framework and directs episode
+generation, execution or model training
+"""
+
 class FieldMap:
 	# Class constructor
 	def __init__(		self, 

@@ -7,7 +7,8 @@ import Constants as const
 
 """
 This class contains our dual-input CNN-based solution, for more details, see our
-IROS 2018 paper submission
+IROS 2018 paper submission entitled "Learning to Search for Distributed Targets
+from UAV-like Vision"
 """
 
 class DualInputCNN:
@@ -73,7 +74,7 @@ class DualInputCNN:
 			# Select an appropriate action towards visiting the nearest largest unvisited
 			# region of the occupancy map
 			chosen_action = self.findUnvisitedDirection(occupancy_map, a_x, a_y)
-			
+
 			# Get the value of the occupancy map were the action applied
 			value = self.elementForAction(occupancy_map, a_x, a_y, chosen_action)
 
