@@ -51,7 +51,7 @@ if __name__ == '__main__':
 	iterations = const.ITERATIONS
 
 
-	# generateTrainingExamples(iterations, visualise, use_simulator)
+	generateTrainingExamples(iterations, visualise, use_simulator)
 	# trainModel(iterations, use_simulator)
-	testModel(iterations, visualise, use_simulator)
+	# testModel(iterations, visualise, use_simulator)
 	# compareSolvers(iterations, visualise)

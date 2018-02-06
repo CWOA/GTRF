@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import math
 import time
 import copy
 import random
@@ -20,7 +21,8 @@ class ObjectHandler:
 					random_num_targets=False,
 					solver_method=const.SOLVER_METHOD,
 					dist_methood=const.OBJECT_DIST_METHOD,
-					second_solver=False				 		):
+					second_solver=False,
+					individual_motion=const.INDIVIDUAL_MOTION	):
 		"""
 		Class arguments from init
 		"""
@@ -33,6 +35,10 @@ class ObjectHandler:
 
 		# How should object's be initialised spatially?
 		self._object_dist_method = dist_methood
+
+		# Should each individual move per iteration according to their own velocity
+		# and heading parameters
+		self._individual_motion = individual_motion
 
 		"""
 		Class attributes
@@ -48,7 +54,7 @@ class ObjectHandler:
 		if self._use_second_solver:
 			self._second_solver = EpisodeSolver(const.NAIVE_SOLVER)
 
-		# Pointers to agent and list of targets
+		# Agent and list of targets
 		self._agent = None
 		self._targets = None
 
@@ -83,7 +89,13 @@ class ObjectHandler:
 		# Generate the targets
 		for i in range(num_targets):
 			t_x, t_y = self.generateUnoccupiedPosition()
-			self._targets.append(Object(self._id_ctr, False, x=t_x, y=t_y))
+			target = Object(	self._id_ctr, 
+								False, 
+								x=t_x, 
+								y=t_y,
+								individual_motion=self._individual_motion	)
+
+			self._targets.append(target)
 			self._id_ctr += 1
 
 		# Give generated agent and target objects to the solver
@@ -94,6 +106,13 @@ class ObjectHandler:
 			self._second_solver.reset(copy.deepcopy(self._agent), copy.deepcopy(self._targets))
 
 		return self.getAgentPos(), self.getTargetPositions()
+
+	# Called at each iteration, just used for individual and population motion (if enabled)
+	def iterate(self):
+		# If individual-motion is enabled, enact it
+		if self._individual_motion:
+			for t in self._targets:
+				t.step()
 
 	"""
 	Object-centric methods
@@ -145,7 +164,6 @@ class ObjectHandler:
 				y = equi_y.pop(0)
 			# Use a Gaussian distribution
 			elif self._object_dist_method == const.GAUS_DIST:
-				# Gaussian parameters are constant, is this ok?
 				x = int(round(random.gauss(const.GAUS_MU_X, const.GAUS_SIGMA_X)))
 				y = int(round(random.gauss(const.GAUS_MU_Y, const.GAUS_SIGMA_Y)))
 			else:
@@ -333,7 +351,9 @@ class Object:
 					ID,
 					is_agent, 
 					x=const.AGENT_START_COORDS[0], 
-					y=const.AGENT_START_COORDS[1]	):
+					y=const.AGENT_START_COORDS[1],
+					individual_motion=const.INDIVIDUAL_MOTION,
+					motion_method=const.INDIVIDUAL_MOTION_METHOD	):
 		"""
 		Class attributes/properties
 		"""
@@ -348,16 +368,33 @@ class Object:
 		self._x = x 
 		self._y = y
 
-		# Variables depending on whetherh we're the agent
+		# Variables depending on whether we're the agent
 		if self._agent:
 			# Colour to render for visualisation
 			self._colour = const.AGENT_COLOUR
+		# We're a target
 		else:
 			# As a target, have we been visited before
 			self._visited = False
 
 			# Colour to render for visualisation
 			self._colour = const.TARGET_COLOUR
+
+			# Are we supposed to move every so often
+			self._motion = individual_motion
+
+			if self._motion:
+				# The selected motion model
+				self._motion_method = motion_method
+
+				# If this target is using the heading/velocity model
+				if self._motion_method == const.INDIVIDUAL_MOTION_HEADING:
+					# Randomly choose a heading
+					rand_heading = random.randint(0, 360)
+					self._heading = math.radians(rand_heading)
+
+					# Target velocity in grid squares per iteration
+					self._velocity = 0.5
 
 	# Class to string method
 	def __str__(self):
@@ -367,6 +404,35 @@ class Object:
 			obj_type = "Target"
 
 		return "{}: ({},{})".format(obj_type, self._x, self._y)
+
+	# Allow the object to move according to its motion parameters
+	def step(self):
+		# Ensure we're a target
+		assert(not self._agent)
+
+		# Ensure we're supposed to move
+		assert(self._motion)
+
+		# Just enact random walk
+		if self._motion_method == const.INDIVIDUAL_MOTION_RANDOM:
+			# Make a random choice between the 4 possible actions (F,B,L,R)
+			choice = random.randint(0, 3)
+
+			if choice == 0: self._y -= 1	# Forward
+			elif choice == 1: self._y += 1	# Backward
+			elif choice == 2: self._x -= 1	# Left
+			elif choice == 3: self._x += 1	# Right
+		# If this target is using the heading/velocity model
+		elif self._motion_method == const.INDIVIDUAL_MOTION_HEADING:
+			# Compute x,y movement vector
+			d_x = self._velocity * math.sin(self._heading)
+			d_y = self._velocity * math.cos(self._heading)
+
+			# Enact this vector to the current target position
+			self._x += d_x
+			self._y += d_y
+		else:
+			Utility.die("Given motion model does not exist (look in Constants.py)")
 
 	# Returns a DEEP copy of this object
 	def copy(self):
@@ -405,7 +471,6 @@ class Object:
 			self._visited = visited
 		else:
 			Utility.die("Trying to set agent visitation")
-
 	def setPos(self, x, y):
 		if self._agent:
 			self._x = x

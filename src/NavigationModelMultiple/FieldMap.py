@@ -178,6 +178,9 @@ class FieldMap:
 			# Make the move
 			_ = self.performAction(chosen_action)
 
+			# Iterate the object handler
+			self._object_handler.iterate()
+
 			# Increment the move counter
 			num_moves += 1
 

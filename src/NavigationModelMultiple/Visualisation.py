@@ -58,7 +58,11 @@ class Visualiser:
 
 		# Render target locations
 		for target in state[1]:
-			img = self.renderGridPosition(target[0], target[1], img, const.TARGET_COLOUR)
+			# Round target positions to the nearest integer if motion is enabled
+			t_x = int(round(target[0]))
+			t_y = int(round(target[1]))
+
+			img = self.renderGridPosition(t_x, t_y, img, const.TARGET_COLOUR)
 
 		# Make a copy of the image (we don't want to render visitation history
 		# to the agent subview)
@@ -74,7 +78,11 @@ class Visualiser:
 
 		# Render target locations
 		for target in state[1]:
-			img = self.renderGridPosition(target[0], target[1], img, const.TARGET_COLOUR)
+			# Round target positions to the nearest integer if motion is enabled
+			t_x = int(round(target[0]))
+			t_y = int(round(target[1]))
+
+			img = self.renderGridPosition(t_x, t_y, img, const.TARGET_COLOUR)
 
 		# Render current agent position to both images
 		img = self.renderGridPosition(		a_x, 

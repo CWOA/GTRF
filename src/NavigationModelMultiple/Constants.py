@@ -57,7 +57,7 @@ ACTIONS = ['F', 'B', 'L', 'R']
 MOVE_DIST = 1
 
 # Number of targets to generate if random number of targets is disabled
-NUM_TARGETS = 5
+NUM_TARGETS = 1
 
 # Range of random numbers of targets
 NUM_TARGETS_RANGE = (2, 10)
@@ -79,11 +79,12 @@ PRNG_DIST = 0	# Uses "random" python class (which uses Mersenne Twister PRNG)
 EQUI_DIST = 1	# Equidistant target spacing
 GAUS_DIST = 2	# Gaussian distribution
 
+# Which distribution method to use
 # OBJECT_DIST_METHOD = PRNG_DIST
 # OBJECT_DIST_METHOD = EQUI_DIST
 OBJECT_DIST_METHOD = GAUS_DIST
 
-# Unsure whether this should be constant?! Should it somewhat vary per episode?
+# Gaussian distribution initialisation parameters
 GAUS_MU_X = 3
 GAUS_MU_Y = 5
 GAUS_SIGMA_X = 1
@@ -93,6 +94,17 @@ GAUS_SIGMA_Y = 1
 EQUI_START_X = 2 # Where equidistant grid starts from
 EQUI_START_Y = 3
 EQUI_SPACING = 3 # Spacing between equidistant targets
+
+# Whether individuals should move according to their own velocity/heading parameters
+INDIVIDUAL_MOTION = True
+
+# Individual motion style
+INDIVIDUAL_MOTION_RANDOM = 0	# Individuals move randomly (random walk)
+INDIVIDUAL_MOTION_HEADING = 1	# Individuals move having a heading and velocity
+
+# Which individual motion model to utilise
+INDIVIDUAL_MOTION_METHOD = INDIVIDUAL_MOTION_RANDOM
+# INDIVIDUAL_MOTION_METHOD = INDIVIDUAL_MOTION_HEADING
 
 """
 VisitationMap constants
@@ -203,4 +215,3 @@ MANUAL_SOLVER_POSITIONS = True
 """
 Sequence Solver constants
 """
-
