@@ -103,10 +103,13 @@ class ObjectHandler:
 			self._targets.append(target)
 			self._id_ctr += 1
 
+		# In case motion is disabled
+		self._rand_pos = None
+
 		# If random walk individual motion is enabled
 		if self._individual_motion and self._motion_method == const.INDIVIDUAL_MOTION_RANDOM:
 			# Pre-determine random walks so that we can generate GO solution
-			rand_pos, success = self.predetermineRandomWalk(const.RANDOM_WALK_NUM_STEPS)
+			self._rand_pos, success = self.predetermineRandomWalk(const.RANDOM_WALK_NUM_STEPS)
 
 			# If we coudln't figure out non-collision random walk for this configuration
 			# try generating another (recurse)
@@ -116,14 +119,17 @@ class ObjectHandler:
 			# Otherwise assign random walk positions to each target
 			else:
 				for i in range(len(self._targets)):
-					self._targets[i].assignRandomWalk(rand_pos, i)
+					self._targets[i].assignRandomWalk(self._rand_pos, i)
 
 		# Give generated agent and target objects to the solver
-		self._solver.reset(copy.deepcopy(self._agent), copy.deepcopy(self._targets))
+		self._solver.reset(		copy.deepcopy(self._agent), 
+								copy.deepcopy(self._targets), 
+								rand_pos=self._rand_pos 		)
 
 		# Initialise the second solver if we're supposed to
 		if self._use_second_solver:
-			self._second_solver.reset(copy.deepcopy(self._agent), copy.deepcopy(self._targets))
+			self._second_solver.reset(	copy.deepcopy(self._agent), 
+										copy.deepcopy(self._targets)	)
 
 		return self.getAgentPos(), self.getTargetPositions()
 

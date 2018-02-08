@@ -113,7 +113,7 @@ INDIVIDUAL_VELOCITY = 3
 
 # When pre-determining random walks for objects (to generate ground-truth global optimal
 # solution), how many random steps to generate
-RANDOM_WALK_NUM_STEPS = 10
+RANDOM_WALK_NUM_STEPS = 100
 
 """
 VisitationMap / Occupancy map constants

@@ -369,4 +369,12 @@ class Utility:
 
 # Entry method/unit testing
 if __name__ == '__main__':
-	Utility.drawModelLengthHistogram()
+	# Utility.drawModelLengthHistogram()
+
+	print Utility.distanceBetweenPoints((5,0),(0,5))
+	print Utility.distanceBetweenPoints((5,0),(1,5))
+	print Utility.distanceBetweenPoints((5,0),(2,5))
+	print Utility.distanceBetweenPoints((5,0),(3,5))
+	print Utility.distanceBetweenPoints((5,0),(4,5))
+	print Utility.distanceBetweenPoints((5,0),(5,5))
+	print Utility.distanceBetweenPoints((5,0),(6,5))

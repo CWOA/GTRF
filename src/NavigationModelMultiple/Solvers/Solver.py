@@ -36,8 +36,8 @@ class EpisodeSolver:
 			Utility.die("Solver method not recognised", __file__)
 
 	# Giving initial conditions to this episode to the solver
-	def reset(self, agent, targets):
-		self._solver.reset(agent, targets)
+	def reset(self, agent, targets, rand_pos=None):
+		self._solver.reset(agent, targets, rand_pos=rand_pos)
 
 	# Solve the given episode using the designated method
 	def solveEpisode(self):

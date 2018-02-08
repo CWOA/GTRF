@@ -71,14 +71,15 @@ class FieldMap:
 	# Reset the map (agent position, target positions, memory, etc.)
 	def reset(self):
 		# Reset objects (agent, target), returns generated agent/target positions
-		states = self._object_handler.reset()
-		a_x = states[0][0]
-		a_y = states[0][1]
-		target_poses = states[1]
+		a_pos, t_pos = self._object_handler.reset()
+		
+		# Extract the starting agent position
+		a_x = a_pos[0]
+		a_y = a_pos[1]
 
 		# If we're using the gazebo simulator, move the agent/targets to generated positions
 		if self._use_simulator:
-			self._visualiser.resetAgentTargets(a_x, a_y, target_poses)
+			self._visualiser.resetAgentTargets(a_x, a_y, t_pos)
 
 		# Reset the visitation map
 		self._map_handler.reset(a_x, a_y)
