@@ -53,11 +53,11 @@ MAP_WIDTH = 10
 MAP_HEIGHT = 10
 ACTIONS = ['F', 'B', 'L', 'R']
 
-# Unit to move the agent by each step
+# Unit to move the agent by each step (its velocity)
 MOVE_DIST = 1
 
 # Number of targets to generate if random number of targets is disabled
-NUM_TARGETS = 1
+NUM_TARGETS = 5
 
 # Range of random numbers of targets
 NUM_TARGETS_RANGE = (2, 10)
@@ -80,9 +80,9 @@ EQUI_DIST = 1	# Equidistant target spacing
 GAUS_DIST = 2	# Gaussian distribution
 
 # Which distribution method to use
-# OBJECT_DIST_METHOD = PRNG_DIST
+OBJECT_DIST_METHOD = PRNG_DIST
 # OBJECT_DIST_METHOD = EQUI_DIST
-OBJECT_DIST_METHOD = GAUS_DIST
+# OBJECT_DIST_METHOD = GAUS_DIST
 
 # Gaussian distribution initialisation parameters
 GAUS_MU_X = 3
@@ -106,12 +106,32 @@ INDIVIDUAL_MOTION_HEADING = 1	# Individuals move having a heading and velocity
 INDIVIDUAL_MOTION_METHOD = INDIVIDUAL_MOTION_RANDOM
 # INDIVIDUAL_MOTION_METHOD = INDIVIDUAL_MOTION_HEADING
 
+# If individual's are supposed to move, how much slower do they move compared to the agent
+# e.g. the agent moves at 1 unit per iteration, with individual_velocity=3, targets will
+# move at 1 unit per 3 iterations
+INDIVIDUAL_VELOCITY = 3
+
+# When pre-determining random walks for objects (to generate ground-truth global optimal
+# solution), how many random steps to generate
+RANDOM_WALK_NUM_STEPS = 10
+
 """
-VisitationMap constants
+VisitationMap / Occupancy map constants
 """
+
+# Values to fill occupancy map with
 UNVISITED_VAL = 0
 VISITED_VAL = 1
-AGENT_VAL = 10
+# AGENT_VAL = 10
+AGENT_VAL = -1
+
+# Which mode to use in the visitation map
+VISITATION_MODE = 0		# Used for when targets are static
+GAUSSIAN_MODE = 1		# Used for estimating moving target locations
+
+# Which mode is the occupancy map in
+OCCUPANCY_MAP_MODE = VISITATION_MODE
+# OCCUPANCY_MAP_MODE = GAUSSIAN_MODE
 
 """
 Visualisation/rendering constants
@@ -186,14 +206,13 @@ SEQUENCE_SOLVER = 0
 CLOSEST_SOLVER = 1
 TREE_SOLVER = 2
 NAIVE_SOLVER = 3
+MOTION_SOLVER = 4
 
 # Which solver to use
-# 0: Sequence solver
-# 1: Closest solver
-# 2: Tree solver
-SOLVER_METHOD = SEQUENCE_SOLVER
+# SOLVER_METHOD = SEQUENCE_SOLVER
 # SOLVER_METHOD = CLOSEST_SOLVER
 # SOLVER_METHOD = NAIVE_SOLVER
+SOLVER_METHOD = MOTION_SOLVER
 
 """
 Tree Solver constants

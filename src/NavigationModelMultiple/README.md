@@ -11,6 +11,7 @@ Essential dependencies
 ------
   * OpenCV (https://opencv.org/) - used for rendering visual input to the respective algorithm
   * Numpy (http://www.numpy.org/) - used for numerical/matrix operations
+  * NetworkX (https://networkx.github.io/) - used for compute globally-optimal solutions to epsiode generations
 
 Non-essential dependencies
 ------

@@ -210,7 +210,7 @@ class SimulatorBridge:
 		try:
 			_ = self._set_model_state(desired_pose)
 		except ros.ServiceException as e:
-			Utility.die("Service call failed for reason: {}".format(e))
+			Utility.die("Service call failed for reason: {}".format(e), __file__)
 
 	# Use the ROS simulator to generate the current agent subview
 	def renderSubviewUsingSimulator(self, a_x, a_y):

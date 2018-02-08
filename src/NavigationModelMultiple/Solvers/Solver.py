@@ -4,6 +4,7 @@ import TreeSolver
 import ClosestSolver
 import SequenceSolver
 import NaiveSolver
+import MotionSolver
 import Constants as const
 from Utility import Utility
 
@@ -29,8 +30,10 @@ class EpisodeSolver:
 			self._solver = TreeSolver.TreeSolver()
 		elif solver_method == const.NAIVE_SOLVER:
 			self._solver = NaiveSolver.NaiveSolver()
+		elif solver_method == const.MOTION_SOLVER:
+			self._solver = MotionSolver.MotionSolver()
 		else:
-			Utility.die("Solver method not recognised")
+			Utility.die("Solver method not recognised", __file__)
 
 	# Giving initial conditions to this episode to the solver
 	def reset(self, agent, targets):

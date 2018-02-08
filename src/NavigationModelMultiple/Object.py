@@ -22,7 +22,8 @@ class ObjectHandler:
 					solver_method=const.SOLVER_METHOD,
 					dist_methood=const.OBJECT_DIST_METHOD,
 					second_solver=False,
-					individual_motion=const.INDIVIDUAL_MOTION	):
+					individual_motion=const.INDIVIDUAL_MOTION,
+					motion_method=const.INDIVIDUAL_MOTION_METHOD	):
 		"""
 		Class arguments from init
 		"""
@@ -39,6 +40,9 @@ class ObjectHandler:
 		# Should each individual move per iteration according to their own velocity
 		# and heading parameters
 		self._individual_motion = individual_motion
+
+		# If motion is enabled, how should individuals move
+		self._motion_method = motion_method
 
 		"""
 		Class attributes
@@ -93,10 +97,26 @@ class ObjectHandler:
 								False, 
 								x=t_x, 
 								y=t_y,
-								individual_motion=self._individual_motion	)
+								individual_motion=self._individual_motion,
+								motion_method=self._motion_method			)
 
 			self._targets.append(target)
 			self._id_ctr += 1
+
+		# If random walk individual motion is enabled
+		if self._individual_motion and self._motion_method == const.INDIVIDUAL_MOTION_RANDOM:
+			# Pre-determine random walks so that we can generate GO solution
+			rand_pos, success = self.predetermineRandomWalk(const.RANDOM_WALK_NUM_STEPS)
+
+			# If we coudln't figure out non-collision random walk for this configuration
+			# try generating another (recurse)
+			if not success:
+				print "Resetting"
+				self.reset()
+			# Otherwise assign random walk positions to each target
+			else:
+				for i in range(len(self._targets)):
+					self._targets[i].assignRandomWalk(rand_pos, i)
 
 		# Give generated agent and target objects to the solver
 		self._solver.reset(copy.deepcopy(self._agent), copy.deepcopy(self._targets))
@@ -108,11 +128,11 @@ class ObjectHandler:
 		return self.getAgentPos(), self.getTargetPositions()
 
 	# Called at each iteration, just used for individual and population motion (if enabled)
-	def iterate(self):
+	def iterate(self, itr):
 		# If individual-motion is enabled, enact it
 		if self._individual_motion:
 			for t in self._targets:
-				t.step()
+				t.step(itr)
 
 	"""
 	Object-centric methods
@@ -226,6 +246,15 @@ class ObjectHandler:
 
 		return positions
 
+	# Returns target positions as a list of lists (instead of tuple)
+	def getTargetPositionsList(self):
+		positions = []
+
+		for target in self._targets:
+			positions.append(target.getPosList())
+
+		return positions
+
 	# Returns True if all targets have been visited
 	def allTargetsVisited(self):
 		for target in self._targets:
@@ -233,6 +262,80 @@ class ObjectHandler:
 				return False
 
 		return True
+
+	# If individual motion and random walk is enabled, this function pre-determines the
+	# random motion of the targets in a way that object-object collisions are avoided
+	# such that a globally-optimal solution can be generated
+	def predetermineRandomWalk(self, num_steps):
+		# Get the current target positions
+		cur_pos = self.getTargetPositions()
+
+		# Number of attempts to make to randomly generate random positions with no
+		# collisions
+		attempts_threshold = 10
+
+		# List of random walk positions
+		rand_pos = []
+		rand_pos.append(cur_pos)
+
+		# Generate num_steps random walks
+		for i in range(num_steps):
+			# Make a copy of the positions
+			new_pos = list(cur_pos)
+
+			# Only move every velocity steps
+			if i % const.INDIVIDUAL_VELOCITY == const.INDIVIDUAL_VELOCITY-1:
+				# Number of attempts at generating non-collision positions
+				attempts = 0
+
+				# Loop until there are no collisions
+				while True:
+					# Loop over the number of targets
+					for j in range(const.NUM_TARGETS):
+						# Loop until the newly generated position is in bounds
+						while True:
+							# Generate a random action
+							action = random.randint(0, 3)
+
+							# Apply the action
+							# Forward
+							if action == 0: 
+								t_pos = (new_pos[j][0], new_pos[j][1] - 1)
+							# Backward	
+							elif action == 1: 
+								t_pos = (new_pos[j][0], new_pos[j][1] + 1)
+							# Left
+							elif action == 2: 
+								t_pos = (new_pos[j][0] - 1, new_pos[j][1])
+							# Right	
+							elif action == 3: 
+								t_pos = (new_pos[j][0] + 1, new_pos[j][1])
+
+							# Assign the tuple back
+							new_pos[j] = t_pos
+
+							# Check the position is in the map boundaries
+							if Utility.checkPositionInBounds(new_pos[j][0], new_pos[j][1]):
+								break
+
+					# Ensure there are no duplicate generated positions
+					assert(len(new_pos) == const.NUM_TARGETS)
+					if len(new_pos) == len(set(new_pos)):
+						break
+					else:
+						# We've tried again to generate non-collision positions
+						attempts += 1
+
+						# If we've exceeded a threshold, there's probably no solution
+						if attempts >= attempts_threshold: return None, False
+
+			# If we're here, generated positions are valid, add to the list
+			rand_pos.append(new_pos)
+
+			# Update current pos
+			cur_pos = new_pos
+
+		return rand_pos, True
 
 	"""
 	Episode Solver methods
@@ -395,6 +498,10 @@ class Object:
 
 					# Target velocity in grid squares per iteration
 					self._velocity = 0.5
+				# Random walk
+				elif self._motion_method == const.INDIVIDUAL_MOTION_RANDOM:
+					# List of random walk coordinates per iteration
+					self._random_walk = []
 
 	# Class to string method
 	def __str__(self):
@@ -406,33 +513,31 @@ class Object:
 		return "{}: ({},{})".format(obj_type, self._x, self._y)
 
 	# Allow the object to move according to its motion parameters
-	def step(self):
+	def step(self, itr):
 		# Ensure we're a target
 		assert(not self._agent)
 
 		# Ensure we're supposed to move
 		assert(self._motion)
 
-		# Just enact random walk
+		# Just replay random walk from pre-determined list
 		if self._motion_method == const.INDIVIDUAL_MOTION_RANDOM:
-			# Make a random choice between the 4 possible actions (F,B,L,R)
-			choice = random.randint(0, 3)
-
-			if choice == 0: self._y -= 1	# Forward
-			elif choice == 1: self._y += 1	# Backward
-			elif choice == 2: self._x -= 1	# Left
-			elif choice == 3: self._x += 1	# Right
+			pos = self._random_walk.pop(0)
+			self._x = pos[0]
+			self._y = pos[1]
 		# If this target is using the heading/velocity model
 		elif self._motion_method == const.INDIVIDUAL_MOTION_HEADING:
-			# Compute x,y movement vector
-			d_x = self._velocity * math.sin(self._heading)
-			d_y = self._velocity * math.cos(self._heading)
+			# If we're supposed to move this iteration (due to our velocity constant)
+			if itr % const.INDIVIDUAL_VELOCITY == 0:
+				# Compute x,y movement vector
+				d_x = self._velocity * math.sin(self._heading)
+				d_y = self._velocity * math.cos(self._heading)
 
-			# Enact this vector to the current target position
-			self._x += d_x
-			self._y += d_y
+				# Enact this vector to the current target position
+				self._x += d_x
+				self._y += d_y
 		else:
-			Utility.die("Given motion model does not exist (look in Constants.py)")
+			Utility.die("Given motion model does not exist (look in Constants.py)", __file__)
 
 	# Returns a DEEP copy of this object
 	def copy(self):
@@ -445,7 +550,13 @@ class Object:
 			elif action == 'L': self._x -= const.MOVE_DIST
 			elif action == 'R': self._x += const.MOVE_DIST
 		else:
-			Utility.die("Trying to perform action on a non-agent")		
+			Utility.die("Trying to perform action on a non-agent", __file__)
+
+	# Extract this target's random walk from the given list of lists of tuples
+	def assignRandomWalk(self, rand_pos, i):
+		# Loop over the number of steps
+		for j in range(len(rand_pos)):
+			self._random_walk.append(rand_pos[j][i])
 
 	"""
 	Getters
@@ -458,6 +569,8 @@ class Object:
 		return self._x, self._y
 	def getPosTuple(self):
 		return (self._x, self._y)
+	def getPosList(self):
+		return [self._x, self._y]
 	def getColour(self):
 		return self._colour
 	def isAgent(self):
@@ -470,13 +583,13 @@ class Object:
 		if not self._agent:
 			self._visited = visited
 		else:
-			Utility.die("Trying to set agent visitation")
+			Utility.die("Trying to set agent visitation", __file__)
 	def setPos(self, x, y):
 		if self._agent:
 			self._x = x
 			self._y = y
 		else:
-			Utility.die("Trying to directly set position of non-agent")
+			Utility.die("Trying to directly set position of non-agent", __file__)
 
 # Entry method for unit testing
 if __name__ == '__main__':

@@ -77,7 +77,7 @@ class Utility:
 			elif choice == 'B': a_y += const.MOVE_DIST
 			elif choice == 'L': a_x -= const.MOVE_DIST
 			elif choice == 'R': a_x += const.MOVE_DIST
-			else: Utility.die("Action: {} not recognised!".format(choice))
+			else: Utility.die("Action: {} not recognised!".format(choice), __file__)
 
 			# Store the chosen action in the list of actions
 			actions.append(choice)
@@ -94,7 +94,7 @@ class Utility:
 		elif action == 'B': vec[1] = 1
 		elif action == 'L': vec[2] = 1
 		elif action == 'R': vec[3] = 1
-		else: Utility.die("Action not recognised.")
+		else: Utility.die("Action not recognised.", __file__)
 
 		return vec
 
@@ -107,7 +107,7 @@ class Utility:
 		elif class_vec[1]: action = 'B'
 		elif class_vec[2]: action = 'L'
 		elif class_vec[3]: action = 'R'
-		else: Utility.die("Action not recognised.")
+		else: Utility.die("Action not recognised.", __file__)
 
 		return action
 
@@ -123,7 +123,7 @@ class Utility:
 		elif angle >= math.pi/4 and angle < 3*math.pi/4: action = 'L'
 		elif angle <= math.pi/4 and angle > -3*math.pi/4: action = 'R'
 		elif angle >= 3*math.pi/4 or angle <= -3*math.pi/4: action = 'B'
-		else: Utility.die("Angle is not in [0,360] degrees")
+		else: Utility.die("Angle is not in [0,360] degrees", __file__)
 
 		# Make sure the assigned action is valid
 		assert(action in const.ACTIONS)
@@ -177,7 +177,7 @@ class Utility:
 
 		# Ensure we only found one position
 		if index[0].shape[0] > 1 and index[1].shape[0] > 1:
-			Utility.die("Found more than one agent location!")
+			Utility.die("Found more than one agent location!", __file__)
 
 		return index[1][0], index[0][0]
 
@@ -190,8 +190,9 @@ class Utility:
 		return True
 
 	@staticmethod
-	def die(message):
-		print "{}\nExiting..".format(message)
+	def die(message, file):
+		print "\nERROR MESSAGE:_________________\n\"{}\"\nin file: {}\nExiting..".\
+			format(message, file)
 		sys.exit(0)
 
 	"""
@@ -355,12 +356,13 @@ class Utility:
 
 		N, bins, patches = plt.hist(hist_vec, bins=80, normed=True, histtype='step',
 									color=['g', 'b', 'k', 'r'],
-									label=['TO', 'TU', 'NS', 'TO+S'], stacked=False)
+									label=['TO', 'CU', 'NS', 'TO+S'], stacked=False)
 
 		plt.xlabel("Difference in solution length")
 		plt.ylabel("Probability")
 		plt.axis([0, 200, 0, 0.045])
 		plt.legend()
+		plt.tight_layout()
 
 		plt.savefig("{}/model-solution-length.pdf".format(Utility.getICIPFigureDir()))
 		plt.show()

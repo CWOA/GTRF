@@ -326,7 +326,7 @@ class NodeAttributes:
 		if to_remove is not None:
 			self._unvisited.remove(to_remove)
 		else:
-			Utility.die("Trying to remove target that doesn't exist!")
+			Utility.die("Trying to remove target that doesn't exist!", __file__)
 
 	def printTargets(self):
 		print "Targets: "

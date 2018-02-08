@@ -11,36 +11,79 @@ This class manages the occupancy map
 
 class MapHandler:
 	# Class constructor
-	def __init__(self):
+	def __init__(	self,
+					map_mode=const.OCCUPANCY_MAP_MODE	):
 		"""
 		Class attributes/properties
 		"""
 
+		# Whether this map should operate in visitation (static) or gaussian (moving) mode 
+		self._map_mode = map_mode
+
 	# Reset the map itself, mark the agent's initial position
 	def reset(self, a_x, a_y):
-		# Create the map
-		self._map = np.zeros((const.MAP_WIDTH, const.MAP_HEIGHT))
+		# If the map is in visitation mode
+		if self._map_mode == const.VISITATION_MODE:
+			# Create the map
+			self._map = np.zeros((const.MAP_WIDTH, const.MAP_HEIGHT))
 
-		# Fill it with un-visted value
-		self._map.fill(const.UNVISITED_VAL)
+			# Fill it with un-visted value
+			self._map.fill(const.UNVISITED_VAL)
 
-		# Mark the agent's initial coordinates
-		self.setElement(a_x, a_y, const.AGENT_VAL)
+			# Mark the agent's initial coordinates
+			self.setElement(a_x, a_y, const.AGENT_VAL)
+		# If the map is in Gaussian mode
+		elif self._map_mode == const.GAUSSIAN_MODE:
+			# Create the map with an extra dimension
+			# The first contains sigma values
+			# The second contains the number of targets at that point
+			self._map = np.zeros((const.MAP_WIDTH, const.MAP_HEIGHT, 2))
+
+			# Fill it with un-visited value
+			self._map.fill(const.UNVISITED_VAL)
+
+			# Mark the agent's initial coordinates
+			self.setElement(a_x, a_y, const.AGENT_VAL)
+
+			# Find the center coordinates of the map
+			c_x = int(round(const.MAP_WIDTH/2))
+			c_y = int(round(const.MAP_HEIGHT/2))
+
+			# Initial sigma value
+			sigma_init = c_x
+
+			# Mark all target's distribution center
+			self.setElement(c_x, c_y, sigma_init, dim=0)
+
+			# Mark the number of targets at the center
+			self.setElement(c_x, c_y, const.NUM_TARGETS, dim=1)
 
 	# Update the map to reflect new (given) agent positions
-	def update(self, new_x, new_y):
+	def iterate(self, new_x, new_y):
 		# Fetch the agent's current position
 		curr_x, curr_y = Utility.getAgentCoordinatesFromMap(self._map)
 
-		# Make the current agent position a visited location
-		self.setElement(curr_x, curr_y, const.VISITED_VAL)
+		# If the map is visitation mode
+		if self._map_mode == const.VISITATION_MODE:
+			# Make the current agent position a visited location
+			self.setElement(curr_x, curr_y, const.VISITED_VAL)
 
-		# See whether the agent has already visited the new position
-		if self.getElement(new_x, new_y) == const.UNVISITED_VAL: new_location = True
-		else: new_location = False 
+			# See whether the agent has already visited the new position
+			if self.getElement(new_x, new_y) == const.UNVISITED_VAL: new_location = True
+			else: new_location = False
 
-		# Mark the new agent position
-		self.setElement(new_x, new_y, const.AGENT_VAL)
+			# Mark the new agent position
+			self.setElement(new_x, new_y, const.AGENT_VAL)
+		# Map is gaussian probabiltistic mode
+		elif self._map_mode == const.GAUSSIAN_MODE:
+			# Unmark the agent's current position
+			self.setElement(curr_x, curr_y, const.UNVISITED_VAL)
+
+			# Mark the agent's new position
+			self.setElement(new_x, new_y, const.AGENT_VAL)
+		else:
+			Utility.die("Occupancy map mode not recognised", __file__)
+
 
 		return new_location
 
@@ -76,8 +119,12 @@ class MapHandler:
 	"""
 
 	# Set an element at coordinates (x, y) to value
-	def setElement(self, x, y, value):
-		self._map[y, x] = value
+	def setElement(self, x, y, value, dim=0):
+		if self._map_mode == const.VISITATION_MODE:
+			self._map[y, x] = value
+		# Gaussian mode has an extra dimension
+		elif self._map_mode == const.GAUSSIAN_MODE:
+			self._map[y, x, dim] = value
 
 # Entry method/unit testing
 if __name__ == '__main__':

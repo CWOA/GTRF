@@ -119,12 +119,12 @@ class DualInputCNN:
 		elif action == 'B': new_y += const.MOVE_DIST
 		elif action == 'L': new_x -= const.MOVE_DIST
 		elif action == 'R': new_x += const.MOVE_DIST
-		else: Utility.die("Action: {} not recognised!".format(action))
+		else: Utility.die("Action: {} not recognised!".format(action), __file__)
 
 		# Check the position is in the map's boundaries
 		if not Utility.checkPositionInBounds(new_x, new_y):
 			Utility.die("Action: {} for new position ({},{}) is out of bounds".\
-							format(action, new_x, new_y))
+							format(action, new_x, new_y), __file__)
 
 		# Return the map value at the prospective position
 		return occupancy_map[new_y, new_x]
@@ -176,7 +176,7 @@ class DualInputCNN:
 			# Get indices of elements that are unvisited (0)
 			indices = np.where(sub == 0)
 		except Exception as e:
-			Utility.die("All cells have been visited..")
+			Utility.die("All cells have been visited..", __file__)
 
 		# Action to carry out
 		action = None
@@ -248,7 +248,7 @@ class DualInputCNN:
 			elif action == 'B':  table[1] += 1
 			elif action == 'L': table[2] += 1
 			elif action == 'R': table[3] += 1
-			else: Utility.die("Action not recognised")
+			else: Utility.die("Action not recognised", __file__)
 
 		return table
 

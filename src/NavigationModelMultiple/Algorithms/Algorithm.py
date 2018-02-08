@@ -25,7 +25,7 @@ class Algorithm:
 		elif self._algorithm_selection == const.ALGORITHM_YOUR_ALGORITHM:
 			self._algorithm = YourAlgorithm.YourAlgorithm()
 		else:
-			Utility.die("Algorithm method not recognised")
+			Utility.die("Algorithm method not recognised", __file__)
 
 	# Signal the respective algorithm to reset
 	def reset(self):

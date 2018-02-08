@@ -100,7 +100,7 @@ class FieldMap:
 		elif action == 'B': req_y += const.MOVE_DIST
 		elif action == 'L': req_x -= const.MOVE_DIST
 		elif action == 'R': req_x += const.MOVE_DIST
-		else: Utility.die("Action: {} not recognised!".format(action))
+		else: Utility.die("Action: {} not recognised!".format(action), __file__)
 
 		# Requested position is in bounds
 		if Utility.checkPositionInBounds(req_x, req_y):
@@ -120,7 +120,7 @@ class FieldMap:
 
 		# Update the map, function returns whether this new position
 		# has been visited before
-		is_new_location = self._map_handler.update(req_x, req_y)
+		is_new_location = self._map_handler.iterate(req_x, req_y)
 
 		return is_new_location
 
@@ -179,7 +179,7 @@ class FieldMap:
 			_ = self.performAction(chosen_action)
 
 			# Iterate the object handler
-			self._object_handler.iterate()
+			self._object_handler.iterate(num_moves)
 
 			# Increment the move counter
 			num_moves += 1
