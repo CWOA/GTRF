@@ -84,24 +84,7 @@ class MapHandler:
 		else:
 			Utility.die("Occupancy map mode not recognised", __file__)
 
-
 		return new_location
-
-	# Given a position and the map's boundaries, return a list of possible
-	# actions that don't result in the agent going out of bounds
-	def possibleActionsForPosition(self, x, y):
-		# Get the list of all actions
-		actions = list(const.ACTIONS)
-
-		# Check map boundaries in x axis
-		if x == 0: actions.remove('L')
-		elif x == const.MAP_WIDTH - 1: actions.remove('R')
-
-		# Check map boundaries in y axis
-		if y == 0: actions.remove('F')
-		elif y == const.MAP_HEIGHT - 1: actions.remove('B')
-
-		return actions
 
 	"""
 	Getters

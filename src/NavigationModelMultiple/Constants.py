@@ -57,7 +57,7 @@ ACTIONS = ['F', 'B', 'L', 'R']
 MOVE_DIST = 1
 
 # Number of targets to generate if random number of targets is disabled
-NUM_TARGETS = 5
+NUM_TARGETS = 1
 
 # Range of random numbers of targets
 NUM_TARGETS_RANGE = (2, 10)

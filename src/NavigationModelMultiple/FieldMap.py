@@ -176,11 +176,11 @@ class FieldMap:
 										np.copy(self._map_handler.getMap()),
 										Utility.actionToClassVector(chosen_action)	)
 
-			# Make the move
-			_ = self.performAction(chosen_action)
-
 			# Iterate the object handler
 			self._object_handler.iterate(num_moves)
+
+			# Make the move
+			_ = self.performAction(chosen_action)
 
 			# Increment the move counter
 			num_moves += 1

@@ -69,8 +69,6 @@ class ObjectHandler:
 
 		# Generate a random starting agent coordinate if we're supposed to
 		if self._random_agent_pos:
-			# MIGHT NEED CHANGING: based on object distribution method
-			# possible incorporate within "generateUnoccupiedPosition()" below? 
 			a_x = random.randint(0, const.MAP_WIDTH-1)
 			a_y = random.randint(0, const.MAP_HEIGHT-1)
 			self._agent = Object(self._id_ctr, True, x=a_x, y=a_y)
@@ -239,6 +237,8 @@ class ObjectHandler:
 		for target in self._targets:
 			t_x, t_y = target.getPos()
 
+			print "Current AGENT position = ({},{}), TARGET pos = ({},{})".format(a_x,a_y,t_x,t_y)
+
 			if a_x == t_x and a_y == t_y:
 				if not target.getVisited():
 					target.setVisited(True)
@@ -282,7 +282,7 @@ class ObjectHandler:
 
 		# List of random walk positions
 		rand_pos = []
-		rand_pos.append(cur_pos)
+		#rand_pos.append(cur_pos)
 
 		# Generate num_steps random walks
 		for i in range(num_steps):
@@ -290,7 +290,7 @@ class ObjectHandler:
 			new_pos = list(cur_pos)
 
 			# Only move every velocity steps
-			if i % const.INDIVIDUAL_VELOCITY == const.INDIVIDUAL_VELOCITY-1:
+			if i % const.INDIVIDUAL_VELOCITY == 0:
 				# Number of attempts at generating non-collision positions
 				attempts = 0
 
@@ -298,27 +298,24 @@ class ObjectHandler:
 				while True:
 					# Loop over the number of targets
 					for j in range(const.NUM_TARGETS):
-						# Loop until the newly generated position is in bounds
-						while True:
-							# Generate a random action
-							action = random.randint(0, 3)
+						# The list of all actions possible in this position
+						possible_actions = Utility.possibleActionsForPosition(new_pos[j][0], new_pos[j][1])
 
+						# Shuffle the list
+						random.shuffle(possible_actions)
+
+						# Loop over possible shuffled actions for this position
+						for action in possible_actions:
 							# Apply the action
-							# Forward
-							if action == 0: 
-								t_pos = (new_pos[j][0], new_pos[j][1] - 1)
-							# Backward	
-							elif action == 1: 
-								t_pos = (new_pos[j][0], new_pos[j][1] + 1)
-							# Left
-							elif action == 2: 
-								t_pos = (new_pos[j][0] - 1, new_pos[j][1])
-							# Right	
-							elif action == 3: 
-								t_pos = (new_pos[j][0] + 1, new_pos[j][1])
+							if action == 'F': t_pos = (new_pos[j][0], new_pos[j][1] - 1)
+							elif action == 'B': t_pos = (new_pos[j][0], new_pos[j][1] + 1)
+							elif action == 'L': t_pos = (new_pos[j][0] - 1, new_pos[j][1])
+							elif action == 'R': t_pos = (new_pos[j][0] + 1, new_pos[j][1])
 
 							# Assign the tuple back
 							new_pos[j] = t_pos
+
+							print "Inside action={}, attempts={}".format(action, attempts)
 
 							# Check the position is in the map boundaries
 							if Utility.checkPositionInBounds(new_pos[j][0], new_pos[j][1]):
