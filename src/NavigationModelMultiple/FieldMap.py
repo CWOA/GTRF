@@ -2,6 +2,7 @@
 
 import cv2
 import DNN
+import h5py
 import Object
 import random
 import numpy as np
@@ -19,16 +20,20 @@ generation, execution or model training
 
 class FieldMap:
 	# Class constructor
-	def __init__(		self, 
+	def __init__(		self,
+						generating,
 						visualise=False,
 						use_simulator=True,
 						random_agent_pos=True,
-						training_model=False,
 						save=False,
-						second_solver=False		):
+						second_solver=False,
+						model_path=None				):
 		"""
 		Class arguments from init
 		"""
+
+		# Whether we're just generating training examples 
+		self._generating = generating
 
 		# Bool to decide whether to actually visualise
 		self._visualise = visualise
@@ -42,31 +47,27 @@ class FieldMap:
 		# Whether or not we should use ROS/gazebo simulator
 		self._use_simulator = use_simulator
 
-		# If we're just training the DNN
-		self._training_model = training_model
-
 		"""
 		Class attributes
 		"""
 
-		# Don't initialise the Visualiser (and ROS node) if we're just training the DNN
-		if not self._training_model:
+		if not self._generating:
 			# Algorithm class for selecting agent actions based on the environment state
 			# You can override the algorithm method here
-			self._algorithm = Algorithm(const.ALGORITHM_METHOD, self._use_simulator)
-
-			# Class in charge of handling agent/targets
-			self._object_handler = Object.ObjectHandler(second_solver=second_solver)
-
-			# Class in charge of visitation map
-			self._map_handler = VisitationMap.MapHandler()
-
-			# Class in charge of visualisation (for both model input and our viewing benefit)
-			self._visualiser = Visualisation.Visualiser(self._use_simulator)
-
+			self._algorithm = Algorithm(const.ALGORITHM_METHOD, self._use_simulator, model_path)
+		else:
 			# Training data list to save upon completion (if we're even supposed to be
 			# saving output at all)
 			self._training_output = []
+
+		# Class in charge of handling agent/targets
+		self._object_handler = Object.ObjectHandler(second_solver=second_solver)
+
+		# Class in charge of visitation map
+		self._map_handler = VisitationMap.MapHandler()
+
+		# Class in charge of visualisation (for both model input and our viewing benefit)
+		self._visualiser = Visualisation.Visualiser(self._use_simulator)
 
 	# Reset the map (agent position, target positions, memory, etc.)
 	def reset(self):
@@ -84,8 +85,9 @@ class FieldMap:
 		# Reset the visitation map
 		self._map_handler.reset(a_x, a_y)
 
-		# Reset the algorithm
-		self._algorithm.reset()
+		if not self._generating:
+			# Reset the algorithm
+			self._algorithm.reset()
 
 	# Perform a given action
 	def performAction(self, action):
@@ -103,14 +105,17 @@ class FieldMap:
 		elif action == 'R': req_x += const.MOVE_DIST
 		else: Utility.die("Action: {} not recognised!".format(action), __file__)
 
+		# Is the agent now at a target position?
+		target_match = False
+
 		# Requested position is in bounds
 		if Utility.checkPositionInBounds(req_x, req_y):
 			# Set the new agent position
-			self._object_handler.setAgentPos(req_x, req_y)
+			target_match = self._object_handler.setAgentPos(req_x, req_y)
 		# Agent tried to move out of bounds, select a random valid action instead
 		else:
 			# Find possible actions from all actions given the map boundaries
-			possible_actions = self._map_handler.possibleActionsForPosition(old_x, old_y)
+			possible_actions = Utility.possibleActionsForPosition(old_x, old_y)
 
 			# Randomly select an action
 			rand_idx = random.randint(0, len(possible_actions)-1)
@@ -121,7 +126,7 @@ class FieldMap:
 
 		# Update the map, function returns whether this new position
 		# has been visited before
-		is_new_location = self._map_handler.iterate(req_x, req_y)
+		is_new_location = self._map_handler.iterate(req_x, req_y, target_match)
 
 		return is_new_location
 
@@ -146,14 +151,14 @@ class FieldMap:
 		# Number of moves the agent has made
 		num_moves = 0
 
-		# Display if we're supposed to
-		if self._visualise: self._visualiser.display(wait_amount)
-
 		# Indicate to the solver to solve this episode/instance, returns the length
 		# of the generated solution using the selected solver method
 		# This is typically used for extracting the global optimum solution to a 
 		# particular episode configuration
 		sol_length = self._object_handler.solveEpisode()
+
+		# Display if we're supposed to
+		if self._visualise: self._visualiser.display(wait_amount)
 
 		# Loop until we've visited all the target objects
 		while not self._object_handler.allTargetsVisited():
@@ -191,8 +196,11 @@ class FieldMap:
 			# Display if we're supposed to
 			if self._visualise: self._visualiser.display(wait_amount)
 
-		# Retrieve the number of loops detected. 0 for algorithms that don't use it
-		num_loops = self._algorithm.getNumLoops()
+		# If we're testing our algorithm
+		if not self._generating:
+			# Retrieve the number of loops detected. 0 for algorithms that don't use it
+			num_loops = self._algorithm.getNumLoops()
+		else: num_loops = 0
 
 		# Return the number of moves taken by the model and the solution
 		# Also return the number of times loop detection is found
@@ -207,65 +215,54 @@ class FieldMap:
 		self._training_output.append(row)
 
 	# Save output data to file
-	def saveDataToFile(self):
-		# Use HDF5 py
-		if const.USE_HDF5:
-			import h5py
+	def saveDataToFile(self, exp_name):
+		print "Saving data using h5py"
 
-			print "Saving data using h5py"
+		# file_str = Utility.getHDF5DataDir()
+		file_str = "{}/TRAINING_DATA_{}.h5".format(Utility.getICIPDataDir(), exp_name)
 
-			# file_str = Utility.getHDF5DataDir()
-			file_str = "{}/gaussian_SEQUENCE.h5".format(Utility.getICIPDataDir())
+		# Open the dataset file (may overwrite an existing file!!)
+		dataset = h5py.File(file_str, 'w')
 
-			# Open the dataset file (may overwrite an existing file!!)
-			dataset = h5py.File(file_str, 'w')
+		# The number of training instances generated
+		num_instances = len(self._training_output)
 
-			# The number of training instances generated
-			num_instances = len(self._training_output)
+		# The number of possible action classes
+		num_classes = len(const.ACTIONS)
 
-			# The number of possible action classes
-			num_classes = len(const.ACTIONS)
-
-			# Image dimensions
-			if self._use_simulator:
-				img_width = const.IMG_DOWNSAMPLED_WIDTH
-				img_height = const.IMG_DOWNSAMPLED_HEIGHT
-				channels = const.NUM_CHANNELS
-			else:
-				img_width = const.GRID_PIXELS * 3
-				img_height = const.GRID_PIXELS * 3
-				channels = const.NUM_CHANNELS
-
-			# Create three datasets within the file with the correct shapes:
-			# X0: agent visual subview
-			# X1: visitation map
-			# Y: corresponding ground truth action vector in form [0, 1, 0, 0]
-			dataset.create_dataset('X0', (num_instances, img_width, img_height, channels))
-			dataset.create_dataset('X1', (num_instances, const.MAP_WIDTH, const.MAP_HEIGHT))
-			dataset.create_dataset('Y', (num_instances, num_classes))
-
-			# Actually add instances to the respective datasets
-			for i in range(len(self._training_output)):
-				dataset['X0'][i] = self._training_output[i][0]
-				dataset['X1'][i] = self._training_output[i][1]
-				dataset['Y'][i] = self._training_output[i][2]
-
-			# Finish up
-			dataset.close()
-		# Use pickle
+		# Image dimensions
+		if self._use_simulator:
+			img_width = const.IMG_DOWNSAMPLED_WIDTH
+			img_height = const.IMG_DOWNSAMPLED_HEIGHT
+			channels = const.NUM_CHANNELS
 		else:
-			import pickle
+			img_width = const.GRID_PIXELS * 3
+			img_height = const.GRID_PIXELS * 3
+			channels = const.NUM_CHANNELS
 
-			print "Pickling/saving data, this may take some time..."
+		# Create three datasets within the file with the correct shapes:
+		# X0: agent visual subview
+		# X1: visitation map
+		# Y: corresponding ground truth action vector in form [0, 1, 0, 0]
+		dataset.create_dataset('X0', (num_instances, img_width, img_height, channels))
+		dataset.create_dataset('X1', (num_instances, const.MAP_WIDTH, const.MAP_HEIGHT))
+		dataset.create_dataset('Y', (num_instances, num_classes))
 
-			# Save it out
-			with open(Utility.getPickleDataDir(), 'wb') as fout:
-					pickle.dump(self._training_output, fout)
+		# Actually add instances to the respective datasets
+		for i in range(len(self._training_output)):
+			dataset['X0'][i] = self._training_output[i][0]
+			dataset['X1'][i] = self._training_output[i][1]
+			dataset['Y'][i] = self._training_output[i][2]
 
-		print "Finished saving data!"
+		# Finish up
+		dataset.close()
+
+		print "Finished saving data at: {}".format(file_str)
+
+		return file_str
 
 	# Do a given number of episodes
-	def startTrainingEpisodes(self, num_episodes):
+	def generateTrainingData(self, num_episodes, exp_name=None):
 		# Initialise progress bar (TQDM) object
 		pbar = tqdm(total=num_episodes)
 
@@ -278,10 +275,11 @@ class FieldMap:
 		pbar.close()
 
 		# Save the output if we're supposed to
-		if self._save_output: self.saveDataToFile()
+		if self._save_output: 
+			return self.saveDataToFile(exp_name)
 
 	# Do a given number of testing episodes
-	def startTestingEpisodes(self, num_episodes):
+	def startTestingEpisodes(self, num_episodes, exp_name):
 		print "Beginning testing on generated examples"
 
 		# Place to store testing data to in numpy form
@@ -316,7 +314,7 @@ class FieldMap:
 		pbar.close()
 
 		# Save data to file
-		np.save("{}/test_data_GAUS_SEQ".format(base), test_data)
+		np.save("{}/RESULTS_{}".format(base, exp_name), test_data)
 
 	# Compare solver performance over a number of testing episodes
 	def compareSolvers(self, num_episodes):
@@ -412,11 +410,6 @@ class FieldMap:
 
 		# Close up
 		pbar.close()
-
-
-	# Signifies DNN class to train model on data at a given directory
-	def trainModel(self):
-		self._dnn.trainModel()
 
 # Entry method/unit testing
 if __name__ == '__main__':

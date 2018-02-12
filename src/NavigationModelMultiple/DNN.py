@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import cv2
+import h5py
 from Utility import Utility
 import tflearn
 import numpy as np
@@ -58,59 +59,35 @@ class DNNModel:
 
 		print "Initialised DNN"
 
-
 	# Load pickled data from file
-	def loadData(self):
+	def loadData(self, data_dir):
 		print "Loading data"
 
-		# Use HDF5 python implementation
-		if const.USE_HDF5:
-			import h5py
-
-			# Load location
+		# Load location
+		if data_dir is None:
 			# load_loc = Utility.getHDF5DataDir()
 			load_loc = "{}/gaussian_SEQUENCE.h5".format(Utility.getICIPDataDir())
-
-			# Load the data
-			dataset = h5py.File(load_loc, 'r')
-
-			print "Loaded data at: {}".format(load_loc)
-
-			# Extract the datasets contained within the file as numpy arrays, simple :)
-			X0 = dataset['X0'][()]
-			X1 = dataset['X1'][()]
-			Y = dataset['Y'][()]
-
-			# Add extra dimension to X1 at the end
-			X_temp = np.zeros((X1.shape[0], X1.shape[1], X1.shape[2], 1))
-			X_temp[:,:,:,0] = X1
-			X1 = X_temp
-
-			# Normalise all visual input from [0,255] to [0,1]
-			# X0 = self.normaliseInstances(X0, 255)
-			# X1 = self.normaliseInstances(X1, const.AGENT_VAL)
-		# Use pickle
 		else:
-			import pickle
+			load_loc = data_dir
 
-			# Load pickled data
-			with open(Utility.getPickleDataDir()) as fin:
-				self._data = pickle.load(fin)
+		# Load the data
+		dataset = h5py.File(load_loc, 'r')
 
-			num_instances = len(self._data)
+		print "Loaded data at: {}".format(load_loc)
 
-			# Agent subview
-			X0 = np.zeros((num_instances, self._img_width, self._img_height, const.NUM_CHANNELS))
-			# Visitation map
-			X1 = np.zeros((num_instances, const.MAP_WIDTH, const.MAP_HEIGHT, 1))
+		# Extract the datasets contained within the file as numpy arrays, simple :)
+		X0 = dataset['X0'][()]
+		X1 = dataset['X1'][()]
+		Y = dataset['Y'][()]
 
-			# Ground truth labels
-			Y = np.zeros((num_instances, self._num_classes))
+		# Add extra dimension to X1 at the end
+		X_temp = np.zeros((X1.shape[0], X1.shape[1], X1.shape[2], 1))
+		X_temp[:,:,:,0] = X1
+		X1 = X_temp
 
-			for i in range(num_instances):
-				X0[i,:,:,:] = self._data[i][0]
-				X1[i,:,:,0] = self._data[i][1]
-				Y[i,:] = self._data[i][2]
+		# Normalise all visual input from [0,255] to [0,1]
+		# X0 = self.normaliseInstances(X0, 255)
+		# X1 = self.normaliseInstances(X1, const.AGENT_VAL)
 
 		print "Finished loading data"
 
@@ -139,11 +116,11 @@ class DNNModel:
 		return X0_train, X0_test, X1_train, X1_test, Y_train, Y_test
 
 	# Construct a unique RunID (for tensorboard) for this training run
-	def constructRunID(self, fold_id=0):
+	def constructRunID(self, exp_name, fold_id=0):
 		# Get a date string
 		date_str = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
 
-		run_id = "{}_{}".format(const.MODEL_NAME, date_str)
+		run_id = "{}_{}".format(exp_name, date_str)
 
 		# If we're cross-validating, include the current fold id
 		if const.CROSS_VALIDATE:
@@ -153,11 +130,11 @@ class DNNModel:
 
 	# Complete function which loads the appropriate training data, trains the model,
 	# saves it to file and evaluates the trained model's performance
-	def trainModel(self):
+	def trainModel(self, exp_name, data_dir=None):
 		print "Training model"
 
 		# Load the data
-		X0, X1, Y = self.loadData()
+		X0, X1, Y = self.loadData(data_dir)
 
 		# Sanity checking
 		# self.inspectData(X0, X1, Y)
@@ -178,6 +155,9 @@ class DNNModel:
 			# Current fold number
 			fold_number = 0
 
+			# Dictionary of model save directories (key is fold number)
+			model_save_dirs = {}
+
 			# Iterate num folds times
 			for train_idx, test_idx in kf:
 				print "Beginning fold {}/{} complete.".format(fold_number+1, const.NUM_FOLDS)
@@ -188,7 +168,7 @@ class DNNModel:
 				Y_train, Y_test = Y[train_idx], Y[test_idx]
 
 				# Construct a run_id
-				run_id = self.constructRunID(fold_id=fold_number)
+				run_id = self.constructRunID(exp_name, fold_id=fold_number)
 
 				# Network architecture
 				self._network = self.defineDNN()
@@ -211,7 +191,7 @@ class DNNModel:
 									show_metric=True								)
 
 				# Save the trained model
-				self.loadSaveModel(load=False, run_id=run_id)
+				model_save_dirs[fold_number] = self.saveModel(run_id=run_id)
 
 				# Evaluate
 				self.evaluateModel(X0_test, X1_test, Y_test, fold_id=fold_number)
@@ -229,13 +209,21 @@ class DNNModel:
 			# Print all results
 			print self._eval_results
 
+			# Find the fold with the best classification result
+			best_fold = max(self._eval_results.iterkeys(), key=(lambda key: self._eval_results[key]))
+
+			print "Best fold = {}".format(best_fold)
+
+			# Use this key to extract the directory of the best fold
+			best_model_path = model_save_dirs[best_fold]
+
 		# Cross validation not enabled, just split, train and evaluate
 		else:
 			# Split the data into training/testing chunks
 			X0_train, X0_test, X1_train, X1_test, Y_train, Y_test = self.segregateData(X0, X1, Y)
 
 			# Run ID
-			run_id = self.constructRunID()
+			run_id = self.constructRunID(exp_name)
 
 			# Train the model
 			self._model.fit(	[X0_train, X1_train],
@@ -247,10 +235,12 @@ class DNNModel:
 								show_metric=True								)
 
 			# Save the trained model
-			self.loadSaveModel(load=False, run_id=run_id)
+			best_model_path = self.saveModel(run_id=run_id)
 
 			# Evaluate how we did
 			self.evaluateModel(X0_test, X1_test, Y_test)
+
+		return best_model_path
 
 	# Just iteratively inspect the data so it appears to make sense (figuratively)
 	def inspectData(self, X0, X1, Y):
@@ -293,11 +283,12 @@ class DNNModel:
 		# Save result to a {fold number: evaluation result} dict
 		self._eval_results[fold_id] = result
 
-	def loadModel(self):
-		# model_dir = Utility.getModelDir()
-		# model_dir = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/models/model_CLOSEST_2017-12-14_20:04:09_CROSS_VALIDATE_5.tflearn"
-		# model_dir = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/models/model_SEQUENCE_2017-12-15_15:51:08_CROSS_VALIDATE_4.tflearn"
-		model_dir = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/models/gaussian_SEQUENCE_2018-01-31_15:31:02_CROSS_VALIDATE_0.tflearn"
+	def loadModel(self, model_dir=None):
+		if model_dir is None:
+			# model_dir = Utility.getModelDir()
+			# model_dir = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/models/model_CLOSEST_2017-12-14_20:04:09_CROSS_VALIDATE_5.tflearn"
+			# model_dir = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/models/model_SEQUENCE_2017-12-15_15:51:08_CROSS_VALIDATE_4.tflearn"
+			model_dir = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/models/gaussian_SEQUENCE_2018-01-31_15:31:02_CROSS_VALIDATE_0.tflearn"
 
 		self._model.load(model_dir)
 
@@ -311,6 +302,8 @@ class DNNModel:
 		self._model.save(model_dir)
 
 		print "Saved TFLearn model at directory:{}".format(model_dir)
+
+		return model_dir
 
 	# Normalise all given instances with a given value (255 in most cases)
 	def normaliseInstances(self, array, value):

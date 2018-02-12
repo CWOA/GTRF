@@ -19,9 +19,6 @@ class Utility:
 	Directory generation methods
 	"""
 	@staticmethod
-	def getPickleDataDir():
-		return os.path.join(const.BASE_DIR, const.DATA_DIR_PICKLE)
-	@staticmethod
 	def getHDF5DataDir():
 		return os.path.join(const.BASE_DIR, const.DATA_DIR_HDF5)
 	@staticmethod
@@ -68,7 +65,7 @@ class Utility:
 			# Find possible actions for the current-end relative vector
 			possible_actions = Utility.possibleActionsForAngle(a_x, a_y, b_x, b_y)
 
-			# Randomly select an action
+			# Randomly select a possible action (for 45 degree cases)
 			rand_idx = random.randint(0, len(possible_actions)-1)
 			choice = possible_actions[rand_idx]
 
@@ -388,10 +385,10 @@ class Utility:
 if __name__ == '__main__':
 	# Utility.drawModelLengthHistogram()
 
-	print Utility.distanceBetweenPoints((5,0),(0,5))
-	print Utility.distanceBetweenPoints((5,0),(1,5))
-	print Utility.distanceBetweenPoints((5,0),(2,5))
-	print Utility.distanceBetweenPoints((5,0),(3,5))
-	print Utility.distanceBetweenPoints((5,0),(4,5))
-	print Utility.distanceBetweenPoints((5,0),(5,5))
-	print Utility.distanceBetweenPoints((5,0),(6,5))
+	# print Utility.distanceBetweenPoints((5,0),(0,5))
+	# print Utility.distanceBetweenPoints((5,0),(1,5))
+	# print Utility.distanceBetweenPoints((5,0),(2,5))
+	# print Utility.distanceBetweenPoints((5,0),(3,5))
+	# print Utility.distanceBetweenPoints((5,0),(4,5))
+	# print Utility.distanceBetweenPoints((5,0),(5,5))
+	# print Utility.distanceBetweenPoints((5,0),(6,5))

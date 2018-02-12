@@ -14,7 +14,8 @@ from UAV-like Vision"
 class DualInputCNN:
 	# Class constructor
 	def __init__(	self,
-					use_simulator	):
+					use_simulator,
+					model_path		):
 		"""
 		Class attributes
 		"""
@@ -30,7 +31,7 @@ class DualInputCNN:
 		"""
 
 		# Signal the DNN to load model weights
-		self._dnn.loadModel()
+		self._dnn.loadModel(model_dir=model_path)
 
 	# Reset function is called each time a new episode is started
 	def reset(self):
@@ -67,8 +68,6 @@ class DualInputCNN:
 			self._agent_stuck = True
 			self._num_loops += 1
 
-			print "Agent stuck"
-
 		# If the agent is deemed to be stuck
 		if self._agent_stuck:
 			# Select an appropriate action towards visiting the nearest largest unvisited
@@ -86,8 +85,6 @@ class DualInputCNN:
 
 				# Indicate that the agent is no longer stuck
 				self._agent_stuck = False
-
-				print "UNSTUCK"
 
 		return chosen_action
 

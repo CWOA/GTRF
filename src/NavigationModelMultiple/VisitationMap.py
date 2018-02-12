@@ -32,6 +32,12 @@ class MapHandler:
 
 			# Mark the agent's initial coordinates
 			self.setElement(a_x, a_y, const.AGENT_VAL)
+
+			# If we should mark coordinates where a target was visited
+			if const.MARK_PAST_VISITATION:
+				# Store where targets were visited
+				self._visit_locations = []
+
 		# If the map is in Gaussian mode
 		elif self._map_mode == const.GAUSSIAN_MODE:
 			# Create the map with an extra dimension
@@ -59,7 +65,7 @@ class MapHandler:
 			self.setElement(c_x, c_y, const.NUM_TARGETS, dim=1)
 
 	# Update the map to reflect new (given) agent positions
-	def iterate(self, new_x, new_y):
+	def iterate(self, new_x, new_y, target_match):
 		# Fetch the agent's current position
 		curr_x, curr_y = Utility.getAgentCoordinatesFromMap(self._map)
 
@@ -71,6 +77,17 @@ class MapHandler:
 			# See whether the agent has already visited the new position
 			if self.getElement(new_x, new_y) == const.UNVISITED_VAL: new_location = True
 			else: new_location = False
+
+			# If we should mark coordinates where a target was visited
+			if const.MARK_PAST_VISITATION:
+				# If the agent visited a new target this iteration
+				if target_match:
+					# Add this location
+					self._visit_locations.append((new_x, new_y))
+
+				# Render all visit locations
+				for location in self._visit_locations:
+					self.setElement(location[0], location[1], const.TARGET_VISITED_VAL)
 
 			# Mark the new agent position
 			self.setElement(new_x, new_y, const.AGENT_VAL)

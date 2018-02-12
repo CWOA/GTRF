@@ -427,8 +427,6 @@ class EdgeAttributes:
 		# Best action sequence to target in minimal time
 		best_sequence = None
 
-		print rand_pos
-
 		# Iterate from the parent node's timestep until the end of the matrix
 		for i in range(s_t, len(rand_pos)):
 			# Retrieve the respective target's position at the current timestep
@@ -438,7 +436,14 @@ class EdgeAttributes:
 			# Is the target's position reacheable in the number of steps
 			actions = Utility.actionSequenceBetweenCoordinates(s_x, s_y, c_x, c_y)
 			if len(actions) <= num_moves:
-				print "Trying to get to: ({},{}), i={}".format(c_x, c_y, i)
+				# Find the difference in solution length
+				diff = num_moves - len(actions)
+
+				# Append do nothing actions for the difference
+				for j in range(diff):
+					print "DO NOTHING"
+					actions.append('N')
+					
 				best_sequence = actions
 				break
 

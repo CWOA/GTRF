@@ -12,7 +12,8 @@ class Algorithm:
 	# Class consturctor
 	def __init__(	self, 
 					algorithm_method, 
-					use_simulator		):
+					use_simulator,
+					model_path			):
 		"""
 		Class attributes
 		"""
@@ -21,7 +22,7 @@ class Algorithm:
 		self._algorithm_selection = algorithm_method
 
 		if self._algorithm_selection == const.ALGORITHM_DUAL_INPUT_CNN:
-			self._algorithm = DualInputCNN.DualInputCNN(use_simulator)
+			self._algorithm = DualInputCNN.DualInputCNN(use_simulator, model_path)
 		elif self._algorithm_selection == const.ALGORITHM_YOUR_ALGORITHM:
 			self._algorithm = YourAlgorithm.YourAlgorithm()
 		else:

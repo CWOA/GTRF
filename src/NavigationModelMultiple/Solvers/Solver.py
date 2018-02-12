@@ -21,23 +21,31 @@ class EpisodeSolver:
 		Class attributes
 		"""
 
+		# Which method to use?
+		self._solver_method = solver_method
+
 		# The actual solver method we're going to use
-		if solver_method == const.SEQUENCE_SOLVER:
+		if self._solver_method == const.SEQUENCE_SOLVER:
 			self._solver = SequenceSolver.SequenceSolver()
-		elif solver_method == const.CLOSEST_SOLVER:
+		elif self._solver_method == const.CLOSEST_SOLVER:
 			self._solver = ClosestSolver.ClosestSolver()
-		elif solver_method == const.TREE_SOLVER:
+		elif self._solver_method == const.TREE_SOLVER:
 			self._solver = TreeSolver.TreeSolver()
-		elif solver_method == const.NAIVE_SOLVER:
+		elif self._solver_method == const.NAIVE_SOLVER:
 			self._solver = NaiveSolver.NaiveSolver()
-		elif solver_method == const.MOTION_SOLVER:
+		elif self._solver_method == const.MOTION_SOLVER:
 			self._solver = MotionSolver.MotionSolver()
 		else:
 			Utility.die("Solver method not recognised", __file__)
 
 	# Giving initial conditions to this episode to the solver
 	def reset(self, agent, targets, rand_pos=None):
-		self._solver.reset(agent, targets, rand_pos=rand_pos)
+		# If we're using the motion solver, give it the target positions versus time
+		if self._solver_method == const.MOTION_SOLVER:
+			self._solver.reset(agent, targets, rand_pos=rand_pos)
+		# Otherwise, act as normal
+		else:
+			self._solver.reset(agent, targets)
 
 	# Solve the given episode using the designated method
 	def solveEpisode(self):

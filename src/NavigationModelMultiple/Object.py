@@ -230,18 +230,21 @@ class ObjectHandler:
 		# Set the position
 		self._agent.setPos(x, y)
 
-		self.checkAgentTargetMatch(x, y)
+		return self.checkAgentTargetMatch(x, y)
 
 	# Marks a target as visited if the agent position matches it
 	def checkAgentTargetMatch(self, a_x, a_y):
 		for target in self._targets:
 			t_x, t_y = target.getPos()
 
-			print "Current AGENT position = ({},{}), TARGET pos = ({},{})".format(a_x,a_y,t_x,t_y)
+			# print "Current AGENT position = ({},{}), TARGET pos = ({},{})".format(a_x,a_y,t_x,t_y)
 
 			if a_x == t_x and a_y == t_y:
 				if not target.getVisited():
 					target.setVisited(True)
+					return True
+
+		return False
 
 	# Returns a list of all target positions
 	def getTargetPositions(self):
@@ -315,7 +318,7 @@ class ObjectHandler:
 							# Assign the tuple back
 							new_pos[j] = t_pos
 
-							print "Inside action={}, attempts={}".format(action, attempts)
+							# print "Inside action={}, attempts={}".format(action, attempts)
 
 							# Check the position is in the map boundaries
 							if Utility.checkPositionInBounds(new_pos[j][0], new_pos[j][1]):

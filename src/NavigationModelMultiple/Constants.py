@@ -16,7 +16,7 @@ VISUALISE = True
 USE_SIMULATOR = False
 
 # Number of episodes to test on or generate training examples
-ITERATIONS = 10000
+ITERATIONS = 20000
 
 """
 Algorithm class constants
@@ -33,7 +33,6 @@ ALGORITHM_METHOD = ALGORITHM_DUAL_INPUT_CNN
 Directory constats
 """
 BASE_DIR = "/home/will/catkin_ws/src/uav_id/tflearn"
-DATA_DIR_PICKLE = "data/multiple_nav_data_SIMULATOR.pkl"
 DATA_DIR_HDF5 = "data/multiple_nav_data_SIMULATOR.h5"
 TENSORBOARD_DIR = "tensorboard"
 MODELS_DIR = "models"
@@ -61,11 +60,6 @@ NUM_TARGETS = 1
 
 # Range of random numbers of targets
 NUM_TARGETS_RANGE = (2, 10)
-
-# Method/API to use for saving synthesised training data
-# When true, it uses HDF5 (which is suitable for larger databases)
-# when false, uses pickle (not sure what it's good for...)
-USE_HDF5 = True
 
 """
 Object class consants
@@ -122,8 +116,12 @@ VisitationMap / Occupancy map constants
 # Values to fill occupancy map with
 UNVISITED_VAL = 0
 VISITED_VAL = 1
-# AGENT_VAL = 10
-AGENT_VAL = -1
+AGENT_VAL = 10
+# AGENT_VAL = -1
+TARGET_VISITED_VAL = 5
+
+# Whether or not to mark positions in the map where a target was visited
+MARK_PAST_VISITATION = True
 
 # Which mode to use in the visitation map
 VISITATION_MODE = 0		# Used for when targets are static
