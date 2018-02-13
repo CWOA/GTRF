@@ -103,15 +103,17 @@ class FieldMap:
 		elif action == 'B': req_y += const.MOVE_DIST
 		elif action == 'L': req_x -= const.MOVE_DIST
 		elif action == 'R': req_x += const.MOVE_DIST
+		elif const.USE_EXT_ACTIONS and action == 'N': pass
 		else: Utility.die("Action: {} not recognised!".format(action), __file__)
 
 		# Is the agent now at a target position?
 		target_match = False
+		target_id = -1
 
 		# Requested position is in bounds
 		if Utility.checkPositionInBounds(req_x, req_y):
 			# Set the new agent position
-			target_match = self._object_handler.setAgentPos(req_x, req_y)
+			target_match, target_id = self._object_handler.setAgentPos(req_x, req_y)
 		# Agent tried to move out of bounds, select a random valid action instead
 		else:
 			# Find possible actions from all actions given the map boundaries
@@ -126,7 +128,7 @@ class FieldMap:
 
 		# Update the map, function returns whether this new position
 		# has been visited before
-		is_new_location = self._map_handler.iterate(req_x, req_y, target_match)
+		is_new_location = self._map_handler.iterate(req_x, req_y, target_match, target_id)
 
 		return is_new_location
 
@@ -228,7 +230,10 @@ class FieldMap:
 		num_instances = len(self._training_output)
 
 		# The number of possible action classes
-		num_classes = len(const.ACTIONS)
+		if const.USE_EXT_ACTIONS:
+			num_classes = len(const.EXT_ACTIONS)
+		else:
+			num_classes = len(const.ACTIONS)
 
 		# Image dimensions
 		if self._use_simulator:

@@ -50,13 +50,17 @@ FieldMap constants
 """
 MAP_WIDTH = 10
 MAP_HEIGHT = 10
-ACTIONS = ['F', 'B', 'L', 'R']
+ACTIONS = ['F', 'B', 'L', 'R'] # Forward, backward, left, right
+EXT_ACTIONS = ['F', 'B', 'L', 'R', 'N'] # Forward, backward, left, right, nothing
+
+# Whether to use extended actions including "Do nothing"
+USE_EXT_ACTIONS = True
 
 # Unit to move the agent by each step (its velocity)
 MOVE_DIST = 1
 
 # Number of targets to generate if random number of targets is disabled
-NUM_TARGETS = 1
+NUM_TARGETS = 2
 
 # Range of random numbers of targets
 NUM_TARGETS_RANGE = (2, 10)
@@ -113,23 +117,27 @@ RANDOM_WALK_NUM_STEPS = 100
 VisitationMap / Occupancy map constants
 """
 
-# Values to fill occupancy map with
+# Values to fill occupancy map with (for visitation mode)
 UNVISITED_VAL = 0
 VISITED_VAL = 1
 AGENT_VAL = 10
-# AGENT_VAL = -1
 TARGET_VISITED_VAL = 5
+
+# Motion mode occupancy map values
+MOTION_EMPTY_VAL = 0
+MOTION_AGENT_VAL = 5
+MOTION_VISIT_VAL = 10
 
 # Whether or not to mark positions in the map where a target was visited
 MARK_PAST_VISITATION = True
 
 # Which mode to use in the visitation map
 VISITATION_MODE = 0		# Used for when targets are static
-GAUSSIAN_MODE = 1		# Used for estimating moving target locations
+MOTION_MODE = 1		# Used for estimating moving target locations
 
 # Which mode is the occupancy map in
-OCCUPANCY_MAP_MODE = VISITATION_MODE
-# OCCUPANCY_MAP_MODE = GAUSSIAN_MODE
+# OCCUPANCY_MAP_MODE = VISITATION_MODE
+OCCUPANCY_MAP_MODE = MOTION_MODE
 
 """
 Visualisation/rendering constants

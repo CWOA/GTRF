@@ -85,13 +85,17 @@ class Utility:
 	# e.g. 'F' -> [1,0,0,0]
 	@staticmethod
 	def actionToClassVector(action):
-		vec = np.zeros(len(const.ACTIONS))
+		if const.USE_EXT_ACTIONS:
+			vec = np.zeros(len(const.EXT_ACTIONS))
+		else:
+			vec = np.zeros(len(const.ACTIONS))
 
 		if action == 'F': vec[0] = 1
 		elif action == 'B': vec[1] = 1
 		elif action == 'L': vec[2] = 1
 		elif action == 'R': vec[3] = 1
-		else: Utility.die("Action not recognised.", __file__)
+		elif action == 'N' and const.USE_EXT_ACTIONS: vec[4] = 1
+		else: Utility.die("Action not recognised or extended actions not enabled", __file__)
 
 		return vec
 
@@ -104,7 +108,8 @@ class Utility:
 		elif class_vec[1]: action = 'B'
 		elif class_vec[2]: action = 'L'
 		elif class_vec[3]: action = 'R'
-		else: Utility.die("Action not recognised.", __file__)
+		elif const.USE_EXT_ACTIONS and class_vec[4]: action = 'N'
+		else: Utility.die("Action not recognised or extended actions not enabled.", __file__)
 
 		return action
 
@@ -187,7 +192,12 @@ class Utility:
 	@staticmethod
 	def getAgentCoordinatesFromMap(occupancy_map):
 		# Find the current agent position
-		index = np.where(occupancy_map == const.AGENT_VAL)
+		if const.OCCUPANCY_MAP_MODE == const.VISITATION_MODE:
+			index = np.where(occupancy_map == const.AGENT_VAL)
+		elif const.OCCUPANCY_MAP_MODE == const.MOTION_MODE:
+			index = np.where(occupancy_map == const.MOTION_AGENT_VAL)
+		else:
+			Utility.die("Occupancy map mode not recognised", __file__)
 
 		# Ensure we only found one position
 		if index[0].shape[0] > 1 and index[1].shape[0] > 1:
@@ -385,10 +395,10 @@ class Utility:
 if __name__ == '__main__':
 	# Utility.drawModelLengthHistogram()
 
-	# print Utility.distanceBetweenPoints((5,0),(0,5))
-	# print Utility.distanceBetweenPoints((5,0),(1,5))
-	# print Utility.distanceBetweenPoints((5,0),(2,5))
-	# print Utility.distanceBetweenPoints((5,0),(3,5))
-	# print Utility.distanceBetweenPoints((5,0),(4,5))
-	# print Utility.distanceBetweenPoints((5,0),(5,5))
-	# print Utility.distanceBetweenPoints((5,0),(6,5))
+	print Utility.distanceBetweenPoints((5,0),(0,5))
+	print Utility.distanceBetweenPoints((5,0),(1,5))
+	print Utility.distanceBetweenPoints((5,0),(2,5))
+	print Utility.distanceBetweenPoints((5,0),(3,5))
+	print Utility.distanceBetweenPoints((5,0),(4,5))
+	print Utility.distanceBetweenPoints((5,0),(5,5))
+	print Utility.distanceBetweenPoints((5,0),(6,5))

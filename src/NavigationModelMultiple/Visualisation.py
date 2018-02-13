@@ -68,13 +68,14 @@ class Visualiser:
 		# to the agent subview)
 		img_copy = img.copy()
 
-		# Render visited locations
-		for x in range(const.MAP_WIDTH):
-			for y in range(const.MAP_HEIGHT):
-				# Have we been to this coordinate before?
-				if state[2][y,x]:
-					# Render this square as have being visited
-					img = self.renderGridPosition(x, y, img, const.VISITED_COLOUR)
+		if const.OCCUPANCY_MAP_MODE is not const.MOTION_MODE:
+			# Render visited locations
+			for x in range(const.MAP_WIDTH):
+				for y in range(const.MAP_HEIGHT):
+					# Have we been to this coordinate before?
+					if state[2][y,x]:
+						# Render this square as have being visited
+						img = self.renderGridPosition(x, y, img, const.VISITED_COLOUR)
 
 		# Render target locations
 		for target in state[1]:

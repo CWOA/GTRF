@@ -6,6 +6,7 @@ import random
 import networkx as nx
 import Constants as const
 from Utility import Utility
+import matplotlib.pyplot as plt
 
 """
 TBC
@@ -40,7 +41,7 @@ class MotionSolver:
 
 		# Insert target position list at the head of the list
 		target_start = [x.getPosTuple() for x in self._targets]
-		rand_pos.insert(0, target_start)
+		self._rand_pos.insert(0, target_start)
 
 		# Total number of possible solutions (one or more of which is globally optimal)
 		self._complexity = math.factorial(self._num_targets)
@@ -54,6 +55,7 @@ class MotionSolver:
 	def solve(self):
 		self.growTree()
 		self._actions = self.findBestSolutions()
+		print "Solution length = {}, actions={}".format(len(self._actions), self._actions)
 		return len(self._actions)
 
 	def nextAction(self):
@@ -81,14 +83,10 @@ class MotionSolver:
 		# tic = time.clock()
 		self.growTreeRecursive(root)
 		# toc = time.clock()
-
 		# Total time required (seconds)
 		# total = toc - tic
 
 		# print "Time to grow tree = {} seconds".format(total)
-
-		# if self._visualise:
-		# 	self.visualiseTree()
 
 	# Recursively builds or grows the tree until a base case is satisfied
 	def growTreeRecursive(self, parent_attr):
@@ -396,7 +394,7 @@ class EdgeAttributes:
 		self._parent_timestep = parent.getTimestep()
 
 		# Coordinates of parent within the map
-		self._parent_pos = parent.getObject().getPosTuple()
+		self._parent_pos = parent.getObject().getPosTupleAtTimestep(self._parent_timestep)
 
 		# ID for the target we're trying to visit
 		self._target_ID = child.getObject().getID()
@@ -439,11 +437,13 @@ class EdgeAttributes:
 				# Find the difference in solution length
 				diff = num_moves - len(actions)
 
+				print "STARTING = ({},{}), DIF = {}".format(s_x, s_y, diff)
+				print "rand_pos[{}]=({},{})\n".format(i, c_x, c_y)
+
 				# Append do nothing actions for the difference
 				for j in range(diff):
-					print "DO NOTHING"
 					actions.append('N')
-					
+
 				best_sequence = actions
 				break
 
@@ -459,7 +459,6 @@ class EdgeAttributes:
 		new_timestep = s_t + len(best_sequence)
 
 		return best_sequence, new_timestep
-
 
 	"""
 	Getters

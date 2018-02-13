@@ -30,7 +30,10 @@ class DNNModel:
 		self._use_simluator = use_simulator
 
 		# Number of classes
-		self._num_classes = len(const.ACTIONS)
+		if const.USE_EXT_ACTIONS:
+			self._num_classes = len(const.EXT_ACTIONS)
+		else:
+			self._num_classes = len(const.ACTIONS)
 
 		# If we're using the ROS/gazebo simulator for visual input
 		if use_simulator:

@@ -98,7 +98,11 @@ class DualInputCNN:
 		max_idx = np.argmax(probability_vec)
 
 		# Create a new probability vector with the max index = 1
-		choice_vec = np.zeros(len(const.ACTIONS))
+		if const.USE_EXT_ACTIONS:
+			choice_vec = np.zeros(len(const.EXT_ACTIONS))
+		else:
+			choice_vec = np.zeros(len(const.ACTIONS))
+
 		choice_vec[max_idx] = 1
 
 		# Convert to action

@@ -242,9 +242,9 @@ class ObjectHandler:
 			if a_x == t_x and a_y == t_y:
 				if not target.getVisited():
 					target.setVisited(True)
-					return True
+					return True, target.getID()
 
-		return False
+		return False, -1
 
 	# Returns a list of all target positions
 	def getTargetPositions(self):
@@ -581,6 +581,11 @@ class Object:
 		return self._colour
 	def isAgent(self):
 		return self._agent
+	def getPosTupleAtTimestep(self, timestep):
+		if self.isAgent():
+			return self.getPosTuple()
+		else:
+			return self._random_walk[timestep]
 
 	"""
 	Setters
@@ -594,6 +599,7 @@ class Object:
 		if self._agent:
 			self._x = x
 			self._y = y
+			# print "New position = ({},{})".format(x, y)
 		else:
 			Utility.die("Trying to directly set position of non-agent", __file__)
 
