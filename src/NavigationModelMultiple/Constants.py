@@ -10,13 +10,16 @@ Run-time arguments
 """
 
 # Whether to visualise visual input/map via OpenCV imshow for debugging purposes
-VISUALISE = True
+VISUALISE = False
 
 # Whether or not to use ROS/Gazebo simulator for synthesised visual input
 USE_SIMULATOR = False
 
+# Save frames to individual per-episode videos?
+SAVE_VIDEO = True
+
 # Number of episodes to test on or generate training examples
-ITERATIONS = 20000
+ITERATIONS = 10
 
 """
 Algorithm class constants
@@ -36,6 +39,7 @@ BASE_DIR = "/home/will/catkin_ws/src/uav_id/tflearn"
 DATA_DIR_HDF5 = "data/multiple_nav_data_SIMULATOR.h5"
 TENSORBOARD_DIR = "tensorboard"
 MODELS_DIR = "models"
+VIDEO_DIR = "ICIP2018/video"
 
 """
 ICIP directories
@@ -60,7 +64,7 @@ USE_EXT_ACTIONS = True
 MOVE_DIST = 1
 
 # Number of targets to generate if random number of targets is disabled
-NUM_TARGETS = 2
+NUM_TARGETS = 5
 
 # Range of random numbers of targets
 NUM_TARGETS_RANGE = (2, 10)
@@ -125,8 +129,7 @@ TARGET_VISITED_VAL = 5
 
 # Motion mode occupancy map values
 MOTION_EMPTY_VAL = 0
-MOTION_AGENT_VAL = 5
-MOTION_VISIT_VAL = 10
+MOTION_HIGH_VALUE = 1000
 
 # Whether or not to mark positions in the map where a target was visited
 MARK_PAST_VISITATION = True
@@ -154,7 +157,7 @@ TARGET_COLOUR = (64,30,162)
 VISIBLE_COLOUR = (247,242,236)
 
 GRID_PIXELS = 1
-WAIT_AMOUNT = 0
+WAIT_AMOUNT = 1
 
 """
 SimulatorBridge constants
@@ -240,3 +243,21 @@ MANUAL_SOLVER_POSITIONS = True
 """
 Sequence Solver constants
 """
+
+
+"""
+VideoWriter constants
+"""
+
+# Video codec to encode saved videos with
+VIDEO_CODEC = 'XVID'
+
+# Frames per second to encode at
+VIDEO_FPS = 24.0
+
+# Iterations per second to show
+VIDEO_ITR_PER_SECOND = 3
+
+# Video output resolution
+VIDEO_OUT_WIDTH = 500
+VIDEO_OUT_HEIGHT = 500

@@ -22,11 +22,11 @@ class MapHandler:
 
 	# Reset the map itself, mark the agent's initial position
 	def reset(self, a_x, a_y):
-		# Create the map
-		self._map = np.zeros((const.MAP_WIDTH, const.MAP_HEIGHT))
-
 		# If the map is in visitation mode
 		if self._map_mode == const.VISITATION_MODE:
+			# Create the map
+			self._map = np.zeros((const.MAP_WIDTH, const.MAP_HEIGHT))
+
 			# Fill it with un-visted value
 			self._map.fill(const.UNVISITED_VAL)
 
@@ -38,13 +38,18 @@ class MapHandler:
 				# Store where targets were visited
 				self._visit_locations = []
 
-		# If the map is in Gaussian mode
+		# If the map is in motion mode:
+		# 1st 10x10 grid: Where targets have been visited
+		# 2nd 10x10 grid: Where has agent been previously
 		elif self._map_mode == const.MOTION_MODE:
-			# Fill it with un-visited value
+			# Create the map
+			self._map = np.zeros((const.MAP_WIDTH, const.MAP_HEIGHT, 2))
+
+			# Set all values to empty
 			self._map.fill(const.MOTION_EMPTY_VAL)
 
 			# Mark the agent's initial coordinates
-			self.setElement(a_x, a_y, const.MOTION_AGENT_VAL)
+			self.setElement(a_x, a_y, const.MOTION_HIGH_VALUE, dim=1)
 
 			# Past target locations (dict of target ID: x,y coordinates, steps since visit)
 			self._visit_locations = {}
@@ -80,25 +85,36 @@ class MapHandler:
 			self.setElement(new_x, new_y, const.AGENT_VAL)
 		# Map is gaussian probabiltistic mode
 		elif self._map_mode == const.MOTION_MODE:
-			# Unmark the entire map
-			self._map.fill(const.MOTION_EMPTY_VAL)
+			# Unmark the entire target visitation dimension
+			self._map[:,:,0] = const.MOTION_EMPTY_VAL
 
 			# Increment the step counter for each visited target
 			for key in self._visit_locations:
-				self._visit_locations[key][2] += 1
+				# Degrade the time since visitation
+				self._visit_locations[key][2] -= 1
+
+				# Cap it at 0
+				if self._visit_locations[key][2] < 0:
+					self._visit_locations[key][2] = 0
 
 			# If this new position visits a target
 			if target_match:
-				self._visit_locations[target_id] = [new_x, new_y, const.MOTION_VISIT_VAL]
+				self._visit_locations[target_id] = [new_x, new_y, const.MOTION_HIGH_VALUE]
 
 			# Render target visits
 			for _, value in self._visit_locations.iteritems():
 				self.setElement(value[0], value[1], value[2])
 
+			# Degrade every non-zero value in the agent visitation dimension
+			self._map[np.where(self._map[:,:,1] > 0)] -= 1
+
+			# Clip negative numbers to 0
+			self._map = self._map.clip(min=0)
+
 			# Mark the agent's new position
-			self.setElement(new_x, new_y, const.MOTION_AGENT_VAL)
+			self.setElement(new_x, new_y, const.MOTION_HIGH_VALUE, dim=1)
 		else:
-			Utility.die("Occupancy map mode not recognised", __file__)
+			Utility.die("Occupancy map mode not recognised in iterate()", __file__)
 
 		return new_location
 
@@ -109,7 +125,12 @@ class MapHandler:
 	def getElement(self, x, y):
 		return self._map[y, x]
 	def printMap(self):
-		print self._map
+		if self._map_mode == const.VISITATION_MODE:
+			print self._map
+		elif self._map_mode == const.MOTION_MODE:
+			print self._map[:,:,0], self._map[:,:,1]
+		else:
+			Utility.die("Occupancy map mode not recognised in setElement()", __file__)
 	def getMap(self):
 		return self._map
 
@@ -118,8 +139,13 @@ class MapHandler:
 	"""
 
 	# Set an element at coordinates (x, y) to value
-	def setElement(self, x, y, value):
-		self._map[y, x] = value
+	def setElement(self, x, y, value, dim=0):
+		if self._map_mode == const.VISITATION_MODE:
+			self._map[y, x] = value
+		elif self._map_mode == const.MOTION_MODE:
+			self._map[y, x, dim] = value
+		else:
+			Utility.die("Occupancy map mode not recognised in setElement()", __file__)
 
 # Entry method/unit testing
 if __name__ == '__main__':

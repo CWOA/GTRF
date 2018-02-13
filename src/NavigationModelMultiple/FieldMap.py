@@ -5,6 +5,7 @@ import DNN
 import h5py
 import Object
 import random
+import VideoWriter
 import numpy as np
 from Utility import *
 import Visualisation
@@ -22,12 +23,14 @@ class FieldMap:
 	# Class constructor
 	def __init__(		self,
 						generating,
+						exp_name,
 						visualise=False,
 						use_simulator=True,
 						random_agent_pos=True,
 						save=False,
 						second_solver=False,
-						model_path=None				):
+						model_path=None,
+						save_video=False,		):
 		"""
 		Class arguments from init
 		"""
@@ -47,9 +50,19 @@ class FieldMap:
 		# Whether or not we should use ROS/gazebo simulator
 		self._use_simulator = use_simulator
 
+		# Whether we should save each episode as a video
+		self._save_video = save_video
+
+		# Name of this experiment
+		self._exp_name = exp_name
+
 		"""
 		Class attributes
 		"""
+
+		# If we should generate video
+		if self._save_video:
+			self._video_writer = VideoWriter.VideoWriter(self._exp_name, Utility.getVideoDir())
 
 		if not self._generating:
 			# Algorithm class for selecting agent actions based on the environment state
@@ -85,9 +98,11 @@ class FieldMap:
 		# Reset the visitation map
 		self._map_handler.reset(a_x, a_y)
 
-		if not self._generating:
-			# Reset the algorithm
-			self._algorithm.reset()
+		# If we should generate and save video
+		if self._save_video: self._video_writer.reset()
+
+		# Reset the algorithm
+		if not self._generating: self._algorithm.reset()
 
 	# Perform a given action
 	def performAction(self, action):
@@ -129,6 +144,8 @@ class FieldMap:
 		# Update the map, function returns whether this new position
 		# has been visited before
 		is_new_location = self._map_handler.iterate(req_x, req_y, target_match, target_id)
+
+		# self._map_handler.printMap()
 
 		return is_new_location
 
@@ -193,7 +210,10 @@ class FieldMap:
 			num_moves += 1
 
 			# Render the updated views (for input into the subsequent iteration)
-			_, subview = self._visualiser.update(self.retrieveStates())
+			img, subview = self._visualiser.update(self.retrieveStates())
+
+			# If we should generate and save video
+			if self._save_video: self._video_writer.iterate(img)
 
 			# Display if we're supposed to
 			if self._visualise: self._visualiser.display(wait_amount)
@@ -203,6 +223,9 @@ class FieldMap:
 			# Retrieve the number of loops detected. 0 for algorithms that don't use it
 			num_loops = self._algorithm.getNumLoops()
 		else: num_loops = 0
+
+		# If we should generate and save video
+		if self._save_video: self._video_writer.finishUp()
 
 		# Return the number of moves taken by the model and the solution
 		# Also return the number of times loop detection is found
@@ -217,11 +240,11 @@ class FieldMap:
 		self._training_output.append(row)
 
 	# Save output data to file
-	def saveDataToFile(self, exp_name):
+	def saveDataToFile(self):
 		print "Saving data using h5py"
 
 		# file_str = Utility.getHDF5DataDir()
-		file_str = "{}/TRAINING_DATA_{}.h5".format(Utility.getICIPDataDir(), exp_name)
+		file_str = "{}/TRAINING_DATA_{}.h5".format(Utility.getICIPDataDir(), self._exp_name)
 
 		# Open the dataset file (may overwrite an existing file!!)
 		dataset = h5py.File(file_str, 'w')
@@ -250,7 +273,10 @@ class FieldMap:
 		# X1: visitation map
 		# Y: corresponding ground truth action vector in form [0, 1, 0, 0]
 		dataset.create_dataset('X0', (num_instances, img_width, img_height, channels))
-		dataset.create_dataset('X1', (num_instances, const.MAP_WIDTH, const.MAP_HEIGHT))
+		if const.OCCUPANCY_MAP_MODE == const.VISITATION_MODE:
+			dataset.create_dataset('X1', (num_instances, const.MAP_WIDTH, const.MAP_HEIGHT))
+		elif const.OCCUPANCY_MAP_MODE == const.MOTION_MODE:
+			dataset.create_dataset('X1', (num_instances, const.MAP_WIDTH, const.MAP_HEIGHT, 2))
 		dataset.create_dataset('Y', (num_instances, num_classes))
 
 		# Actually add instances to the respective datasets
@@ -267,7 +293,7 @@ class FieldMap:
 		return file_str
 
 	# Do a given number of episodes
-	def generateTrainingData(self, num_episodes, exp_name=None):
+	def generateTrainingData(self, num_episodes, ):
 		# Initialise progress bar (TQDM) object
 		pbar = tqdm(total=num_episodes)
 
@@ -281,10 +307,10 @@ class FieldMap:
 
 		# Save the output if we're supposed to
 		if self._save_output: 
-			return self.saveDataToFile(exp_name)
+			return self.saveDataToFile(self._exp_name)
 
 	# Do a given number of testing episodes
-	def startTestingEpisodes(self, num_episodes, exp_name):
+	def startTestingEpisodes(self, num_episodes):
 		print "Beginning testing on generated examples"
 
 		# Place to store testing data to in numpy form
@@ -319,7 +345,7 @@ class FieldMap:
 		pbar.close()
 
 		# Save data to file
-		np.save("{}/RESULTS_{}".format(base, exp_name), test_data)
+		np.save("{}/RESULTS_{}".format(base, self._exp_name), test_data)
 
 	# Compare solver performance over a number of testing episodes
 	def compareSolvers(self, num_episodes):

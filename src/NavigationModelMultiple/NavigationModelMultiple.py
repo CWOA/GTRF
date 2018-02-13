@@ -17,7 +17,7 @@ def generateTrainTest(iterations, use_simulator):
 
 	# Initialise FieldMap instance for training data generation and perform it
 	train_fm = FieldMap(True, visualise=False, use_simulator=use_simulator, save=True)
-	saved_to_path = train_fm.generateTrainingData(iterations, exp_name=experiment_name)
+	saved_to_path = train_fm.generateTrainingData(iterations)
 
 	# Use this training data to initialise and train the dual input CNN
 	dnn = DNN.DNNModel(use_simulator=use_simulator)
@@ -27,9 +27,17 @@ def generateTrainTest(iterations, use_simulator):
 	test_fm = FieldMap(False, visualise=False, use_simulator=use_simulator, model_path=best_model_path)
 	test_fm.startTestingEpisodes(iterations, experiment_name)
 
-# Generating training data
-def generateTrainingExamples(iterations, visualise, use_simulator):
-	fm = FieldMap(True, visualise=visualise, use_simulator=use_simulator, save=True)
+# Just generate training examples
+def generateTrainingExamples(iterations, visualise, use_simulator, save_video):
+	# Experiment parameters
+	experiment_name = "video_test"
+
+	fm = FieldMap(	True,
+					experiment_name,
+					visualise=visualise, 
+					use_simulator=use_simulator, 
+					save=True, 
+					save_video=save_video 			)
 	fm.generateTrainingData(iterations)
 
 """
@@ -67,12 +75,15 @@ if __name__ == '__main__':
 	# Number of episodes to test on or generate training examples
 	iterations = const.ITERATIONS
 
+	# Save frames to individual per-episode videos?
+	save_video = const.SAVE_VIDEO
+
 	"""
 	Primary function calls
 	"""
 
 	# generateTrainTest(iterations, use_simulator)
-	generateTrainingExamples(iterations, visualise, use_simulator)
+	generateTrainingExamples(iterations, visualise, use_simulator, save_video)
 	# trainModel(iterations, use_simulator)
 	# testModel(iterations, visualise, use_simulator)
 	# compareSolvers(iterations, visualise)

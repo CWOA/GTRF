@@ -32,6 +32,10 @@ class Utility:
 	def getBestModelDir():
 		filename = "{}_BEST.tflearn".format(const.MODEL_NAME)
 		return os.path.join(const.BASE_DIR, const.MODELS_DIR, filename)
+	@staticmethod
+	def getVideoDir():
+		return os.path.join(const.BASE_DIR, const.VIDEO_DIR)
+
 	"""
 	ICIP 2018 directory methods
 	"""
@@ -195,7 +199,7 @@ class Utility:
 		if const.OCCUPANCY_MAP_MODE == const.VISITATION_MODE:
 			index = np.where(occupancy_map == const.AGENT_VAL)
 		elif const.OCCUPANCY_MAP_MODE == const.MOTION_MODE:
-			index = np.where(occupancy_map == const.MOTION_AGENT_VAL)
+			index = np.where(occupancy_map[:,:,1] == const.MOTION_HIGH_VALUE)
 		else:
 			Utility.die("Occupancy map mode not recognised", __file__)
 

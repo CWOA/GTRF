@@ -62,7 +62,7 @@ class DNNModel:
 
 		print "Initialised DNN"
 
-	# Load pickled data from file
+	# Load H5 data from file
 	def loadData(self, data_dir):
 		print "Loading data"
 
@@ -83,10 +83,11 @@ class DNNModel:
 		X1 = dataset['X1'][()]
 		Y = dataset['Y'][()]
 
-		# Add extra dimension to X1 at the end
-		X_temp = np.zeros((X1.shape[0], X1.shape[1], X1.shape[2], 1))
-		X_temp[:,:,:,0] = X1
-		X1 = X_temp
+		# Add extra dimension to X1 at the end if we're in visitation mode
+		if const.OCCUPANCY_MAP_MODE == const.VISITATION_MODE:
+			X_temp = np.zeros((X1.shape[0], X1.shape[1], X1.shape[2], 1))
+			X_temp[:,:,:,0] = X1
+			X1 = X_temp
 
 		# Normalise all visual input from [0,255] to [0,1]
 		# X0 = self.normaliseInstances(X0, 255)
@@ -337,11 +338,19 @@ class DNNModel:
 		net0 = fully_connected(net0, 4096, activation='tanh')
 		net0 = dropout(net0, 0.5)
 
+		# If motion is enabled (for the occupancy grid), add a dimension
+		if const.OCCUPANCY_MAP_MODE == VISITATION_MODE:
+			visit_map_dims = 1
+		elif const.OCCUPANCY_MAP_MODE == MOTION_MODE:
+			visit_map_dims = 2
+		else:
+			Utility.die("Occupancy map mode not recognised in defineDNN()", __file__)
+
 		# Network 1 definition (VISIT MAP)
 		net1 = tflearn.input_data([		None,
 										const.MAP_HEIGHT,
 										const.MAP_WIDTH,
-										1					])
+										visit_map_dims		])
 		net1 = conv_2d(net1, 12, 3, activation='relu')
 		net1 = max_pool_2d(net1, 3, strides=2)
 		net1 = local_response_normalization(net1)
