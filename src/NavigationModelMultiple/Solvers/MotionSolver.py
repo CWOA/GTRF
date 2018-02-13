@@ -55,7 +55,6 @@ class MotionSolver:
 	def solve(self):
 		self.growTree()
 		self._actions = self.findBestSolutions()
-		print "Solution length = {}, actions={}".format(len(self._actions), self._actions)
 		return len(self._actions)
 
 	def nextAction(self):
@@ -436,9 +435,6 @@ class EdgeAttributes:
 			if len(actions) <= num_moves:
 				# Find the difference in solution length
 				diff = num_moves - len(actions)
-
-				print "STARTING = ({},{}), DIF = {}".format(s_x, s_y, diff)
-				print "rand_pos[{}]=({},{})\n".format(i, c_x, c_y)
 
 				# Append do nothing actions for the difference
 				for j in range(diff):

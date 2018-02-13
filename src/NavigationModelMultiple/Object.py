@@ -585,7 +585,7 @@ class Object:
 		if self.isAgent():
 			return self.getPosTuple()
 		else:
-			return self._random_walk[timestep]
+			return self._random_walk[timestep-1]
 
 	"""
 	Setters
@@ -599,7 +599,6 @@ class Object:
 		if self._agent:
 			self._x = x
 			self._y = y
-			# print "New position = ({},{})".format(x, y)
 		else:
 			Utility.die("Trying to directly set position of non-agent", __file__)
 
