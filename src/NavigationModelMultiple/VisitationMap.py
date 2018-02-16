@@ -108,9 +108,6 @@ class MapHandler:
 			# Degrade every non-zero value in the agent visitation dimension
 			self._map[np.where(self._map[:,:,1] > 0)] -= 1
 
-			# Clip negative numbers to 0
-			self._map = self._map.clip(min=0)
-
 			# Mark the agent's new position
 			self.setElement(new_x, new_y, const.MOTION_HIGH_VALUE, dim=1)
 		else:

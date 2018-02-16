@@ -22,7 +22,9 @@ class Algorithm:
 		self._algorithm_selection = algorithm_method
 
 		if self._algorithm_selection == const.ALGORITHM_DUAL_INPUT_CNN:
-			self._algorithm = DualInputCNN.DualInputCNN(use_simulator, model_path)
+			self._algorithm = DualInputCNN.DualInputCNN(	use_simulator, 
+															model_path, 
+															use_loop_detector=const.USE_LOOP_DETECTOR 	)
 		elif self._algorithm_selection == const.ALGORITHM_YOUR_ALGORITHM:
 			self._algorithm = YourAlgorithm.YourAlgorithm()
 		else:

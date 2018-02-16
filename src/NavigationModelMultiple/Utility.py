@@ -2,9 +2,11 @@
 
 import os
 import sys
+import h5py
 import math
 import random
 import numpy as np
+from scipy.signal import savgol_filter
 import Constants as const
 from collections import deque
 import matplotlib.pyplot as plt
@@ -29,10 +31,6 @@ class Utility:
 		filename = "{}.tflearn".format(const.MODEL_NAME)
 		return os.path.join(const.BASE_DIR, const.MODELS_DIR, filename)
 	@staticmethod
-	def getBestModelDir():
-		filename = "{}_BEST.tflearn".format(const.MODEL_NAME)
-		return os.path.join(const.BASE_DIR, const.MODELS_DIR, filename)
-	@staticmethod
 	def getVideoDir():
 		return os.path.join(const.BASE_DIR, const.VIDEO_DIR)
 
@@ -48,9 +46,6 @@ class Utility:
 	@staticmethod
 	def getICIPModelDir():
 		return os.path.join(const.BASE_DIR, const.ICIP_MODELS_DIR)
-	@staticmethod
-	def getICIPBestModelDir():
-		return os.path.join(const.BASE_DIR, const.ICIP_MODELS_DIR, "best/")
 	@staticmethod
 	def getICIPTensorboardDir():
 		return os.path.join(const.BASE_DIR, const.ICIP_TENSORBOARD_DIR)
@@ -223,12 +218,48 @@ class Utility:
 			format(message, file)
 		sys.exit(0)
 
+	# Method takes two h5 databases of equal dimensions and combines them into a single file
+	@staticmethod
+	def combineH5Databases(out_path, file1_path, file2_path):
+		f1 = h5py.File(file1_path, 'r')
+		f2 = h5py.File(file2_path, 'r')
+
+		# Extract datasets from both
+		f1_X0 = f1['X0'][()]
+		f1_X1 = f1['X1'][()]
+		f1_Y = f1['Y'][()]
+		f2_X0 = f2['X0'][()]
+		f2_X1 = f2['X1'][()]
+		f2_Y = f2['Y'][()]
+
+		# Check the dataset shapes agree
+		assert(f1_X0.shape[1:] == f2_X0.shape[1:])
+		assert(f1_X1.shape[1:] == f2_X1.shape[1:])
+		assert(f1_Y.shape[1:] == f2_Y.shape[1:])
+
+		# Append to each other
+		X0 = np.concatenate((f1_X0, f2_X0), axis=0)
+		X1 = np.concatenate((f1_X1, f2_X1), axis=0)
+		Y = np.concatenate((f1_Y, f2_Y), axis=0)
+
+		# Open the new dataset file (WARNING: will overwrite exisiting file!)
+		out = h5py.File(out_path, 'w')
+
+		# Create the datasets
+		out.create_dataset('X0', data=X0)
+		out.create_dataset('X1', data=X1)
+		out.create_dataset('Y', data=Y)
+
+		# Finish up
+		out.close()
+
 	"""
 	Graph drawing utility methods for evaluating algorithm performance
 	"""
 
 	@staticmethod
 	def drawGenerationTimeGraph(t_s, t_c, s_t, e_t):
+		plt.style.use('seaborn-darkgrid')
 		# Construct size of targets vector
 		T = np.arange(s_t, e_t)
 
@@ -244,6 +275,7 @@ class Utility:
 
 	@staticmethod
 	def drawGenerationLengthGraph(m_s, m_c, s_t, e_t):
+		plt.style.use('seaborn-darkgrid')
 		# Construct size of targets vector
 		T = np.arange(s_t, e_t)
 
@@ -257,7 +289,7 @@ class Utility:
 
 		# print hist_vec
 
-		N, bins, patches = plt.hist(hist_vec, bins=13, normed=True)
+		N, bins, patches = plt.hist(hist_vec, bins=13, normed=True, histtype='stepfilled',)
 
 		# Plot vectors
 		# plt.plot(T, seq_avg, label="Sequence")
@@ -267,11 +299,13 @@ class Utility:
 		plt.xlabel('Difference in solution length')
 		# plt.ylabel('moves')
 		plt.legend(loc="center right")
+		plt.tight_layout()
 		plt.savefig("{}/solution-generation-hist.pdf".format(Utility.getICIPFigureDir()))
 		plt.show()
 
 	@staticmethod
 	def drawGenerationGraphs(m_s, m_c, t_s, t_c, num_targets):
+		plt.style.use('seaborn-darkgrid')
 		fig, axs = plt.subplots(1, 2, sharey=False, tight_layout=True)
 
 		# Number of targets array
@@ -294,8 +328,81 @@ class Utility:
 		axs[1].set_xlabel("|R|")
 
 		plt.legend(loc="upper left")
-
+		plt.tight_layout()
 		plt.savefig("{}/solution-generation.pdf".format(Utility.getICIPFigureDir()))
+		plt.show()
+
+	# Method for drawing a graph that compares training and validation accuracy versus
+	# epochs.
+	@staticmethod
+	def drawAccuracyGraph():
+		# Convolutional based smoothing function
+		def smooth(y, box_pts):
+		    return savgol_filter(y, box_pts, 3)
+		    # return y_smooth
+
+		# Load the data
+		base = Utility.getICIPDataDir()
+		acc_20k = np.genfromtxt("{}/20k_train_acc.csv".format(base), delimiter=',', skip_header=1, names=['x', 'y', 'z'])
+		val_20k = np.genfromtxt("{}/20k_val_acc.csv".format(base), delimiter=',', skip_header=1, names=['x', 'y', 'z'])
+		acc_40k = np.genfromtxt("{}/40k_train_acc.csv".format(base), delimiter=',', skip_header=1, names=['x', 'y', 'z'])
+		val_40k = np.genfromtxt("{}/40k_val_acc.csv".format(base), delimiter=',', skip_header=1, names=['x', 'y', 'z'])
+		acc_60k = np.genfromtxt("{}/60k_train_acc.csv".format(base), delimiter=',', skip_header=1, names=['x', 'y', 'z'])
+		val_60k = np.genfromtxt("{}/60k_val_acc.csv".format(base), delimiter=',', skip_header=1, names=['x', 'y', 'z'])
+
+		# Define the style and subplots
+		plt.style.use('seaborn-darkgrid')
+		fig, axs = plt.subplots(1, 2, sharey=True, tight_layout=True)
+
+		# Scale x-axis values down to the number of epochs
+		acc_20k['y'] = (const.NUM_EPOCHS*(acc_20k['y'] - acc_20k['y'].min())) / acc_20k['y'].max()
+		acc_40k['y'] = (const.NUM_EPOCHS*(acc_40k['y'] - acc_40k['y'].min())) / acc_40k['y'].max()
+		acc_60k['y'] = (const.NUM_EPOCHS*(acc_60k['y'] - acc_60k['y'].min())) / acc_60k['y'].max()
+
+		val_20k['y'] = ((const.NUM_EPOCHS*(val_20k['y'] - val_20k['y'].min())) / val_20k['y'].max()) + 1
+		val_40k['y'] = ((const.NUM_EPOCHS*(val_40k['y'] - val_40k['y'].min())) / val_40k['y'].max()) + 1 
+		val_60k['y'] = ((const.NUM_EPOCHS*(val_60k['y'] - val_60k['y'].min())) / val_60k['y'].max()) + 1
+
+		# Alpha constant
+		alpha = 0.2
+
+		# Smoothing parameter
+		tra_s = 99
+
+		# Plot to training accuracy graph
+		axs[0].plot(acc_20k['y'], acc_20k['z'], color='r', alpha=alpha)
+		axs[0].plot(acc_40k['y'], acc_40k['z'], color='g', alpha=alpha)
+		axs[0].plot(acc_60k['y'], acc_60k['z'], color='b', alpha=alpha)
+
+		axs[0].plot(acc_20k['y'], smooth(acc_20k['z'], tra_s), color='r', label='20k')
+		axs[0].plot(acc_40k['y'], smooth(acc_40k['z'], tra_s), color='g', label='40k')
+		axs[0].plot(acc_60k['y'], smooth(acc_60k['z'], tra_s), color='b', label='60k')
+
+		# Plot to validation accuracy graph
+		axs[1].plot(val_20k['y'], val_20k['z'], color='r', alpha=alpha)
+		axs[1].plot(val_40k['y'], val_40k['z'], color='g', alpha=alpha)
+		axs[1].plot(val_60k['y'], val_60k['z'], color='b', alpha=alpha)
+
+		# Smoothing constant
+		val_s = 11
+
+		axs[1].plot(val_20k['y'], smooth(val_20k['z'], val_s), color='r', label='20k')
+		axs[1].plot(val_40k['y'], smooth(val_40k['z'], val_s), color='g', label='40k')
+		axs[1].plot(val_60k['y'], smooth(val_60k['z'], val_s), color='b', label='60k')
+
+		# Set axis labels for subplots
+		axs[0].set_xlabel("Epochs")
+		axs[0].set_ylabel("Accuracy")
+		axs[0].set_title("Training")
+		axs[1].set_xlabel("Epochs")
+		# axs[1].set_ylabel("Accuracy")
+		axs[1].set_title("Validation")
+
+		plt.axis([0, 50, 0.5, 0.8])
+		plt.legend(loc="upper right")
+		plt.tight_layout()
+
+		plt.savefig("{}/motion-training-accuracy.pdf".format(Utility.getICIPFigureDir()))
 		plt.show()
 
 	@staticmethod
@@ -382,9 +489,11 @@ class Utility:
 		hist_vec[:,2] = data_nav[:,0] - data_nav[:,1]
 		hist_vec[:,3] = data_seq_sim[:,0] - data_seq_sim[:,1]
 
-		N, bins, patches = plt.hist(hist_vec, bins=80, normed=True, histtype='step',
-									color=['g', 'b', 'k', 'r'],
-									label=['TO', 'CU', 'NS', 'TO+S'], stacked=False)
+		plt.style.use('seaborn-darkgrid')
+
+		plt.hist(	hist_vec, bins=80, normed=True, histtype='step',
+					color=['g', 'b', 'k', 'r'],
+					label=['TO', 'CU', 'NS', 'TO+S'], stacked=False		)
 
 		plt.xlabel("Difference in solution length")
 		plt.ylabel("Probability")
@@ -397,12 +506,19 @@ class Utility:
 
 # Entry method/unit testing
 if __name__ == '__main__':
+	Utility.drawAccuracyGraph()
+
 	# Utility.drawModelLengthHistogram()
 
-	print Utility.distanceBetweenPoints((5,0),(0,5))
-	print Utility.distanceBetweenPoints((5,0),(1,5))
-	print Utility.distanceBetweenPoints((5,0),(2,5))
-	print Utility.distanceBetweenPoints((5,0),(3,5))
-	print Utility.distanceBetweenPoints((5,0),(4,5))
-	print Utility.distanceBetweenPoints((5,0),(5,5))
-	print Utility.distanceBetweenPoints((5,0),(6,5))
+	# print Utility.distanceBetweenPoints((5,0),(0,5))
+	# print Utility.distanceBetweenPoints((5,0),(1,5))
+	# print Utility.distanceBetweenPoints((5,0),(2,5))
+	# print Utility.distanceBetweenPoints((5,0),(3,5))
+	# print Utility.distanceBetweenPoints((5,0),(4,5))
+	# print Utility.distanceBetweenPoints((5,0),(5,5))
+	# print Utility.distanceBetweenPoints((5,0),(6,5))
+
+	# file1_path = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/data/TRAINING_DATA_individual_motion_LARGE.h5"
+	# file2_path = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/data/TRAINING_DATA_individual_motion_MS.h5"
+	# out_path = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/data/TRAINING_DATA_individual_motion_60k.h5"
+	# Utility.combineH5Databases(out_path, file1_path, file2_path)

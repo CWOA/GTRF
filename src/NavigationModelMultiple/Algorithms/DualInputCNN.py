@@ -15,13 +15,22 @@ class DualInputCNN:
 	# Class constructor
 	def __init__(	self,
 					use_simulator,
-					model_path		):
+					model_path,
+					use_loop_detector=True		):
+		"""
+		Class arguments
+		"""
+
+		# Whether loop detection is enabled or not
+		self._use_loop_detector = use_loop_detector
+
 		"""
 		Class attributes
 		"""
 
 		# Initialise the agent loop detection module
-		self._loop_detector = LoopDetector()
+		if self._use_loop_detector:
+			self._loop_detector = LoopDetector()
 
 		# Deep Neural Network class used for action selection
 		self._dnn = DNN.DNNModel(use_simulator)
@@ -36,7 +45,8 @@ class DualInputCNN:
 	# Reset function is called each time a new episode is started
 	def reset(self):
 		# Reset the loop detector
-		self._loop_detector.reset()
+		if self._use_loop_detector:
+			self._loop_detector.reset()
 
 		# Counter for the number of times loop detection is triggered
 		self._num_loops = 0
@@ -61,30 +71,31 @@ class DualInputCNN:
 		# Extract the agent's current position from the occupancy map
 		a_x, a_y = Utility.getAgentCoordinatesFromMap(occupancy_map)
 
-		# Add the suggested action and check history, check if the agent is
-		# stuck in a loop, act accordingly
-		if not self._agent_stuck and self._loop_detector.addCheckElement(chosen_action, (a_x, a_y)):
-			# Indicate that we're stuck
-			self._agent_stuck = True
-			self._num_loops += 1
+		if self._use_loop_detector:
+			# Add the suggested action and check history, check if the agent is
+			# stuck in a loop, act accordingly
+			if not self._agent_stuck and self._loop_detector.addCheckElement(chosen_action, (a_x, a_y)):
+				# Indicate that we're stuck
+				self._agent_stuck = True
+				self._num_loops += 1
 
-		# If the agent is deemed to be stuck
-		if self._agent_stuck:
-			# Select an appropriate action towards visiting the nearest largest unvisited
-			# region of the occupancy map
-			chosen_action = self.findUnvisitedDirection(occupancy_map, a_x, a_y)
+			# If the agent is deemed to be stuck
+			if self._agent_stuck:
+				# Select an appropriate action towards visiting the nearest largest unvisited
+				# region of the occupancy map
+				chosen_action = self.findUnvisitedDirection(occupancy_map, a_x, a_y)
 
-			# Get the value of the occupancy map were the action applied
-			value = self.elementForAction(occupancy_map, a_x, a_y, chosen_action)
+				# Get the value of the occupancy map were the action applied
+				value = self.elementForAction(occupancy_map, a_x, a_y, chosen_action)
 
-			# If this new position hasn't been visited before, control is handed back to
-			# the CNN
-			if value == const.UNVISITED_VAL:
-				# Delete elements in the loop detector
-				self._loop_detector.reset()
+				# If this new position hasn't been visited before, control is handed back to
+				# the CNN
+				if value == const.UNVISITED_VAL or value == const.MOTION_EMPTY_VAL:
+					# Delete elements in the loop detector
+					self._loop_detector.reset()
 
-				# Indicate that the agent is no longer stuck
-				self._agent_stuck = False
+					# Indicate that the agent is no longer stuck
+					self._agent_stuck = False
 
 		return chosen_action
 
@@ -106,7 +117,9 @@ class DualInputCNN:
 		choice_vec[max_idx] = 1
 
 		# Convert to action
-		return Utility.classVectorToAction(choice_vec)
+		action = Utility.classVectorToAction(choice_vec)
+
+		return action
 
 	# Return the occupancy map element for a prospective coordinate based on a selected
 	# action
@@ -128,7 +141,11 @@ class DualInputCNN:
 							format(action, new_x, new_y), __file__)
 
 		# Return the map value at the prospective position
-		return occupancy_map[new_y, new_x]
+		if const.OCCUPANCY_MAP_MODE == const.VISITATION_MODE:
+			return occupancy_map[new_y, new_x]
+		elif const.OCCUPANCY_MAP_MODE == const.MOTION_MODE:
+			return occupancy_map[new_y, new_x, 1]
+		else: Utility.die("Occupancy map mode not recognised in elementForAction()", __file__)
 
 	# Given that the agent is deemed to be an infinite loop
 	def findUnvisitedDirection(self, o_map, a_x, a_y):
@@ -160,9 +177,16 @@ class DualInputCNN:
 		# Pad a temporary map with ones
 		padded_map = np.ones((const.MAP_WIDTH+d_rad, const.MAP_HEIGHT+d_rad))
 
-		# Insert visitation map into border padded map
-		padded_map[		radius:const.MAP_WIDTH+radius,
-						radius:const.MAP_HEIGHT+radius	] = o_map[:,:]
+		if const.OCCUPANCY_MAP_MODE == const.VISITATION_MODE:
+			# Insert visitation map into border padded map
+			padded_map[		radius:const.MAP_WIDTH+radius,
+							radius:const.MAP_HEIGHT+radius	] = o_map[:,:]
+		elif const.OCCUPANCY_MAP_MODE == const.MOTION_MODE:
+			# Insert visitation map into border padded map
+			padded_map[		radius:const.MAP_WIDTH+radius,
+							radius:const.MAP_HEIGHT+radius	] = o_map[:,:,1]
+		else:
+			Utility.die("Occupancy map mode not recognised in determineCellNeighbours()", __file__)
 
 		# Determine neighbouring cell bounds for radius
 		y_low = y - radius

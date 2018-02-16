@@ -113,7 +113,7 @@ class ObjectHandler:
 			# try generating another (recurse)
 			if not success:
 				print "Resetting"
-				self.reset()
+				return self.reset()
 			# Otherwise assign random walk positions to each target
 			else:
 				for i in range(len(self._targets)):
@@ -236,8 +236,6 @@ class ObjectHandler:
 	def checkAgentTargetMatch(self, a_x, a_y):
 		for target in self._targets:
 			t_x, t_y = target.getPos()
-
-			# print "Current AGENT position = ({},{}), TARGET pos = ({},{})".format(a_x,a_y,t_x,t_y)
 
 			if a_x == t_x and a_y == t_y:
 				if not target.getVisited():
@@ -444,15 +442,15 @@ class ObjectHandler:
 		# 									start_num_targets, 
 		# 									end_num_targets			)
 
-		# Utility.drawGenerationLengthGraph(	moves_seq,
-		# 									moves_clo,
-		# 									start_num_targets,
-		# 									end_num_targets			)
-		Utility.drawGenerationGraphs(	moves_seq, 
-										moves_clo,
-										time_seq,
-										time_clo,
-										num_targets 				)
+		Utility.drawGenerationLengthGraph(	moves_seq,
+											moves_clo,
+											start_num_targets,
+											end_num_targets			)
+		# Utility.drawGenerationGraphs(	moves_seq, 
+		# 								moves_clo,
+		# 								time_seq,
+		# 								time_clo,
+		# 								num_targets 				)
 
 class Object:
 	# Class constructor

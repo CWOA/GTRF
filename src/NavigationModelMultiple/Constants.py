@@ -16,10 +16,10 @@ VISUALISE = False
 USE_SIMULATOR = False
 
 # Save frames to individual per-episode videos?
-SAVE_VIDEO = True
+SAVE_VIDEO = False
 
 # Number of episodes to test on or generate training examples
-ITERATIONS = 10
+ITERATIONS = 10000
 
 """
 Algorithm class constants
@@ -115,7 +115,7 @@ INDIVIDUAL_VELOCITY = 3
 
 # When pre-determining random walks for objects (to generate ground-truth global optimal
 # solution), how many random steps to generate
-RANDOM_WALK_NUM_STEPS = 100
+RANDOM_WALK_NUM_STEPS = 200
 
 """
 VisitationMap / Occupancy map constants
@@ -132,7 +132,7 @@ MOTION_EMPTY_VAL = 0
 MOTION_HIGH_VALUE = 1000
 
 # Whether or not to mark positions in the map where a target was visited
-MARK_PAST_VISITATION = True
+MARK_PAST_VISITATION = False
 
 # Which mode to use in the visitation map
 VISITATION_MODE = 0		# Used for when targets are static
@@ -157,7 +157,7 @@ TARGET_COLOUR = (64,30,162)
 VISIBLE_COLOUR = (247,242,236)
 
 GRID_PIXELS = 1
-WAIT_AMOUNT = 1
+WAIT_AMOUNT = 0
 
 """
 SimulatorBridge constants
@@ -187,21 +187,30 @@ BASE_TARGET_NAME = "cow"
 """
 DNN model/training constants
 """
-MODEL_NAME = "gaussian_SEQUENCE"
+
+# If cross fold validation is disabled, this is the ratio of training to testing data
 DATA_RATIO = 0.9
+
+# Number of epochs to train for (per fold for cross-fold validation)
 NUM_EPOCHS = 50
+
+# Should we cross-validate, how many folds?
 CROSS_VALIDATE = True
 NUM_FOLDS = 10
 
 """
 Loop Detector constants
 """
+
+# Whether to even use the loop detector
+USE_LOOP_DETECTOR = True
+
 # Use the string-based method (e.g. LRL) or coordinate-based system
 USE_ACTION_STRING = False
 
 # Maximum length of loop detection queue at any one time
-# MAX_QUEUE_SIZE = 40
-MAX_QUEUE_SIZE = 20
+MAX_QUEUE_SIZE = 40
+# MAX_QUEUE_SIZE = 20
 
 # Number of times the agent has to visit a particular coordinate (within)
 # the queue before it is deemed to be in an infinite loop

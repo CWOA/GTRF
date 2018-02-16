@@ -6,7 +6,7 @@ import numpy as np
 import Constants as const
 
 """
-TBC
+Class in charge of saving given video to file
 """
 
 class VideoWriter:
@@ -29,8 +29,7 @@ class VideoWriter:
 		"""
 
 		# Codec definition
-		c = const.VIDEO_CODEC
-		self._four_cc = cv2.VideoWriter_fourcc(*'XVID')
+		self._four_cc = cv2.VideoWriter_fourcc(*const.VIDEO_CODEC)
 
 		# File name counter
 		self._file_ctr = 0
@@ -70,3 +69,7 @@ class VideoWriter:
 
 		# Increment the file counter
 		self._file_ctr += 1
+
+# Entry method for unit testing
+if __name__ == '__main__':
+	pass

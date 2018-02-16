@@ -57,8 +57,7 @@ class DNNModel:
 		# # Model declaration
 		self._model = tflearn.DNN(	self._network,
 									tensorboard_verbose=0,
-									tensorboard_dir=Utility.getICIPTensorboardDir(),
-									best_checkpoint_path=Utility.getBestModelDir()	)
+									tensorboard_dir=Utility.getICIPTensorboardDir()	)
 
 		print "Initialised DNN"
 
@@ -177,13 +176,10 @@ class DNNModel:
 				# Network architecture
 				self._network = self.defineDNN()
 
-				print Utility.getICIPBestModelDir()
-
 				# Init the model
 				self._model = tflearn.DNN(	self._network,
 											tensorboard_verbose=0,
-											tensorboard_dir=Utility.getICIPTensorboardDir(),
-											best_checkpoint_path=Utility.getICIPBestModelDir()	)
+											tensorboard_dir=Utility.getICIPTensorboardDir()	)
 
 				# Train the model
 				self._model.fit(	[X0_train, X1_train],
@@ -259,7 +255,7 @@ class DNNModel:
 			# Display relevant things
 			cv2.imshow(const.AGENT_WINDOW_NAME, current_img)
 			print current_img
-			print X1[i,:,:,0]
+			print X1[i,:,:,:]
 			print Utility.classVectorToAction(Y[i,:])
 
 			# Wait for a keypress
@@ -270,9 +266,15 @@ class DNNModel:
 		np_img = np.zeros((1, self._img_width, self._img_height, const.NUM_CHANNELS))
 		np_img[0,:,:,:] = img
 
-		# Insert map into 4D numpy array
-		np_map = np.zeros((1, const.MAP_WIDTH, const.MAP_HEIGHT, 1))
-		np_map[0,:,:,0] = visit_map
+		# If motion is enabled (for the occupancy grid), add a dimension
+		if const.OCCUPANCY_MAP_MODE == const.VISITATION_MODE:
+			np_map = np.zeros((1, const.MAP_WIDTH, const.MAP_HEIGHT, 1))
+			np_map[0,:,:,0] = visit_map
+		elif const.OCCUPANCY_MAP_MODE == const.MOTION_MODE:
+			np_map = np.zeros((1, const.MAP_WIDTH, const.MAP_HEIGHT, 2))
+			np_map[0,:,:,:] = visit_map
+		else:
+			Utility.die("Occupancy map mode not recognised in testModelSingle()", __file__)
 
 		# Predict on given img and map
 		return self._model.predict([np_img, np_map])
@@ -292,7 +294,7 @@ class DNNModel:
 			# model_dir = Utility.getModelDir()
 			# model_dir = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/models/model_CLOSEST_2017-12-14_20:04:09_CROSS_VALIDATE_5.tflearn"
 			# model_dir = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/models/model_SEQUENCE_2017-12-15_15:51:08_CROSS_VALIDATE_4.tflearn"
-			model_dir = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/models/gaussian_SEQUENCE_2018-01-31_15:31:02_CROSS_VALIDATE_0.tflearn"
+			model_dir = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/models/motion_test_MS_2018-02-13_17:08:22_CROSS_VALIDATE_9.tflearn"
 
 		self._model.load(model_dir)
 
@@ -339,9 +341,9 @@ class DNNModel:
 		net0 = dropout(net0, 0.5)
 
 		# If motion is enabled (for the occupancy grid), add a dimension
-		if const.OCCUPANCY_MAP_MODE == VISITATION_MODE:
+		if const.OCCUPANCY_MAP_MODE == const.VISITATION_MODE:
 			visit_map_dims = 1
-		elif const.OCCUPANCY_MAP_MODE == MOTION_MODE:
+		elif const.OCCUPANCY_MAP_MODE == const.MOTION_MODE:
 			visit_map_dims = 2
 		else:
 			Utility.die("Occupancy map mode not recognised in defineDNN()", __file__)
@@ -363,10 +365,14 @@ class DNNModel:
 		net = fully_connected(net, self._num_classes, activation='softmax')
 
 		# Optimiser
-		net = regression(		net, 
-								optimizer='momentum',
-								loss='categorical_crossentropy',
-								learning_rate=0.001						)
+		# optimiser = tflearn.Adam(learning_rate=0.001, beta1=0.99)
+		# optimiser = tflearn.Momentum(learning_rate=0.001, lr_decay=0.96, decay_step=100)
+		optimiser = tflearn.Momentum(learning_rate=0.001)
+
+		# Regression layer
+		net = regression(	net, 
+							optimizer=optimiser,
+							loss='categorical_crossentropy'		)
 
 		return net
 

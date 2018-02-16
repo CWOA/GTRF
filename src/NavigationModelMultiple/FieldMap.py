@@ -307,7 +307,7 @@ class FieldMap:
 
 		# Save the output if we're supposed to
 		if self._save_output: 
-			return self.saveDataToFile(self._exp_name)
+			return self.saveDataToFile()
 
 	# Do a given number of testing episodes
 	def startTestingEpisodes(self, num_episodes):
