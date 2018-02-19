@@ -217,6 +217,11 @@ class DNNModel:
 			# Use this key to extract the directory of the best fold
 			best_model_path = model_save_dirs[best_fold]
 
+			# Report average and standard deviation classification results across all folds
+			all_values = np.asarray(self._eval_results.values())
+
+			print "Average accuracy = {}, standard deviation = {}".format(np.mean(all_values), np.std(all_values))
+
 		# Cross validation not enabled, just split, train and evaluate
 		else:
 			# Split the data into training/testing chunks

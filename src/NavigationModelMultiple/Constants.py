@@ -78,13 +78,15 @@ AGENT_START_COORDS = (0, 0)
 
 # Spatial distribution method for generating agent/target positions
 PRNG_DIST = 0	# Uses "random" python class (which uses Mersenne Twister PRNG)
-EQUI_DIST = 1	# Equidistant target spacing
+STAT_DIST = 1	# Equidistant STATIC grid
 GAUS_DIST = 2	# Gaussian distribution
+EQUI_DIST = 3	# Equidistant grid (at random positions)
 
 # Which distribution method to use
 # OBJECT_DIST_METHOD = PRNG_DIST
-# OBJECT_DIST_METHOD = EQUI_DIST
-OBJECT_DIST_METHOD = GAUS_DIST
+# OBJECT_DIST_METHOD = STAT_DIST
+# OBJECT_DIST_METHOD = GAUS_DIST
+OBJECT_DIST_METHOD = EQUI_DIST
 
 # Gaussian distribution initialisation parameters
 GAUS_MU_X = 3
@@ -93,9 +95,9 @@ GAUS_SIGMA_X = 1
 GAUS_SIGMA_Y = 1
 
 # Again, unsure whether this should be constant..
-EQUI_START_X = 2 # Where equidistant grid starts from
-EQUI_START_Y = 3
-EQUI_SPACING = 3 # Spacing between equidistant targets
+STAT_START_X = 2 # Where equidistant grid starts from
+STAT_START_Y = 3
+GRID_SPACING = 3 # Spacing between equidistant targets
 
 # Whether individuals should move according to their own velocity/heading parameters
 INDIVIDUAL_MOTION = False
@@ -103,10 +105,13 @@ INDIVIDUAL_MOTION = False
 # Individual motion style
 INDIVIDUAL_MOTION_RANDOM = 0	# Individuals move randomly (random walk)
 INDIVIDUAL_MOTION_HEADING = 1	# Individuals move having a heading and velocity
+INDIVIDUAL_MOTION_HERD = 2		# Population moves in a general direction but individuals
+								# have a small chance of inter-cluster randomness
 
 # Which individual motion model to utilise
-INDIVIDUAL_MOTION_METHOD = INDIVIDUAL_MOTION_RANDOM
+# INDIVIDUAL_MOTION_METHOD = INDIVIDUAL_MOTION_RANDOM
 # INDIVIDUAL_MOTION_METHOD = INDIVIDUAL_MOTION_HEADING
+INDIVIDUAL_MOTION_METHOD = INDIVIDUAL_MOTION_HERD
 
 # If individual's are supposed to move, how much slower do they move compared to the agent
 # e.g. the agent moves at 1 unit per iteration, with individual_velocity=3, targets will
@@ -116,6 +121,10 @@ INDIVIDUAL_VELOCITY = 3
 # When pre-determining random walks for objects (to generate ground-truth global optimal
 # solution), how many random steps to generate
 RANDOM_WALK_NUM_STEPS = 200
+
+# When herd motion is enabled, this is the chance that each individual will perform a
+# random walk as opposed to following overall group motion
+INDIVIDUAL_RANDOM_CHANCE = 0.25
 
 """
 VisitationMap / Occupancy map constants
@@ -132,7 +141,7 @@ MOTION_EMPTY_VAL = 0
 MOTION_HIGH_VALUE = 1000
 
 # Whether or not to mark positions in the map where a target was visited
-MARK_PAST_VISITATION = True
+MARK_PAST_VISITATION = False
 
 # Which mode to use in the visitation map
 VISITATION_MODE = 0		# Used for when targets are static

@@ -88,6 +88,9 @@ class ObjectHandler:
 		# Initialise the targets list
 		self._targets = []
 
+		# Precompute object positions for some distribution types (e.g. grids)
+		self.preComputeObjectPositions()
+
 		# Generate the targets
 		for i in range(num_targets):
 			t_x, t_y = self.generateUnoccupiedPosition()
@@ -100,6 +103,10 @@ class ObjectHandler:
 
 			self._targets.append(target)
 			self._id_ctr += 1
+
+		# Reset equidistant parameters
+		self._equi_x = []
+		self._equi_y = []
 
 		# In case motion is disabled
 		self._rand_pos = None
@@ -191,6 +198,49 @@ class ObjectHandler:
 	Object-centric methods
 	"""
 
+	# For some target distribution types, need to generate all values beforehand
+	# (not per individual)
+	def preComputeObjectPositions(self):
+		# If targets should be equidistant
+		if (self._object_dist_method == const.STAT_DIST or
+			self._object_dist_method == const.EQUI_DIST		):
+			# x, y array with boundaries and spacing
+			x = np.arange(const.STAT_START_X, const.MAP_WIDTH, const.GRID_SPACING)
+			y = np.arange(const.STAT_START_Y, const.MAP_HEIGHT, const.GRID_SPACING)
+
+			# Create two coordinate arrays with this
+			equi_x, equi_y = np.meshgrid(x, y)
+
+			# Offset odd rows of x by half the spacing size to yield approximate 
+			# equidistant spacing
+			half_spacing = round(const.GRID_SPACING/2)
+			for i in range(equi_x.shape[0]):
+				for j in range(equi_x.shape[1]):
+					# If i is odd
+					if i % 2 == 1:
+						equi_x[i,j] += half_spacing
+
+			# Convert to python list
+			self._equi_x = equi_x.flatten().tolist()
+			self._equi_y = equi_y.flatten().tolist()
+
+		# If the grid is supposed to move around
+		if self._object_dist_method == const.EQUI_DIST:
+			# Manually fill grid positions ()
+			self._equi_x = [0, 2, 4, 1, 3, 5]
+			self._equi_y = [0, 0, 0, 2, 2, 2]
+
+			# Detemine random grid offsets
+			off_x = random.randint(0, const.MAP_WIDTH-6)
+			off_y = random.randint(0, const.MAP_HEIGHT-3)
+
+			# Apply the offsets to each grid coordinate
+			assert len(self._equi_x) == len(self._equi_y)
+			for i in range(len(self._equi_x)):
+				# Apply the offset
+				self._equi_x[i] += off_x
+				self._equi_y[i] += off_y
+
 	# Generate a random position within the grid that isn't already occupied
 	def generateUnoccupiedPosition(self):
 		# List of occupied positions
@@ -202,27 +252,6 @@ class ObjectHandler:
 			for target in self._targets:
 				occupied.append(target.getPosTuple())
 
-		# If targets should be equidistant
-		if self._object_dist_method == const.EQUI_DIST:
-			# x, y array with boundaries and spacing
-			x = np.arange(const.EQUI_START_X, const.MAP_WIDTH, const.EQUI_SPACING)
-			y = np.arange(const.EQUI_START_Y, const.MAP_HEIGHT, const.EQUI_SPACING)
-
-			# Create two coordinate arrays with this
-			equi_x, equi_y = np.meshgrid(x, y)
-
-			# Offset odd rows of x by half the spacing size to yield equidistant spacing
-			half_spacing = round(const.EQUI_SPACING/2)
-			for i in range(equi_x.shape[0]):
-				for j in range(equi_x.shape[1]):
-					# If i is odd
-					if i % 2 == 1:
-						equi_x[i,j] += half_spacing
-
-			# Convert to python list
-			equi_x = equi_x.flatten().tolist()
-			equi_y = equi_y.flatten().tolist()
-
 		# Loop until we've generated a valid position
 		while True:
 			# Python "random" class uses PRNG Mersenne Twister
@@ -231,16 +260,17 @@ class ObjectHandler:
 				x = random.randint(0, const.MAP_WIDTH-1)
 				y = random.randint(0, const.MAP_HEIGHT-1)
 			# Equidistant targets
-			elif self._object_dist_method == const.EQUI_DIST:
+			elif (self._object_dist_method == const.STAT_DIST or
+				  self._object_dist_method == const.EQUI_DIST	):
 				# Pop the next x,y coordinates from the list
-				x = equi_x.pop(0)
-				y = equi_y.pop(0)
+				x = self._equi_x.pop(0)
+				y = self._equi_y.pop(0)
 			# Use a Gaussian distribution
 			elif self._object_dist_method == const.GAUS_DIST:
 				x = int(round(random.gauss(const.GAUS_MU_X, const.GAUS_SIGMA_X)))
 				y = int(round(random.gauss(const.GAUS_MU_Y, const.GAUS_SIGMA_Y)))
 			else:
-				Utility.die("Object distribution method not recognised", __file__)
+				Utility.die("Object distribution method not recognised in generateUnoccupiedPosition()", __file__)
 
 			# Generated position is valid
 			ok = True
