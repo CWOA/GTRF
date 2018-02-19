@@ -129,6 +129,9 @@ class ObjectHandler:
 			self._second_solver.reset(	copy.deepcopy(self._agent), 
 										copy.deepcopy(self._targets)	)
 
+		# Reset the DT metric
+		self.resetDT()
+
 		return self.getAgentPos(), self.getTargetPositions()
 
 	# Called at each iteration, just used for individual and population motion (if enabled)
@@ -137,6 +140,52 @@ class ObjectHandler:
 		if self._individual_motion:
 			for t in self._targets:
 				t.step(itr)
+
+		# Update the target discovery per timestep metric
+		self.updateDT()
+
+	# Called at the end of each episode
+	def finishUp(self):
+		# Finish up the DT metric for this episode
+		mu_DT, sigma_DT = self.finishDT()
+
+		return mu_DT, sigma_DT
+
+	"""
+	Discovery/timstep metric methods
+	"""
+
+	# Called at the beginning of each episode
+	def resetDT(self):
+		# List storing discovery rates
+		self._DT = []
+
+		# Reset the timesteps since discovery counter
+		self._non_discovery_ctr = 0
+
+	# Called at every episode timestep
+	def updateDT(self):
+		# Increment the counter counting the number of timesteps since new target visitation
+		self._non_discovery_ctr += 1
+
+	# Called whenever a new target is visited
+	def discoveryDT(self):
+		# Compute discovery/time value
+		DT_val = 1.0 / self._non_discovery_ctr
+
+		# Reset the move without discovery counter
+		self._non_discovery_ctr = 0
+
+		# Add it to the list
+		self._DT.append(DT_val)
+
+	# Called at the end of each episode
+	def finishDT(self):
+		# Convert to numpy array
+		DT_np = np.asarray(self._DT)
+
+		# Return the mean and standard deviation
+		return np.mean(DT_np), np.std(DT_np)
 
 	"""
 	Object-centric methods
@@ -239,7 +288,13 @@ class ObjectHandler:
 
 			if a_x == t_x and a_y == t_y:
 				if not target.getVisited():
+					# Update the discovery per timestep value
+					self.discoveryDT()
+
+					# Indicate that we've not visited this target
 					target.setVisited(True)
+
+					# Return that this is the case and the target's ID
 					return True, target.getID()
 
 		return False, -1

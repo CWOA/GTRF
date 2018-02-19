@@ -332,6 +332,35 @@ class Utility:
 		plt.savefig("{}/solution-generation.pdf".format(Utility.getICIPFigureDir()))
 		plt.show()
 
+	# Draws graph of training data instance size versus best validation accuracy
+	@staticmethod
+	def drawDatasetSizeAccuracyGraph():
+		# Load the data
+		base = Utility.getICIPDataDir()
+		val_5k = np.genfromtxt("{}/5k_val_acc.csv".format(base), delimiter=',', skip_header=1, names=['x', 'y', 'z'])
+		val_10k = np.genfromtxt("{}/10k_val_acc.csv".format(base), delimiter=',', skip_header=1, names=['x', 'y', 'z'])
+		val_20k = np.genfromtxt("{}/20k_val_acc.csv".format(base), delimiter=',', skip_header=1, names=['x', 'y', 'z'])
+		val_40k = np.genfromtxt("{}/40k_val_acc.csv".format(base), delimiter=',', skip_header=1, names=['x', 'y', 'z'])
+		val_60k = np.genfromtxt("{}/60k_val_acc.csv".format(base), delimiter=',', skip_header=1, names=['x', 'y', 'z'])
+
+		# Extract maximum validation values
+		max_5 = val_5k['z'].max()
+		max_10 = val_10k['z'].max()
+		max_20 = val_20k['z'].max()
+		max_40 = val_40k['z'].max()
+		max_60 = val_60k['z'].max()
+
+		x = np.asarray([5000, 10000, 20000, 40000, 60000])
+		y = np.asarray([max_5, max_10, max_20, max_40, max_60])
+
+		plt.style.use('seaborn-darkgrid')
+		plt.plot(x, y)
+		plt.xlabel('Dataset size')
+		plt.ylabel('Accuracy')
+		plt.tight_layout()
+		plt.savefig("{}/dataset-size-accuracy.pdf".format(Utility.getICIPFigureDir()))
+		plt.show()
+
 	# Method for drawing a graph that compares training and validation accuracy versus
 	# epochs.
 	@staticmethod
@@ -343,6 +372,10 @@ class Utility:
 
 		# Load the data
 		base = Utility.getICIPDataDir()
+		acc_5k = np.genfromtxt("{}/5k_train_acc.csv".format(base), delimiter=',', skip_header=1, names=['x', 'y', 'z'])
+		val_5k = np.genfromtxt("{}/5k_val_acc.csv".format(base), delimiter=',', skip_header=1, names=['x', 'y', 'z'])
+		acc_10k = np.genfromtxt("{}/10k_train_acc.csv".format(base), delimiter=',', skip_header=1, names=['x', 'y', 'z'])
+		val_10k = np.genfromtxt("{}/10k_val_acc.csv".format(base), delimiter=',', skip_header=1, names=['x', 'y', 'z'])
 		acc_20k = np.genfromtxt("{}/20k_train_acc.csv".format(base), delimiter=',', skip_header=1, names=['x', 'y', 'z'])
 		val_20k = np.genfromtxt("{}/20k_val_acc.csv".format(base), delimiter=',', skip_header=1, names=['x', 'y', 'z'])
 		acc_40k = np.genfromtxt("{}/40k_train_acc.csv".format(base), delimiter=',', skip_header=1, names=['x', 'y', 'z'])
@@ -355,10 +388,14 @@ class Utility:
 		fig, axs = plt.subplots(1, 2, sharey=True, tight_layout=True)
 
 		# Scale x-axis values down to the number of epochs
+		acc_5k['y'] = (const.NUM_EPOCHS*(acc_5k['y'] - acc_5k['y'].min())) / acc_5k['y'].max()
+		acc_10k['y'] = (const.NUM_EPOCHS*(acc_10k['y'] - acc_10k['y'].min())) / acc_10k['y'].max()
 		acc_20k['y'] = (const.NUM_EPOCHS*(acc_20k['y'] - acc_20k['y'].min())) / acc_20k['y'].max()
 		acc_40k['y'] = (const.NUM_EPOCHS*(acc_40k['y'] - acc_40k['y'].min())) / acc_40k['y'].max()
 		acc_60k['y'] = (const.NUM_EPOCHS*(acc_60k['y'] - acc_60k['y'].min())) / acc_60k['y'].max()
 
+		val_5k['y'] = ((const.NUM_EPOCHS*(val_5k['y'] - val_5k['y'].min())) / val_5k['y'].max()) + 1
+		val_10k['y'] = ((const.NUM_EPOCHS*(val_10k['y'] - val_10k['y'].min())) / val_10k['y'].max()) + 1
 		val_20k['y'] = ((const.NUM_EPOCHS*(val_20k['y'] - val_20k['y'].min())) / val_20k['y'].max()) + 1
 		val_40k['y'] = ((const.NUM_EPOCHS*(val_40k['y'] - val_40k['y'].min())) / val_40k['y'].max()) + 1 
 		val_60k['y'] = ((const.NUM_EPOCHS*(val_60k['y'] - val_60k['y'].min())) / val_60k['y'].max()) + 1
@@ -370,15 +407,21 @@ class Utility:
 		tra_s = 99
 
 		# Plot to training accuracy graph
+		axs[0].plot(acc_5k['y'], acc_5k['z'], color='y', alpha=alpha)
+		axs[0].plot(acc_10k['y'], acc_10k['z'], color='k', alpha=alpha)
 		axs[0].plot(acc_20k['y'], acc_20k['z'], color='r', alpha=alpha)
 		axs[0].plot(acc_40k['y'], acc_40k['z'], color='g', alpha=alpha)
 		axs[0].plot(acc_60k['y'], acc_60k['z'], color='b', alpha=alpha)
 
+		axs[0].plot(acc_5k['y'], smooth(acc_5k['z'], tra_s), color='y', label='5k')
+		axs[0].plot(acc_10k['y'], smooth(acc_10k['z'], tra_s), color='k', label='10k')
 		axs[0].plot(acc_20k['y'], smooth(acc_20k['z'], tra_s), color='r', label='20k')
 		axs[0].plot(acc_40k['y'], smooth(acc_40k['z'], tra_s), color='g', label='40k')
 		axs[0].plot(acc_60k['y'], smooth(acc_60k['z'], tra_s), color='b', label='60k')
 
 		# Plot to validation accuracy graph
+		axs[1].plot(val_5k['y'], val_5k['z'], color='y', alpha=alpha)
+		axs[1].plot(val_10k['y'], val_10k['z'], color='k', alpha=alpha)
 		axs[1].plot(val_20k['y'], val_20k['z'], color='r', alpha=alpha)
 		axs[1].plot(val_40k['y'], val_40k['z'], color='g', alpha=alpha)
 		axs[1].plot(val_60k['y'], val_60k['z'], color='b', alpha=alpha)
@@ -386,6 +429,8 @@ class Utility:
 		# Smoothing constant
 		val_s = 11
 
+		axs[1].plot(val_5k['y'], smooth(val_5k['z'], val_s), color='y', label='5k')
+		axs[1].plot(val_10k['y'], smooth(val_10k['z'], val_s), color='k', label='10k')
 		axs[1].plot(val_20k['y'], smooth(val_20k['z'], val_s), color='r', label='20k')
 		axs[1].plot(val_40k['y'], smooth(val_40k['z'], val_s), color='g', label='40k')
 		axs[1].plot(val_60k['y'], smooth(val_60k['z'], val_s), color='b', label='60k')
@@ -395,10 +440,9 @@ class Utility:
 		axs[0].set_ylabel("Accuracy")
 		axs[0].set_title("Training")
 		axs[1].set_xlabel("Epochs")
-		# axs[1].set_ylabel("Accuracy")
 		axs[1].set_title("Validation")
 
-		plt.axis([0, 50, 0.5, 0.8])
+		plt.axis([0, 50, 0.5, 0.9])
 		plt.legend(loc="upper right")
 		plt.tight_layout()
 
@@ -506,9 +550,10 @@ class Utility:
 
 # Entry method/unit testing
 if __name__ == '__main__':
-	Utility.drawAccuracyGraph()
+	# Utility.drawDatasetSizeAccuracyGraph()
+	# Utility.drawAccuracyGraph()
 
-	# Utility.drawModelLengthHistogram()
+	Utility.drawModelLengthHistogram()
 
 	# print Utility.distanceBetweenPoints((5,0),(0,5))
 	# print Utility.distanceBetweenPoints((5,0),(1,5))

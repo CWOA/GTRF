@@ -19,7 +19,7 @@ USE_SIMULATOR = False
 SAVE_VIDEO = False
 
 # Number of episodes to test on or generate training examples
-ITERATIONS = 10000
+ITERATIONS = 20000
 
 """
 Algorithm class constants
@@ -58,7 +58,7 @@ ACTIONS = ['F', 'B', 'L', 'R'] # Forward, backward, left, right
 EXT_ACTIONS = ['F', 'B', 'L', 'R', 'N'] # Forward, backward, left, right, nothing
 
 # Whether to use extended actions including "Do nothing"
-USE_EXT_ACTIONS = True
+USE_EXT_ACTIONS = False
 
 # Unit to move the agent by each step (its velocity)
 MOVE_DIST = 1
@@ -82,9 +82,9 @@ EQUI_DIST = 1	# Equidistant target spacing
 GAUS_DIST = 2	# Gaussian distribution
 
 # Which distribution method to use
-OBJECT_DIST_METHOD = PRNG_DIST
+# OBJECT_DIST_METHOD = PRNG_DIST
 # OBJECT_DIST_METHOD = EQUI_DIST
-# OBJECT_DIST_METHOD = GAUS_DIST
+OBJECT_DIST_METHOD = GAUS_DIST
 
 # Gaussian distribution initialisation parameters
 GAUS_MU_X = 3
@@ -98,7 +98,7 @@ EQUI_START_Y = 3
 EQUI_SPACING = 3 # Spacing between equidistant targets
 
 # Whether individuals should move according to their own velocity/heading parameters
-INDIVIDUAL_MOTION = True
+INDIVIDUAL_MOTION = False
 
 # Individual motion style
 INDIVIDUAL_MOTION_RANDOM = 0	# Individuals move randomly (random walk)
@@ -132,15 +132,15 @@ MOTION_EMPTY_VAL = 0
 MOTION_HIGH_VALUE = 1000
 
 # Whether or not to mark positions in the map where a target was visited
-MARK_PAST_VISITATION = False
+MARK_PAST_VISITATION = True
 
 # Which mode to use in the visitation map
 VISITATION_MODE = 0		# Used for when targets are static
 MOTION_MODE = 1		# Used for estimating moving target locations
 
 # Which mode is the occupancy map in
-# OCCUPANCY_MAP_MODE = VISITATION_MODE
-OCCUPANCY_MAP_MODE = MOTION_MODE
+OCCUPANCY_MAP_MODE = VISITATION_MODE
+# OCCUPANCY_MAP_MODE = MOTION_MODE
 
 """
 Visualisation/rendering constants
@@ -157,7 +157,7 @@ TARGET_COLOUR = (64,30,162)
 VISIBLE_COLOUR = (247,242,236)
 
 GRID_PIXELS = 1
-WAIT_AMOUNT = 0
+WAIT_AMOUNT = 1
 
 """
 SimulatorBridge constants
@@ -227,10 +227,10 @@ NAIVE_SOLVER = 3
 MOTION_SOLVER = 4
 
 # Which solver to use
-# SOLVER_METHOD = SEQUENCE_SOLVER
+SOLVER_METHOD = SEQUENCE_SOLVER
 # SOLVER_METHOD = CLOSEST_SOLVER
 # SOLVER_METHOD = NAIVE_SOLVER
-SOLVER_METHOD = MOTION_SOLVER
+# SOLVER_METHOD = MOTION_SOLVER
 
 """
 Tree Solver constants

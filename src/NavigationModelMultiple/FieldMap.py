@@ -227,9 +227,13 @@ class FieldMap:
 		# If we should generate and save video
 		if self._save_video: self._video_writer.finishUp()
 
+		# Finish up the object handler
+		mu_DT, sigma_DT = self._object_handler.finishUp()
+
 		# Return the number of moves taken by the model and the solution
 		# Also return the number of times loop detection is found
-		return num_moves, sol_length, num_loops
+		# Finally return the average and stddev discovery per timestep rate
+		return num_moves, sol_length, num_loops, mu_DT, sigma_DT
 
 	# For some timestep, append data to the big list
 	def recordData(self, subview, visit_map, action_vector):
@@ -320,7 +324,9 @@ class FieldMap:
 		# 0: number of moves required by the model
 		# 1: number of moves required by employed solver (closest, target ordering)
 		# 2: number of times loop detection is triggered
-		test_data = np.zeros((num_episodes, 3))
+		# 3: Average discovery/per timestep
+		# 4: Standard deviation discovery/per timestep
+		test_data = np.zeros((num_episodes, 5))
 
 		# Initialise progress bar (TQDM) object
 		pbar = tqdm(total=num_episodes)
@@ -331,12 +337,14 @@ class FieldMap:
 			self.reset()
 
 			# Go ahead and solve this instance using model & solver for comparison
-			num_moves, sol_length, num_loops = self.beginEpisode(True, wait_amount=const.WAIT_AMOUNT)
+			num_moves, sol_length, num_loops, mu_DT, sigma_DT = self.beginEpisode(True, wait_amount=const.WAIT_AMOUNT)
 
 			# Store statistics to numpy array
 			test_data[i,0] = num_moves
 			test_data[i,1] = sol_length
 			test_data[i,2] = num_loops
+			test_data[i,3] = mu_DT
+			test_data[i,4] = sigma_DT
 
 			# Update progress bar
 			pbar.update()
