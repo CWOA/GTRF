@@ -63,15 +63,24 @@ class ObjectHandler:
 		self._targets = None
 
 	# Reset this handler so we can go again
-	def reset(self):
+	def reset(self, a_pos=None, t_pos=None):
 		# Unique identifier (ID) counter for objects (both agent and targets)
 		self._id_ctr = 0
 
 		# Generate a random starting agent coordinate if we're supposed to
 		if self._random_agent_pos:
-			a_x = random.randint(0, const.MAP_WIDTH-1)
-			a_y = random.randint(0, const.MAP_HEIGHT-1)
+			# If we've been given agent starting coordinates
+			if a_pos is not None:
+				a_x = a_pos[0]
+				a_y = a_pos[1]
+			# Generate a new random position in the environment
+			else:
+				a_x = random.randint(0, const.MAP_WIDTH-1)
+				a_y = random.randint(0, const.MAP_HEIGHT-1)
+
+			# Create the agent object with these starting coordinates
 			self._agent = Object(self._id_ctr, True, x=a_x, y=a_y)
+
 		# Default agent starting coordinates
 		else: self._agent = Object(self._id_ctr, True)
 
@@ -93,7 +102,15 @@ class ObjectHandler:
 
 		# Generate the targets
 		for i in range(num_targets):
-			t_x, t_y = self.generateUnoccupiedPosition()
+			# If we've been given target starting positions
+			if t_pos is not None:
+				t_x = t_pos[i][0]
+				t_y = t_pos[i][1]
+			# Generate new target position
+			else:
+				t_x, t_y = self.generateUnoccupiedPosition()
+
+			# Create the target object instance
 			target = Object(	self._id_ctr, 
 								False, 
 								x=t_x, 

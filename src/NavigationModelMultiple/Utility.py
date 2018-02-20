@@ -212,6 +212,11 @@ class Utility:
 
 		return True
 
+	# Scale a given value from one range [old_a, old_b] to a new range [new_a, new_b]
+	@staticmethod
+	def scaleValueFromRangeToRange(val, old_a, old_b, new_a, new_b):
+		return (((new_b - new_a) * (val - old_a)) / (old_b - old_a)) + new_a
+
 	@staticmethod
 	def die(message, file):
 		print "\nERROR MESSAGE:_________________\n\"{}\"\nin file: {}\nExiting..".\

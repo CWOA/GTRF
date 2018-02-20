@@ -5,6 +5,7 @@ import math
 import random
 import numpy as np
 import Constants as const
+from Utility import Utility
 
 # ROS libraries
 import tf
@@ -45,13 +46,18 @@ class Visualiser:
 		self._simulator_bridge.resetAgentTargets(a_x, a_y, target_poses)
 
 	# Choose between rendering here (in gridworld) or rendering using ROS simulator
-	def update(self, state):
+	def update(self, state, render_occ_map=False):
 		# Create image to render to
 		img = np.zeros((self._disp_height, self._disp_width, 3), np.uint8)
 
 		# Get agent position
 		a_x = state[0][0]
 		a_y = state[0][1]
+
+		# Render the occupancy grid map in grayscale if we're supposed to
+		occ_map = None
+		if render_occ_map:
+			occ_map = self.renderOccupancyMap(state[2])
 
 		# Set image to background colour
 		img[:] = const.BACKGROUND_COLOUR
@@ -68,6 +74,14 @@ class Visualiser:
 		# to the agent subview)
 		img_copy = img.copy()
 
+		# Render target locations
+		for target in state[1]:
+			# Round target positions to the nearest integer if motion is enabled
+			t_x = int(round(target[0]))
+			t_y = int(round(target[1]))
+
+			img = self.renderGridPosition(t_x, t_y, img, const.TARGET_COLOUR)
+
 		if const.OCCUPANCY_MAP_MODE is not const.MOTION_MODE:
 			# Render visited locations
 			for x in range(const.MAP_WIDTH):
@@ -76,14 +90,6 @@ class Visualiser:
 					if state[2][y,x]:
 						# Render this square as have being visited
 						img = self.renderGridPosition(x, y, img, const.VISITED_COLOUR)
-
-		# Render target locations
-		for target in state[1]:
-			# Round target positions to the nearest integer if motion is enabled
-			t_x = int(round(target[0]))
-			t_y = int(round(target[1]))
-
-			img = self.renderGridPosition(t_x, t_y, img, const.TARGET_COLOUR)
 
 		# Render current agent position to both images
 		img = self.renderGridPosition(		a_x, 
@@ -126,7 +132,48 @@ class Visualiser:
 		self._render_img = img
 		self._subview = subview
 
-		return img, subview
+		return img, subview, occ_map
+
+	# Given the occupancy map in numpy array form, construct a grayscale image of it for
+	# visualisation purposes
+	def renderOccupancyMap(self, occ_map):
+		# Create image to render to
+		img = np.zeros((const.MAP_HEIGHT, const.MAP_WIDTH, 3), np.uint8)
+
+		# Make sure the sizes are the same
+		assert(occ_map.shape[0] == const.MAP_WIDTH)
+		assert(occ_map.shape[1] == const.MAP_HEIGHT)
+
+		# Iterate over the occupancy map
+		for i in range(const.MAP_WIDTH):
+			for j in range(const.MAP_HEIGHT):
+				# Get the current occupancy map value
+				val = occ_map[j,i]
+
+				# If the value is non-zero
+				if val != 0:
+					# Check which occupancy map mode we're in
+					if const.OCCUPANCY_MAP_MODE == const.VISITATION_MODE:
+						# Scale value to grayscale range
+						val = Utility.scaleValueFromRangeToRange(	val,
+																		const.UNVISITED_VAL,
+																		const.AGENT_VAL,
+																		120.0,
+																		255.0				)
+					elif const.OCCUPANCY_MAP_MODE == const.MOTION_MODE:
+						# Scale value to grayscale range
+						val = Utility.scaleValueFromRangeToRange(	val,
+																		const.MOTION_EMPTY_VAL,
+																		const.MOTION_HIGH_VALUE,
+																		0.0,
+																		255.0				)
+					else:
+						Utility.die("Occupancy map mode not recognised in renderOccupancyMap()", __file__)
+
+				# Assign scaled value to the image
+				img[j,i,:] = val
+
+		return img
 
 	def padBorders(self, img, pad):
 		# Create a new image with the correct borders

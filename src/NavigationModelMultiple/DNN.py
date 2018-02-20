@@ -21,7 +21,7 @@ TBC
 
 class DNNModel:
 	# Class constructor
-	def __init__(self, use_simulator=True):
+	def __init__(self, use_simulator=False):
 		"""
 		Class attributes
 		"""

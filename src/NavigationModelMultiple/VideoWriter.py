@@ -35,9 +35,13 @@ class VideoWriter:
 		self._file_ctr = 0
 
 	# Open a new video stream
-	def reset(self):
-		# Construct complete file path
-		file_path = os.path.join(self._video_dir, "{}_{}.avi".format(self._exp_name, self._file_ctr))
+	def reset(self, suffix=None):
+		if suffix is None:
+			filename = "{}_{}.avi".format(self._exp_name, self._file_ctr)
+		else:
+			filename ="{}_{}_{}.avi".format(self._exp_name, suffix, self._file_ctr)
+
+		file_path = os.path.join(self._video_dir, filename)
 
 		# OpenCV videowriter object
 		self._writer = cv2.VideoWriter(	file_path, 
