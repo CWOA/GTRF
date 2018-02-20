@@ -19,7 +19,7 @@ USE_SIMULATOR = False
 SAVE_VIDEO = False
 
 # Number of episodes to test on or generate training examples
-ITERATIONS = 1
+ITERATIONS = 10
 
 """
 Algorithm class constants
@@ -83,9 +83,9 @@ GAUS_DIST = 2	# Gaussian distribution
 EQUI_DIST = 3	# Equidistant grid (at random positions)
 
 # Which distribution method to use
-# OBJECT_DIST_METHOD = PRNG_DIST
+OBJECT_DIST_METHOD = PRNG_DIST
 # OBJECT_DIST_METHOD = STAT_DIST
-OBJECT_DIST_METHOD = GAUS_DIST
+# OBJECT_DIST_METHOD = GAUS_DIST
 # OBJECT_DIST_METHOD = EQUI_DIST
 
 # Gaussian distribution initialisation parameters
@@ -141,7 +141,7 @@ MOTION_EMPTY_VAL = 0
 MOTION_HIGH_VALUE = 1000
 
 # Whether or not to mark positions in the map where a target was visited
-MARK_PAST_VISITATION = True
+MARK_PAST_VISITATION = False
 
 # Which mode to use in the visitation map
 VISITATION_MODE = 0		# Used for when targets are static

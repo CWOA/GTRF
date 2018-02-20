@@ -68,6 +68,13 @@ class FieldMap:
 			# Algorithm class for selecting agent actions based on the environment state
 			# You can override the algorithm method here
 			self._algorithm = Algorithm(const.ALGORITHM_METHOD, self._use_simulator, model_path)
+			
+			# If we should generate video
+			if self._save_video:
+				# Initialise three video writers for our solution, agent view, agent occupancy map
+				self._vw_OURS = VideoWriter.VideoWriter(self._exp_name, Utility.getVideoDir())
+				self._vw_AGENT = VideoWriter.VideoWriter(self._exp_name, Utility.getVideoDir())
+				self._vw_OCC = VideoWriter.VideoWriter(self._exp_name, Utility.getVideoDir())
 		else:
 			# Training data list to save upon completion (if we're even supposed to be
 			# saving output at all)
@@ -84,7 +91,7 @@ class FieldMap:
 
 	# Reset the map (agent position, target positions, memory, etc.)
 	# Can supply function with epsiode configuration to override it
-	def reset(self, a_pos=None, t_pos=None, video_suffix=None):
+	def reset(self, a_pos=None, t_pos=None):
 		# Reset objects (agent, target), returns generated agent/target positions
 		a_pos, t_pos = self._object_handler.reset(a_pos=a_pos, t_pos=t_pos)
 			
@@ -100,7 +107,14 @@ class FieldMap:
 		self._map_handler.reset(a_x, a_y)
 
 		# If we should generate and save video
-		if self._save_video: self._video_writer.reset(video_suffix)
+		if self._save_video: 
+			# Reset the other video writers if they exist
+			if not self._generating:
+				self._vw_OURS.reset("OURS")
+				self._vw_AGENT.reset("AGENT_VISUAL")
+				self._vw_OCC.reset("AGENT_OCC")
+			else:
+				self._video_writer.reset("GO")
 
 		# Reset the algorithm
 		if not self._generating: self._algorithm.reset()
@@ -167,20 +181,20 @@ class FieldMap:
 		return (pos, targets_pos, visit_map)
 
 	# Begin this episode whether we're generating training data, testing, etc.
-	def beginEpisode(	self, 
-						testing, 
-						wait_amount=0, 
-						video_agent_viewpoint=False, 
-						video_agent_occ_map=False		):
+	def beginEpisode(self, testing, wait_amount=0, render_occ_map=False):
 		# Render the initial episode state
-		img, subview, occ_map = self._visualiser.update(self.retrieveStates(), render_occ_map=video_agent_occ_map)
+		img, subview, occ_map = self._visualiser.update(self.retrieveStates(), render_occ_map=render_occ_map)
 
 		# If we should generate and save video
 		if self._save_video:
-			# Should we save agent's viewpoint or the entire environment
-			if video_agent_viewpoint: self._video_writer.iterate(subview)
-			elif video_agent_occ_map: self._video_writer.iterate(occ_map)
-			else: self._video_writer.iterate(img)
+			# If we're testing
+			if testing:
+				self._vw_OURS.iterate(img)
+				self._vw_AGENT.iterate(subview)
+				self._vw_OCC.iterate(occ_map)
+			# We're generating training examples
+			else:
+				self._video_writer.iterate(img)
 
 		# Number of moves the agent has made
 		num_moves = 0
@@ -225,14 +239,18 @@ class FieldMap:
 			num_moves += 1
 
 			# Render the updated views (for input into the subsequent iteration)
-			img, subview, occ_map = self._visualiser.update(self.retrieveStates(), render_occ_map=video_agent_occ_map)
+			img, subview, occ_map = self._visualiser.update(self.retrieveStates(), render_occ_map=render_occ_map)
 
 			# If we should generate and save video
 			if self._save_video:
-				# Should we save agent's viewpoint or the entire environment
-				if video_agent_viewpoint: self._video_writer.iterate(subview)
-				elif video_agent_occ_map: self._video_writer.iterate(occ_map)
-				else: self._video_writer.iterate(img)
+				# If we're testing
+				if testing:
+					self._vw_OURS.iterate(img)
+					self._vw_AGENT.iterate(subview)
+					self._vw_OCC.iterate(occ_map)
+				# We're generating training examples
+				else:
+					self._video_writer.iterate(img)
 
 			# Display if we're supposed to
 			if self._visualise: self._visualiser.display(wait_amount)
@@ -244,7 +262,15 @@ class FieldMap:
 		else: num_loops = 0
 
 		# If we should generate and save video
-		if self._save_video: self._video_writer.finishUp()
+		if self._save_video: 
+			# If we're testing
+			if testing:
+				self._vw_OURS.finishUp()
+				self._vw_AGENT.finishUp()
+				self._vw_OCC.finishUp()
+			# We're generating training examples
+			else:
+				self._video_writer.finishUp()
 
 		# Finish up the object handler
 		mu_DT, sigma_DT = self._object_handler.finishUp()
@@ -376,6 +402,8 @@ class FieldMap:
 
 	# Do a given number of episodes, saving video out to file
 	def generateVideos(self, num_episodes):
+		raw_input()
+
 		# Initialise progress bar
 		pbar = tqdm(total=num_episodes)
 
@@ -384,40 +412,20 @@ class FieldMap:
 			"""
 			Globally optimal solution
 			"""
+			self._generating = True
 			# Generate a new episode
-			a_pos, t_pos = self.reset(video_suffix="GO")
+			a_pos, t_pos = self.reset()
 			# Record the solver's solution to the episode (globally-optimal)
 			self.beginEpisode(False, wait_amount=const.WAIT_AMOUNT)
 
 			"""
 			Our solution
 			"""
-			# Hacky way of making videowriter ID consistent
-			self._video_writer._file_ctr -= 1
+			self._generating = False
 			# Supply the same starting configurations to the episode
-			self.reset(a_pos=a_pos, t_pos=t_pos, video_suffix="OURS")
+			self.reset(a_pos=a_pos, t_pos=t_pos)
 			# Record our solution to the episode
-			self.beginEpisode(True, wait_amount=const.WAIT_AMOUNT)
-
-			"""
-			Agent visual input
-			"""
-			# Hacky way of making videowriter ID consistent
-			self._video_writer._file_ctr -= 1
-			# Supply the same starting configurations to the episode
-			self.reset(a_pos=a_pos, t_pos=t_pos, video_suffix="AGENT_VISUAL")
-			# Record our solution to the episode
-			self.beginEpisode(True, wait_amount=const.WAIT_AMOUNT, video_agent_viewpoint=True)
-
-			"""
-			Agent occupancy map
-			"""
-			# Hacky way of making videowriter ID consistent
-			self._video_writer._file_ctr -= 1
-			# Supply the same starting configurations to the episode
-			self.reset(a_pos=a_pos, t_pos=t_pos, video_suffix="AGENT_OCC")
-			# Record our solution to the episode
-			self.beginEpisode(True, wait_amount=const.WAIT_AMOUNT, video_agent_occ_map=True)
+			self.beginEpisode(True, wait_amount=const.WAIT_AMOUNT, render_occ_map=True)
 
 			# Update the progress bar
 			pbar.update()

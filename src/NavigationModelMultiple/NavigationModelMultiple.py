@@ -2,6 +2,7 @@
 
 import DNN
 import Constants as const
+from Utility import Utility
 from FieldMap import FieldMap
 
 """
@@ -75,12 +76,37 @@ def compareSolvers(iterations, visualise):
 
 # Method for generating videos comparing the employed method, the globally-optimal solution
 def generateVideoComparison(iterations, exp_name, visualise):
-	best_model_path = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/models/visitation_marked_GAUSSIAN_2018-02-18_17:53:40_CROSS_VALIDATE_4.tflearn"
+	# Base model directory
+	base = Utility.getICIPModelDir()
+
+	use_simulator = False
+
+	# 1) Static equidistant grid
+	# exp_name = "static_grid"
+	# best_model_path = "{}/equidistant_SEQUENCE_2018-01-31_12:22:23_CROSS_VALIDATE_6.tflearn".format(base)
 	
+	# 2) Moving equidistant grid
+	# exp_name = "moving_grid"
+	# best_model_path = "{}/visitation_marked_GAUSSIAN_2018-02-18_17:53:40_CROSS_VALIDATE_4.tflearn".format(base)
+
+	# 3) Gaussian
+	# exp_name = "gaussian"
+	# best_model_path = "{}/visitation_marked_GAUSSIAN_2018-02-18_17:53:40_CROSS_VALIDATE_4.tflearn".format(base)
+
+	# 4) Random
+	# exp_name = "random"
+	# best_model_path = "{}/model_SEQUENCE_2017-12-15_15:51:08_CROSS_VALIDATE_4.tflearn".format(base)
+
+	# 5) Random simulator
+	use_simulator = True
+	exp_name = "random_simulator"
+	best_model_path = "{}/sequence_SIMULATOR_2018-01-24_13:40:00_CROSS_VALIDATE_2.tflearn".format(base)
+
 	fm = FieldMap(	False, 
 					exp_name, 
 					visualise=visualise,
-					save_video=True, 
+					save_video=True,
+					use_simulator=use_simulator,
 					model_path=best_model_path	)
 	fm.generateVideos(iterations)
 
@@ -114,4 +140,4 @@ if __name__ == '__main__':
 	# trainModel(iterations, use_simulator)
 	# testModel(iterations, visualise, use_simulator)
 	# compareSolvers(iterations, visualise)
-	generateVideoComparison(iterations, "vid_gen", visualise)
+	generateVideoComparison(iterations, "", visualise)
