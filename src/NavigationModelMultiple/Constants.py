@@ -19,7 +19,7 @@ USE_SIMULATOR = False
 SAVE_VIDEO = False
 
 # Number of episodes to test on or generate training examples
-ITERATIONS = 10
+ITERATIONS = 20000
 
 """
 Algorithm class constants
@@ -141,7 +141,7 @@ MOTION_EMPTY_VAL = 0
 MOTION_HIGH_VALUE = 1000
 
 # Whether or not to mark positions in the map where a target was visited
-MARK_PAST_VISITATION = False
+MARK_PAST_VISITATION = True
 
 # Which mode to use in the visitation map
 VISITATION_MODE = 0		# Used for when targets are static
@@ -236,9 +236,9 @@ NAIVE_SOLVER = 3
 MOTION_SOLVER = 4
 
 # Which solver to use
-SOLVER_METHOD = SEQUENCE_SOLVER
+# SOLVER_METHOD = SEQUENCE_SOLVER
 # SOLVER_METHOD = CLOSEST_SOLVER
-# SOLVER_METHOD = NAIVE_SOLVER
+SOLVER_METHOD = NAIVE_SOLVER
 # SOLVER_METHOD = MOTION_SOLVER
 
 """
@@ -268,13 +268,16 @@ VideoWriter constants
 """
 
 # Video codec to encode saved videos with
-VIDEO_CODEC = 'XVID'
+VIDEO_CODEC = 'FMP4'
+
+# Video file extension
+VIDEO_FILE_EXTENSION = 'mp4'
 
 # Frames per second to encode at
 VIDEO_FPS = 24.0
 
 # Iterations per second to show
-VIDEO_ITR_PER_SECOND = 3
+VIDEO_ITR_PER_SECOND = 4
 
 # Video output resolution
 VIDEO_OUT_WIDTH = 500

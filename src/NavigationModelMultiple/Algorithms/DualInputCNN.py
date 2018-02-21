@@ -308,8 +308,6 @@ class LoopDetector:
 		# declared
 		self._max_visits = max_visit_occurences
 
-		print "Initialised LoopDetector"
-
 	# Reset so we can start a new instance
 	def reset(self):
 		# Queue to store past actions

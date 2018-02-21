@@ -171,9 +171,9 @@ class ObjectHandler:
 	# Called at the end of each episode
 	def finishUp(self):
 		# Finish up the DT metric for this episode
-		mu_DT, sigma_DT = self.finishDT()
+		mu_DT = self.finishDT()
 
-		return mu_DT, sigma_DT
+		return mu_DT
 
 	"""
 	Discovery/timstep metric methods
@@ -209,7 +209,7 @@ class ObjectHandler:
 		DT_np = np.asarray(self._DT)
 
 		# Return the mean and standard deviation
-		return np.mean(DT_np), np.std(DT_np)
+		return np.mean(DT_np)
 
 	"""
 	Object-centric methods

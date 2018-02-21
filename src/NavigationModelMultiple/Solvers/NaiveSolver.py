@@ -52,6 +52,9 @@ class NaiveSolver:
 	def mainLoop(self):
 		valid_actions = []
 
+		# Number of moves made
+		num_moves = 0
+
 		while self._num_visited < const.NUM_TARGETS:
 			# Can agent see a target, if so go towards it
 			actions = self.isTargetVisible()
@@ -65,6 +68,9 @@ class NaiveSolver:
 
 			# Perform the action
 			self._agent.performAction(chosen_action)
+
+			# Increment the move (time step) counter
+			num_moves += 1
 
 			# Check
 			if self.checkMatches():

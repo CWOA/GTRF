@@ -37,9 +37,9 @@ class VideoWriter:
 	# Open a new video stream
 	def reset(self, suffix=None):
 		if suffix is None:
-			filename = "{}_{}.avi".format(self._exp_name, self._file_ctr)
+			filename = "{}_{}.{}".format(self._exp_name, self._file_ctr, const.VIDEO_FILE_EXTENSION)
 		else:
-			filename ="{}_{}_{}.avi".format(self._exp_name, suffix, self._file_ctr)
+			filename ="{}_{}_{}.{}".format(self._exp_name, suffix, self._file_ctr, const.VIDEO_FILE_EXTENSION)
 
 		file_path = os.path.join(self._video_dir, filename)
 

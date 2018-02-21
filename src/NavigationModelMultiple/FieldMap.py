@@ -273,12 +273,12 @@ class FieldMap:
 				self._video_writer.finishUp()
 
 		# Finish up the object handler
-		mu_DT, sigma_DT = self._object_handler.finishUp()
+		mu_DT = self._object_handler.finishUp()
 
 		# Return the number of moves taken by the model and the solution
 		# Also return the number of times loop detection is found
 		# Finally return the average and stddev discovery per timestep rate
-		return num_moves, sol_length, num_loops, mu_DT, sigma_DT
+		return num_moves, sol_length, num_loops, mu_DT
 
 	# For some timestep, append data to the big list
 	def recordData(self, subview, visit_map, action_vector):
@@ -367,11 +367,10 @@ class FieldMap:
 
 		# Numpy array for testing data, consists of:
 		# 0: number of moves required by the model
-		# 1: number of moves required by employed solver (closest, target ordering)
+		# 1: number of moves required by employed solver (e.g. closest, target ordering)
 		# 2: number of times loop detection is triggered
-		# 3: Average discovery/per timestep
-		# 4: Standard deviation discovery/per timestep
-		test_data = np.zeros((num_episodes, 5))
+		# 3: Average discovery/per timestep for that episode
+		test_data = np.zeros((num_episodes, 4))
 
 		# Initialise progress bar (TQDM) object
 		pbar = tqdm(total=num_episodes)
@@ -382,14 +381,13 @@ class FieldMap:
 			self.reset()
 
 			# Go ahead and solve this instance using model & solver for comparison
-			num_moves, sol_length, num_loops, mu_DT, sigma_DT = self.beginEpisode(True, wait_amount=const.WAIT_AMOUNT)
+			num_moves, sol_length, num_loops, mu_DT = self.beginEpisode(True, wait_amount=const.WAIT_AMOUNT)
 
 			# Store statistics to numpy array
 			test_data[i,0] = num_moves
 			test_data[i,1] = sol_length
 			test_data[i,2] = num_loops
 			test_data[i,3] = mu_DT
-			test_data[i,4] = sigma_DT
 
 			# Update progress bar
 			pbar.update()
@@ -397,41 +395,14 @@ class FieldMap:
 		# Close up
 		pbar.close()
 
+		# Where to save numpy file to
+		save_path = "{}/RESULTS_{}".format(base, self._exp_name)
+
 		# Save data to file
-		np.save("{}/RESULTS_{}".format(base, self._exp_name), test_data)
+		np.save(save_path, test_data)
 
-	# Do a given number of episodes, saving video out to file
-	def generateVideos(self, num_episodes):
-		raw_input()
-
-		# Initialise progress bar
-		pbar = tqdm(total=num_episodes)
-
-		# Iterate number of episodes times
-		for i in range(num_episodes):
-			"""
-			Globally optimal solution
-			"""
-			self._generating = True
-			# Generate a new episode
-			a_pos, t_pos = self.reset()
-			# Record the solver's solution to the episode (globally-optimal)
-			self.beginEpisode(False, wait_amount=const.WAIT_AMOUNT)
-
-			"""
-			Our solution
-			"""
-			self._generating = False
-			# Supply the same starting configurations to the episode
-			self.reset(a_pos=a_pos, t_pos=t_pos)
-			# Record our solution to the episode
-			self.beginEpisode(True, wait_amount=const.WAIT_AMOUNT, render_occ_map=True)
-
-			# Update the progress bar
-			pbar.update()
-
-		# Close the progress bar
-		pbar.close()
+		# Print results
+		Utility.listResults(save_path)
 
 	# Compare solver performance over a number of testing episodes
 	def compareSolvers(self, num_episodes):
@@ -442,9 +413,10 @@ class FieldMap:
 
 		# Numpy array for testing data, consists of:
 		# 0: number of moves required by the model
-		# 1: number of moves required by employed solver (closest, target ordering)
+		# 1: number of moves required by employed solver (e.g. closest, target ordering)
 		# 2: number of times loop detection is triggered
-		test_data = np.zeros((num_episodes, 3))
+		# 3: Average discovery/per timestep for that episode
+		test_data = np.zeros((num_episodes, 4))
 
 		# Initialise progress bar (TQDM) object
 		pbar = tqdm(total=num_episodes) 
@@ -469,8 +441,50 @@ class FieldMap:
 		# Close up
 		pbar.close()
 
+		# Where to save numpy file to
+		save_path = "{}/RESULTS_{}".format(base, self._exp_name)
+
 		# Save data to file
-		np.save("{}/test_data_NAIVE".format(base), test_data)
+		np.save(save_path, test_data)
+
+		# Print results
+		Utility.listResults(save_path)
+
+	# Do a given number of episodes, saving video out to file
+	def generateVideos(self, num_episodes, pause_beforehand=False):
+		# Initialise progress bar
+		pbar = tqdm(total=num_episodes)
+
+		# If we're running the gazebo simulator, pause for user input
+		if pause_beforehand:
+			raw_input()
+
+		# Iterate number of episodes times
+		for i in range(num_episodes):
+			"""
+			Globally optimal solution
+			"""
+			self._generating = True
+			# Generate a new episode
+			a_pos, t_pos = self.reset()
+
+			# Record the solver's solution to the episode (globally-optimal)
+			self.beginEpisode(False, wait_amount=const.WAIT_AMOUNT)
+
+			"""
+			Our solution
+			"""
+			self._generating = False
+			# Supply the same starting configurations to the episode
+			self.reset(a_pos=a_pos, t_pos=t_pos)
+			# Record our solution to the episode
+			self.beginEpisode(True, wait_amount=const.WAIT_AMOUNT, render_occ_map=True)
+
+			# Update the progress bar
+			pbar.update()
+
+		# Close the progress bar
+		pbar.close()
 
 	# Generate solutions to randomly-generated episodes using trained model and output
 	# visualisation of agent path to file if the difference between the generated
