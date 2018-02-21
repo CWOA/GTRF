@@ -431,13 +431,14 @@ class FieldMap:
 			self.reset()
 
 			# Get solution lengths (NS: naive solver, GO: globally-optimal)
-			NS_length = self._object_handler.secondSolveEpisode()
-			GO_length = self._object_handler.solveEpisode()
+			NS_length, mu_DT = self._object_handler.secondSolveEpisode()
+			GO_length, _ = self._object_handler.solveEpisode()
 
 			# Store statistics to numpy array
 			test_data[i,0] = NS_length
 			test_data[i,1] = GO_length
 			test_data[i,2] = 0	# There's no loop detection here
+			test_data[i,3] = mu_DT
 
 			# Update progress bar
 			pbar.update()

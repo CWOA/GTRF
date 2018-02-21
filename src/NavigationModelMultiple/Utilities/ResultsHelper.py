@@ -1,11 +1,16 @@
 #!/usr/bin/env python
 
+# Core libraries
+import sys
+sys.path.append('../')
 import random
 import numpy as np
 from scipy.signal import savgol_filter
-import Constants as const
 import matplotlib.pyplot as plt
 import matplotlib as mpl
+
+# My classes
+import Constants as const
 
 """
 Class for analysing results, plotting graphs, etc.
@@ -233,7 +238,10 @@ class ResultsHelper:
 		# has already been triggered
 		mult_loops = np.where(data[:,2] > 1)[0].shape[0]
 		print "__Multiple Loops detected________________"
-		print "{}%\n".format((float(mult_loops)/num_loops)*100)
+		if num_loops > 0:
+			print "{}%\n".format((float(mult_loops)/num_loops)*100)
+		else:
+			print "0%"
 
 		# Find stats about % of time model generates over 100 moves
 		over_100 = np.where(data[:,0] > 100)[0].shape[0]
@@ -359,21 +367,8 @@ class ResultsHelper:
 
 # Entry method/unit testing
 if __name__ == '__main__':
-	# Utility.drawDatasetSizeAccuracyGraph()
-	# Utility.drawAccuracyGraph()
+	# ResultsHelper.drawDatasetSizeAccuracyGraph()
+	# ResultsHelper.drawAccuracyGraph()
 
-	Utility.listResults("/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/data/RESULTS_moving_equidistant.npy")
+	ResultsHelper.listResults("/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/data/RESULTS_naive_solution.npy")
 	# Utility.drawModelLengthHistogram()
-
-	# print Utility.distanceBetweenPoints((5,0),(0,5))
-	# print Utility.distanceBetweenPoints((5,0),(1,5))
-	# print Utility.distanceBetweenPoints((5,0),(2,5))
-	# print Utility.distanceBetweenPoints((5,0),(3,5))
-	# print Utility.distanceBetweenPoints((5,0),(4,5))
-	# print Utility.distanceBetweenPoints((5,0),(5,5))
-	# print Utility.distanceBetweenPoints((5,0),(6,5))
-
-	# file1_path = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/data/TRAINING_DATA_individual_motion_LARGE.h5"
-	# file2_path = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/data/TRAINING_DATA_individual_motion_MS.h5"
-	# out_path = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/data/TRAINING_DATA_individual_motion_60k.h5"
-	# Utility.combineH5Databases(out_path, file1_path, file2_path)

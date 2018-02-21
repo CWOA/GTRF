@@ -1,13 +1,19 @@
 #!/usr/bin/env python
 
+# Core libraries
+import sys
+sys.path.append('../')
 import math
 import time
 import copy
 import random
 import numpy as np
 from tqdm import tqdm
+
+# My libraries/classes
 import Constants as const
 from Solvers.Solver import EpisodeSolver
+from Utilities.DiscoveryRate import DiscoveryRate
 
 """
 TBC
@@ -56,6 +62,9 @@ class ObjectHandler:
 		# Second solver class (for comparisons between solution methods)
 		if self._use_second_solver:
 			self._second_solver = EpisodeSolver(const.NAIVE_SOLVER)
+
+		# For handling target discovery rate statistics
+		self._dr = DiscoveryRate()
 
 		# Agent and list of targets
 		self._agent = None
@@ -153,7 +162,7 @@ class ObjectHandler:
 										copy.deepcopy(self._targets)	)
 
 		# Reset the DT metric
-		self.resetDT()
+		self._dr.reset()
 
 		return self.getAgentPos(), self.getTargetPositions()
 
@@ -165,50 +174,14 @@ class ObjectHandler:
 				t.step(itr)
 
 		# Update the target discovery per timestep metric
-		self.updateDT()
+		self._dr.iterate()
 
 	# Called at the end of each episode
 	def finishUp(self):
 		# Finish up the DT metric for this episode
-		mu_DT = self.finishDT()
+		mu_DT = self._dr.finish()
 
 		return mu_DT
-
-	"""
-	Discovery/timstep metric methods
-	"""
-
-	# Called at the beginning of each episode
-	def resetDT(self):
-		# List storing discovery rates
-		self._DT = []
-
-		# Reset the timesteps since discovery counter
-		self._non_discovery_ctr = 0
-
-	# Called at every episode timestep
-	def updateDT(self):
-		# Increment the counter counting the number of timesteps since new target visitation
-		self._non_discovery_ctr += 1
-
-	# Called whenever a new target is visited
-	def discoveryDT(self):
-		# Compute discovery/time value
-		DT_val = 1.0 / self._non_discovery_ctr
-
-		# Reset the move without discovery counter
-		self._non_discovery_ctr = 0
-
-		# Add it to the list
-		self._DT.append(DT_val)
-
-	# Called at the end of each episode
-	def finishDT(self):
-		# Convert to numpy array
-		DT_np = np.asarray(self._DT)
-
-		# Return the mean and standard deviation
-		return np.mean(DT_np)
 
 	"""
 	Object-centric methods
@@ -335,7 +308,7 @@ class ObjectHandler:
 			if a_x == t_x and a_y == t_y:
 				if not target.getVisited():
 					# Update the discovery per timestep value
-					self.discoveryDT()
+					self._dr.discovery()
 
 					# Indicate that we've not visited this target
 					target.setVisited(True)

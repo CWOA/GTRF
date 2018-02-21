@@ -32,6 +32,9 @@ class NaiveSolver:
 		# Occupancy/visitation map
 		self._v_map = MapHandler()
 
+		# Target discovery rate handler
+		self._dr = DiscoveryRate()
+
 	"""
 	Mandatory class methods
 	"""
@@ -44,13 +47,17 @@ class NaiveSolver:
 		# Number of target objects
 		self._num_targets = len(targets)
 
+		# Reset the visitation map
 		self._v_map.reset(*self._agent.getPos())
 
 		self._num_visited = 0
 
+		# Reset the discovery rate class
+		self._dr.reset()
+
 	def solve(self):
-		self._actions = self.mainLoop()
-		return len(self._actions)
+		self._actions, mu_DT = self.mainLoop()
+		return len(self._actions), mu_DT
 
 	def nextAction(self):
 		return self._actions.pop(0)
@@ -82,11 +89,18 @@ class NaiveSolver:
 			# Increment the move (time step) counter
 			num_moves += 1
 
+			# Iterate the DR handler
+			self._dr.iterate()
+
 			# Does this new position match a target position
 			match = self.checkMatches()
 
 			# Increment the counter if there's a match
-			if match: self._num_visited += 1
+			if match: 
+				self._num_visited += 1
+
+				# Inform the discovery rate handler
+				self._dr.discovery()
 
 			# Get the agent's position
 			a_x, a_y = self._agent.getPos()
@@ -97,7 +111,10 @@ class NaiveSolver:
 			# Save the action choice
 			valid_actions.append(chosen_action)
 
-		return valid_actions
+		# Indicate the DR to finish up, get the mean discovery rate for this episode
+		mu_DT = self._dr.finish()
+
+		return valid_actions, mu_DT
 
 	# Uses agent & target coordinates to find out whether there are any targets currently
 	# visible to the agent

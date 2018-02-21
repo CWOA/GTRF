@@ -1,12 +1,18 @@
 #!/usr/bin/env python
 
+# Core libraries
+import sys
+sys.path.append('../')
 import time
 import copy
 import math
 import random
 import networkx as nx
-import Constants as const
 import matplotlib.pyplot as plt
+
+# My libraries/classes
+import Constants as const
+from Utilities.Utility import Utility
 
 """
 Constructs a globally-optimal solution in a lightweight fashion. Assumes that a global
@@ -49,7 +55,7 @@ class SequenceSolver:
 	def solve(self):
 		self.growTree()
 		self._actions = self.findBestSolutions()
-		return len(self._actions)
+		return len(self._actions), 0
 
 	def nextAction(self):
 		return self._actions.pop(0)

@@ -3,7 +3,7 @@
 import numpy as np
 
 """
-TBC
+Class is in charge of managing the generation of target discovery rate statistics
 """
 
 class DiscoveryRate:
@@ -33,12 +33,15 @@ class DiscoveryRate:
 		self._non_disc_ctr = 0
 
 	# Called at every episode timestep
-	def updateDT(self):
+	#
+	#	BE SURE TO CALL THIS BEFORE DISCOVERY
+	#
+	def iterate(self):
 		# Increment the counter counting the number of timesteps since new target visitation
 		self._non_disc_ctr += 1
 
 	# Called whenever a new target is visited
-	def discoveryDT(self):
+	def discovery(self):
 		# Compute discovery/time value
 		DT_val = 1.0 / self._non_disc_ctr
 
@@ -49,9 +52,18 @@ class DiscoveryRate:
 		self._DT.append(DT_val)
 
 	# Called at the end of each episode
-	def finishDT(self):
+	def finish(self):
 		# Convert to numpy array
 		DT_np = np.asarray(self._DT)
 
 		# Return the mean and standard deviation
 		return np.mean(DT_np)
+
+	"""
+	Getters
+	"""
+
+
+	"""
+	Setters
+	"""
