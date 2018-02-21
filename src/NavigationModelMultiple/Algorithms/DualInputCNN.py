@@ -1,9 +1,13 @@
 #!/usr/bin/env python
 
+# Core libraries
+import sys
+sys.path.append('../')
+
 import DNN
-from Utility import *
 import numpy as np
 import Constants as const
+from Core.VisitationMap import MapHandler
 
 """
 This class contains our dual-input CNN-based solution, for more details, see our
@@ -83,7 +87,7 @@ class DualInputCNN:
 			if self._agent_stuck:
 				# Select an appropriate action towards visiting the nearest largest unvisited
 				# region of the occupancy map
-				chosen_action = self.findUnvisitedDirection(occupancy_map, a_x, a_y)
+				chosen_action = MapHandler.findUnvisitedDirection(occupancy_map, a_x, a_y)
 
 				# Get the value of the occupancy map were the action applied
 				value = self.elementForAction(occupancy_map, a_x, a_y, chosen_action)
@@ -146,136 +150,6 @@ class DualInputCNN:
 		elif const.OCCUPANCY_MAP_MODE == const.MOTION_MODE:
 			return occupancy_map[new_y, new_x, 1]
 		else: Utility.die("Occupancy map mode not recognised in elementForAction()", __file__)
-
-	# Given that the agent is deemed to be an infinite loop
-	def findUnvisitedDirection(self, o_map, a_x, a_y):
-		# Cell search radius for unvisited cells
-		radius = 1
-
-		# Determined action to take
-		action = None
-
-		# Loop until we find a suitable unvisited direction
-		while action is None:
-			# Try and find an unvisited location in the current radius
-			action = self.determineCellNeighbours(o_map, a_x, a_y, radius)
-
-			# Increment the radius
-			radius += 1
-
-		return action
-
-	# Given a position x,y return neighbouring values within a given radius
-	def determineCellNeighbours(self, o_map, x, y, radius):
-		# Double the radius
-		d_rad = radius * 2
-
-		# Add padding to coordinates
-		x += radius
-		y += radius
-
-		# Pad a temporary map with ones
-		padded_map = np.ones((const.MAP_WIDTH+d_rad, const.MAP_HEIGHT+d_rad))
-
-		if const.OCCUPANCY_MAP_MODE == const.VISITATION_MODE:
-			# Insert visitation map into border padded map
-			padded_map[		radius:const.MAP_WIDTH+radius,
-							radius:const.MAP_HEIGHT+radius	] = o_map[:,:]
-		elif const.OCCUPANCY_MAP_MODE == const.MOTION_MODE:
-			# Insert visitation map into border padded map
-			padded_map[		radius:const.MAP_WIDTH+radius,
-							radius:const.MAP_HEIGHT+radius	] = o_map[:,:,1]
-		else:
-			Utility.die("Occupancy map mode not recognised in determineCellNeighbours()", __file__)
-
-		# Determine neighbouring cell bounds for radius
-		y_low = y - radius
-		y_high = y + radius
-		x_low = x - radius
-		x_high = x + radius
-
-		# Get neighbouring elements within radius (includes x,y-th element)
-		sub = padded_map[y_low:y_high+1, x_low:x_high+1]
-
-		try:
-			# Get indices of elements that are unvisited (0)
-			indices = np.where(sub == 0)
-		except Exception as e:
-			Utility.die("All cells have been visited..", __file__)
-
-		# Action to carry out
-		action = None
-
-		# Check whether some 0 elements were found
-		if indices[0].size > 0 and indices[1].size > 0:
-			# Agent position in subview
-			a_x = np.floor((d_rad+1)/2)
-			a_y = np.floor((d_rad+1)/2)
-
-			# Find the best action for the angle between them
-			action = self.bestActionForCoordinates(a_x, a_y, indices[1], indices[0])
-
-		return action
-
-	# Construct the action vote table, find the most voted for action
-	def bestActionForCoordinates(self, a_x, a_y, indices_x, indices_y):
-		# Construct vote table of possible actions
-		vote_table = self.constructActionVoteTable(a_x, a_y, indices_x, indices_y)
-
-		# Find first occurence of most voted for action
-		max_idx = np.argmax(vote_table)
-
-		# What's the vote count for the most voted for
-		element = vote_table[max_idx]
-
-		# Is that element anywhere else in the vote table?
-		other_idx = np.where(vote_table == element)
-
-		# Find the size
-		other_idx_size = len(other_idx[0])
-
-		# If that element is only found once
-		if other_idx_size == 1:
-			action = const.ACTIONS[max_idx]
-		# Randomly chose an index and action
-		else:
-			rand_idx = random.randint(0, other_idx_size - 1)
-			action = const.ACTIONS[other_idx[0][rand_idx]]
-
-		return action
-
-	def constructActionVoteTable(self, a_x, a_y, indices_x, indices_y):
-		# Check the coordinate vectors are equal in size
-		assert(indices_x.size == indices_y.size)
-
-		# Initialise vote table to the number of all actions
-		vote_table = np.zeros(len(const.ACTIONS))
-
-		# Iterate over each coordinate
-		for i in range(indices_x.size):
-			# Extract current coordinates
-			b_x = indices_x[i]
-			b_y = indices_y[i]
-
-			# Get a vector of possible actions for this position
-			possible_actions = Utility.possibleActionsForAngle(a_x, a_y, b_x, b_y)
-
-			# Increment vote table with suitable actions returned for these coordinates
-			vote_table = self.incrementActionCounts(vote_table, possible_actions)
-
-		return vote_table
-
-	# Given the current action vote table, increment elements that are present in 
-	# the provided action vector
-	def incrementActionCounts(self, table, action_vec):
-		for action in action_vec:
-			if action == 'F': table[0] += 1
-			elif action == 'B':  table[1] += 1
-			elif action == 'L': table[2] += 1
-			elif action == 'R': table[3] += 1
-			else: Utility.die("Action not recognised", __file__)
-
-		return table
 
 	"""
 	Getters

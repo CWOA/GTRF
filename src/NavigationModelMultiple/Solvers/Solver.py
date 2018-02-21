@@ -6,7 +6,6 @@ import SequenceSolver
 import NaiveSolver
 import MotionSolver
 import Constants as const
-from Utility import Utility
 
 """
 Classes that inherit this superclass provide some form of solution to the problem of

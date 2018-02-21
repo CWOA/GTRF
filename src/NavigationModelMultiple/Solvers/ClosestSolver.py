@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-from Utility import Utility
-
 """
 Greedy solution simply chooses the closest unvisited target and selects the best actions
 towards navigating towards that target/individual

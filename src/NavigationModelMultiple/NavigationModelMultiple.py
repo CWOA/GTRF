@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
-import DNN
 import Constants as const
-from Utility import Utility
-from FieldMap import FieldMap
+from Utilities import Utility
+from Core.FieldMap import FieldMap
+from Algorithms import DNN
 
 """
 This class forms the principal entry point for selecting experimentation,
@@ -62,16 +62,25 @@ def trainModel(iterations, use_simulator):
 	pass
 
 # Testing trained model on real example/problem
-def testModel(iterations, visualise, use_simulator):
-	# Experiment parameters
-	experiment_name = "motion_test_MS"
+def testModel(iterations, exp_name, visualise, use_simulator):
+	# Create FieldMap object instance
+	fm = FieldMap(	False, 
+					exp_name, 
+					visualise=visualise,
+					use_simulator=use_simulator 	)
 
-	fm = FieldMap(False, experiment_name, visualise=visualise, use_simulator=use_simulator)
+	# Let's test!
 	fm.startTestingEpisodes(iterations)
 
 # Method for testing/comparing solver methods
 def compareSolvers(iterations, exp_name, visualise):
-	fm = FieldMap(True, exp_name, visualise=visualise, use_simulator=False, second_solver=True)
+	# Create FieldMap object instance
+	fm = FieldMap(	True, 
+					exp_name, 
+					visualise=visualise, 
+					use_simulator=False, 
+					second_solver=True 		)
+	
 	fm.compareSolvers(iterations)
 
 # Method for generating videos comparing the employed method, the globally-optimal solution
@@ -140,5 +149,5 @@ if __name__ == '__main__':
 	# generateTrainingExamples(iterations, visualise, use_simulator, save_video)
 	# trainModel(iterations, use_simulator)
 	# testModel(iterations, visualise, use_simulator)
-	compareSolvers(iterations, "naive_solution" visualise)
+	compareSolvers(iterations, "naive_solution", visualise)
 	# generateVideoComparison(iterations, "", visualise)

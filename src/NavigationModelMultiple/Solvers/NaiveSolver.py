@@ -1,26 +1,36 @@
 #!/usr/bin/env python
 
+# Core libraries
+import sys
+sys.path.append('../')
 import time
 import copy
 import math
 import random
 import networkx as nx
-import Constants as const
-import VisitationMap
-from Utility import Utility
 import matplotlib.pyplot as plt
+
+# My libraries/classes
+import Constants as const
+from Utilities.Utility import Utility
+from Utilities.DiscoveryRate import DiscoveryRate
+from Core.VisitationMap import MapHandler
 
 """
 This class is for "attempting" to solve an episode algorithmically to provide a baseline
-for the ICIP paper
 details on how it operates:
+TBC
 """
-
 
 class NaiveSolver:
 	# Class constructor
 	def __init__(self):
-		self._v_map = VisitationMap.MapHandler()
+		"""
+		Class attributes
+		"""
+
+		# Occupancy/visitation map
+		self._v_map = MapHandler()
 
 	"""
 	Mandatory class methods
@@ -64,7 +74,7 @@ class NaiveSolver:
 				chosen_action = actions[choice]
 			# Goto nearest unvisited location using voting table
 			else:
-				chosen_action = self._v_map.findUnvisitedDirection(*self._agent.getPos())
+				chosen_action = self._v_map.findUnvisitedDirectionNonStatic(*self._agent.getPos())
 
 			# Perform the action
 			self._agent.performAction(chosen_action)
@@ -72,12 +82,17 @@ class NaiveSolver:
 			# Increment the move (time step) counter
 			num_moves += 1
 
-			# Check
-			if self.checkMatches():
-				self._num_visited += 1
+			# Does this new position match a target position
+			match = self.checkMatches()
+
+			# Increment the counter if there's a match
+			if match: self._num_visited += 1
+
+			# Get the agent's position
+			a_x, a_y = self._agent.getPos()
 
 			# Update visit map
-			self._v_map.update(*self._agent.getPos())
+			self._v_map.iterate(a_x, a_y, match, 0)
 
 			# Save the action choice
 			valid_actions.append(chosen_action)

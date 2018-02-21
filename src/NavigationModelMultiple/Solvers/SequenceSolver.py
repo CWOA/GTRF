@@ -6,7 +6,6 @@ import math
 import random
 import networkx as nx
 import Constants as const
-from Utility import Utility
 import matplotlib.pyplot as plt
 
 """

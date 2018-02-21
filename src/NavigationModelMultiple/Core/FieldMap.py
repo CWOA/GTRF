@@ -1,16 +1,20 @@
 #!/usr/bin/env python
 
+# Core libraries
+import sys
+sys.path.append('../')
 import cv2
-import DNN
 import h5py
-import Object
 import random
-import VideoWriter
 import numpy as np
-from Utility import *
+from tqdm import tqdm
+
+# My classes
+import Object
+from Utilities.VideoWriter import VideoWriter
+from Utilities.Utility import Utility
 import Visualisation
 import VisitationMap
-from tqdm import tqdm
 import Constants as const
 from Algorithms.Algorithm import Algorithm
 

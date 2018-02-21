@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 
+# Core libraries
 import cv2
 import math
 import random
 import numpy as np
 import Constants as const
-from Utility import Utility
 
 # ROS libraries
 import tf

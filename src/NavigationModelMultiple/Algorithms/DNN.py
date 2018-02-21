@@ -2,7 +2,6 @@
 
 import cv2
 import h5py
-from Utility import Utility
 import tflearn
 import numpy as np
 import Constants as const
