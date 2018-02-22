@@ -11,8 +11,9 @@ from tqdm import tqdm
 
 # My classes
 import Object
-from Utilities.VideoWriter import VideoWriter
 from Utilities.Utility import Utility
+from Utilities.VideoWriter import VideoWriter
+from Utilities.ResultsHelper import ResultsHelper
 import Visualisation
 import VisitationMap
 import Constants as const
@@ -34,7 +35,9 @@ class FieldMap:
 						save=False,
 						second_solver=False,
 						model_path=None,
-						save_video=False,		):
+						save_video=False,
+						dist_method=const.OBJECT_DIST_METHOD,
+						mark_visitation=const.MARK_PAST_VISITATION		):
 		"""
 		Class arguments from init
 		"""
@@ -85,10 +88,11 @@ class FieldMap:
 			self._training_output = []
 
 		# Class in charge of handling agent/targets
-		self._object_handler = Object.ObjectHandler(second_solver=second_solver)
+		self._object_handler = Object.ObjectHandler(	second_solver=second_solver, 
+														dist_method=dist_method 		)
 
 		# Class in charge of visitation map
-		self._map_handler = VisitationMap.MapHandler()
+		self._map_handler = VisitationMap.MapHandler(mark_visitation=mark_visitation)
 
 		# Class in charge of visualisation (for both model input and our viewing benefit)
 		self._visualiser = Visualisation.Visualiser(self._use_simulator)
@@ -207,7 +211,7 @@ class FieldMap:
 		# of the generated solution using the selected solver method
 		# This is typically used for extracting the global optimum solution to a 
 		# particular episode configuration
-		sol_length = self._object_handler.solveEpisode()
+		sol_length, _ = self._object_handler.solveEpisode()
 
 		# Display if we're supposed to
 		if self._visualise: self._visualiser.display(wait_amount)
@@ -400,13 +404,13 @@ class FieldMap:
 		pbar.close()
 
 		# Where to save numpy file to
-		save_path = "{}/RESULTS_{}".format(base, self._exp_name)
+		save_path = "{}/RESULTS_{}.npy".format(base, self._exp_name)
 
 		# Save data to file
 		np.save(save_path, test_data)
 
 		# Print results
-		Utility.listResults(save_path)
+		ResultsHelper.listResults(save_path)
 
 	# Compare solver performance over a number of testing episodes
 	def compareSolvers(self, num_episodes):
@@ -447,13 +451,13 @@ class FieldMap:
 		pbar.close()
 
 		# Where to save numpy file to
-		save_path = "{}/RESULTS_{}".format(base, self._exp_name)
+		save_path = "{}/RESULTS_{}.npy".format(base, self._exp_name)
 
 		# Save data to file
 		np.save(save_path, test_data)
 
 		# Print results
-		Utility.listResults(save_path)
+		ResultsHelper.listResults(save_path)
 
 	# Do a given number of episodes, saving video out to file
 	def generateVideos(self, num_episodes, pause_beforehand=False):

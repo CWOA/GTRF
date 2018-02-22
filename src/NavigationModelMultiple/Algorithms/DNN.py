@@ -1,18 +1,28 @@
 #!/usr/bin/env python
 
+# Core libraries
+import sys
+sys.path.append('../')
 import cv2
 import h5py
-import tflearn
 import numpy as np
 import Constants as const
 import datetime
+
+# Machine learning scikit
 from sklearn.model_selection import train_test_split
 from sklearn import cross_validation
+
+# Deep learning/tensorflow
+import tflearn
 import tensorflow as tf
 from tflearn.layers.core import input_data, dropout, fully_connected
 from tflearn.layers.conv import conv_2d, max_pool_2d
 from tflearn.layers.normalization import local_response_normalization
 from tflearn.layers.estimator import regression
+
+# My libraries/classes
+from Utilities.Utility import Utility
 
 """
 TBC
@@ -49,6 +59,9 @@ class DNNModel:
 		"""
 		Class setup
 		"""
+
+		# Delete variables/reset DNN
+		tf.reset_default_graph()
 
 		# Network architecture
 		self._network = self.defineDNN()

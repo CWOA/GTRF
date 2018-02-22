@@ -17,10 +17,14 @@ This class manages the occupancy/visitation map map
 class MapHandler:
 	# Class constructor
 	def __init__(	self,
-					map_mode=const.OCCUPANCY_MAP_MODE	):
+					map_mode=const.OCCUPANCY_MAP_MODE,
+					mark_visitation=const.MARK_PAST_VISITATION	):
 		"""
 		Class attributes/properties
 		"""
+
+		# Whether we should mark past target visitation
+		self._mark_visitation = mark_visitation
 
 		# Whether this map should operate in visitation (static) or gaussian (moving) mode 
 		self._map_mode = map_mode
@@ -43,7 +47,7 @@ class MapHandler:
 			self.setElement(a_x, a_y, const.AGENT_VAL)
 
 			# If we should mark coordinates where a target was visited
-			if const.MARK_PAST_VISITATION:
+			if self._mark_visitation:
 				# Store where targets were visited
 				self._visit_locations = []
 
@@ -80,7 +84,7 @@ class MapHandler:
 			if self.getElement(new_x, new_y) == const.UNVISITED_VAL: new_location = True
 
 			# If we should mark coordinates where a target was visited
-			if const.MARK_PAST_VISITATION:
+			if self._mark_visitation:
 				# If the agent visited a new target this iteration
 				if target_match:
 					# Add this location

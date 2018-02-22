@@ -26,10 +26,12 @@ Algorithm class constants
 """
 
 ALGORITHM_DUAL_INPUT_CNN = 0
-ALGORITHM_YOUR_ALGORITHM = 1
+ALGORITHM_SPLIT_INPUT_CNN = 1
+ALGORITHM_YOUR_ALGORITHM = 2
 # Add your extra algorithm definition here or change the one above
 
 ALGORITHM_METHOD = ALGORITHM_DUAL_INPUT_CNN
+ALGORITHM_METHOD = ALGORITHM_SPLIT_INPUT_CNN
 # ALGORITHM_METHOD = ALGORITHM_YOUR_ALGORITHM
 
 """
@@ -141,7 +143,7 @@ MOTION_EMPTY_VAL = 0
 MOTION_HIGH_VALUE = 1000
 
 # Whether or not to mark positions in the map where a target was visited
-MARK_PAST_VISITATION = True
+MARK_PAST_VISITATION = False
 
 # Which mode to use in the visitation map
 VISITATION_MODE = 0		# Used for when targets are static

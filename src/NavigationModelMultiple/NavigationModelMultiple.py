@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import Constants as const
-from Utilities import Utility
+from Utilities.Utility import Utility
 from Core.FieldMap import FieldMap
 from Algorithms import DNN
 
@@ -62,12 +62,21 @@ def trainModel(iterations, use_simulator):
 	pass
 
 # Testing trained model on real example/problem
-def testModel(iterations, exp_name, visualise, use_simulator):
+def testModel(	iterations, 
+				exp_name, 
+				visualise, 
+				use_simulator, 
+				model_path,
+				dist_method,
+				mark_visitation 	):
 	# Create FieldMap object instance
 	fm = FieldMap(	False, 
 					exp_name, 
 					visualise=visualise,
-					use_simulator=use_simulator 	)
+					use_simulator=use_simulator,
+					model_path=model_path,
+					dist_method=dist_method,
+					mark_visitation=mark_visitation		)
 
 	# Let's test!
 	fm.startTestingEpisodes(iterations)
@@ -80,7 +89,7 @@ def compareSolvers(iterations, exp_name, visualise):
 					visualise=visualise, 
 					use_simulator=False, 
 					second_solver=True 		)
-	
+
 	fm.compareSolvers(iterations)
 
 # Method for generating videos comparing the employed method, the globally-optimal solution
@@ -141,6 +150,9 @@ if __name__ == '__main__':
 	# Save frames to individual per-episode videos?
 	save_video = const.SAVE_VIDEO
 
+	# Object distribution method
+	dist_method = const.OBJECT_DIST_METHOD
+
 	"""
 	Primary function calls
 	"""
@@ -149,5 +161,38 @@ if __name__ == '__main__':
 	# generateTrainingExamples(iterations, visualise, use_simulator, save_video)
 	# trainModel(iterations, use_simulator)
 	# testModel(iterations, visualise, use_simulator)
-	compareSolvers(iterations, "naive_solution", visualise)
+	# compareSolvers(iterations, "naive_solution", visualise)
 	# generateVideoComparison(iterations, "", visualise)
+
+	# Testing function calls
+
+	# Base model directory
+	base = Utility.getICIPModelDir()
+
+	# CU (best fold: 5)
+	model_path = "{}/model_CLOSEST_2017-12-14_20:04:09_CROSS_VALIDATE_5.tflearn".format(base)
+	testModel(iterations, "closest_unvisited", visualise, False, model_path, dist_method, False)
+
+	# TO (best fold: 4)
+	model_path = "{}/model_SEQUENCE_2017-12-15_15:51:08_CROSS_VALIDATE_4.tflearn".format(base)
+	testModel(iterations, "target_ordering", visualise, False, model_path, dist_method, False)
+
+	# Static grid (best fold: 6)
+	dist_method = const.STAT_DIST
+	model_path = "{}/equidistant_SEQUENCE_2018-01-31_12:22:23_CROSS_VALIDATE_6.tflearn".format(base)
+	testModel(iterations, "static_grid", visualise, False, model_path, dist_method, False)
+
+	# Gaussian (best fold: 2)
+	dist_method = const.GAUS_DIST
+	model_path = "{}/gaussian_SEQUENCE_2018-01-31_16:11:20_CROSS_VALIDATE_2.tflearn".format(base)
+	testModel(iterations, "gaussian", visualise, False, model_path, dist_method, False)
+
+	# Random MARKED visitation (best fold: 4)
+	dist_method = const.PRNG_DIST
+	model_path = "{}/visitation_marked_TO_2018-02-13_22:28:27_CROSS_VALIDATE_4.tflearn".format(base)
+	testModel(iterations, "random_marked", visualise, False, model_path, dist_method, True)
+
+	# Gaussian MARKED visitation (best fold: 4)
+	dist_method = const.GAUS_DIST
+	model_path = "{}/visitation_marked_GAUSSIAN_2018-02-18_17:53:40_CROSS_VALIDATE_4.tflearn".format(base)
+	testModel(iterations, "gaussian_marked", visualise, False, model_path, dist_method, True)

@@ -3,16 +3,18 @@
 # Core libraries
 import sys
 sys.path.append('../')
-
-import DNN
 import numpy as np
+from collections import deque
+
+# My libraries/classes
+import DNN
 import Constants as const
+from Utilities.Utility import Utility
 from Core.VisitationMap import MapHandler
 
 """
 This class contains our dual-input CNN-based solution, for more details, see our
-IROS 2018 paper submission entitled "Learning to Search for Distributed Targets
-from UAV-like Vision"
+IROS 2018 paper submission
 """
 
 class DualInputCNN:

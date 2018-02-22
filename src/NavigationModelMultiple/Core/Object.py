@@ -25,7 +25,7 @@ class ObjectHandler:
 					random_agent_pos=True,
 					random_num_targets=False,
 					solver_method=const.SOLVER_METHOD,
-					dist_methood=const.OBJECT_DIST_METHOD,
+					dist_method=const.OBJECT_DIST_METHOD,
 					second_solver=False,
 					individual_motion=const.INDIVIDUAL_MOTION,
 					motion_method=const.INDIVIDUAL_MOTION_METHOD	):
@@ -40,7 +40,7 @@ class ObjectHandler:
 		self._random_num_targets = random_num_targets
 
 		# How should object's be initialised spatially?
-		self._object_dist_method = dist_methood
+		self._object_dist_method = dist_method
 
 		# Should each individual move per iteration according to their own velocity
 		# and heading parameters
