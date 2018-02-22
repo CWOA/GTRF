@@ -30,13 +30,22 @@ TBC
 
 class DNNModel:
 	# Class constructor
-	def __init__(self, use_simulator=False):
+	def __init__(	self, 
+					use_simulator=False,
+					split_into_dual_networks=False	):
 		"""
-		Class attributes
+		Class arguments
 		"""
 
 		# If we're using the ROS/gazebo simulator for visual input
 		self._use_simluator = use_simulator
+
+		# If the split input algorithm is enabled (for use as a baseline comparison)
+		self._use_dual_networks = split_into_dual_networks
+
+		"""
+		Class attributes
+		"""
 
 		# Number of classes
 		if const.USE_EXT_ACTIONS:
@@ -60,16 +69,21 @@ class DNNModel:
 		Class setup
 		"""
 
-		# Delete variables/reset DNN
+		# Reset TensorFlow DNN (required when doing multiple runs)
 		tf.reset_default_graph()
 
-		# Network architecture
-		self._network = self.defineDNN()
+		# If we're using the dual CNN with two optimisers
+		if self._use_dual_networks:
+			self._network = self.defineDNN(dual_optimiser=True)
+			self._model = tflearn.DNN(	self._network,
+										tensorboard_dir=Utility.getICIPTensorboardDir()	)
+		else:
+			# Network architecture
+			self._network = self.defineDNN()
 
-		# # Model declaration
-		self._model = tflearn.DNN(	self._network,
-									tensorboard_verbose=0,
-									tensorboard_dir=Utility.getICIPTensorboardDir()	)
+			# Model declaration
+			self._model = tflearn.DNN(	self._network,
+										tensorboard_dir=Utility.getICIPTensorboardDir()	)
 
 		print "Initialised DNN"
 
@@ -143,6 +157,93 @@ class DNNModel:
 
 		return run_id
 
+	# Train model and cross validate
+	def crossValidate(self, X0, X1, Y):
+		print "{}-fold cross validation is enabled".format(const.NUM_FOLDS)
+
+		# Extract the number of training instances (previously verified to be
+		# consistent across training variables)
+		num_instances = X0.shape[0]
+
+		# Create the cross validation object that randomly shuffles too
+		kf = cross_validation.KFold(num_instances, n_folds=const.NUM_FOLDS, shuffle=True)
+
+		# Current fold number
+		fold_number = 0
+
+		# Dictionary of model save directories (key is fold number)
+		model_save_dirs = {}
+
+		# Iterate num folds times
+		for train_idx, test_idx in kf:
+			print "Beginning fold {}/{} complete.".format(fold_number+1, const.NUM_FOLDS)
+
+			# Split the data for this fold
+			X0_train, X0_test = X0[train_idx], X0[test_idx]
+			X1_train, X1_test = X1[train_idx], X1[test_idx]
+			Y_train, Y_test = Y[train_idx], Y[test_idx]
+
+			# Construct a run_id
+			run_id = self.constructRunID(exp_name, fold_id=fold_number)
+
+			# Network architecture
+			self._network = self.defineDNN()
+
+			# Init the model
+			self._model = tflearn.DNN(	self._network,
+										tensorboard_verbose=0,
+										tensorboard_dir=Utility.getICIPTensorboardDir()	)
+
+			# If we're training the dual stream CNN with two optimisers, simply give the
+			# training label to both networks
+			if self.__use_dual_networks:
+				train_data = [Y_train, Y_train]
+			else:
+				train_data = [Y_train]
+
+			# Train the model
+			self._model.fit(	[X0_train, X1_train],
+								train_data,
+								validation_set=([X0_test, X1_test], Y_test),
+								n_epoch=const.NUM_EPOCHS,
+								batch_size=64,
+								run_id=run_id,
+								show_metric=True								)
+
+			# Save the trained model
+			model_save_dirs[fold_number] = self.saveModel(run_id=run_id)
+
+			# Evaluate
+			self.evaluateModel(X0_test, X1_test, Y_test, fold_id=fold_number)
+
+			# Delete variables/reset DNN
+			tf.reset_default_graph()
+			del self._network
+			del self._model
+
+			# Increment
+			fold_number += 1
+
+			print "Fold {}/{} complete.".format(fold_number, const.NUM_FOLDS)
+
+		# Print all results
+		print self._eval_results
+
+		# Find the fold with the best classification result
+		best_fold = max(self._eval_results.iterkeys(), key=(lambda key: self._eval_results[key]))
+
+		print "Best fold = {}".format(best_fold)
+
+		# Use this key to extract the directory of the best fold
+		best_model_path = model_save_dirs[best_fold]
+
+		# Report average and standard deviation classification results across all folds
+		all_values = np.asarray(self._eval_results.values())
+
+		print "Average accuracy = {}, standard deviation = {}".format(np.mean(all_values), np.std(all_values))
+
+		return best_model_path
+
 	# Complete function which loads the appropriate training data, trains the model,
 	# saves it to file and evaluates the trained model's performance
 	def trainModel(self, exp_name, data_dir=None):
@@ -156,84 +257,9 @@ class DNNModel:
 
 		tf.reset_default_graph()
 
-		# If we're supposed to cross-validate results
+		# If we're supposed to cross-validate results, do so
 		if const.CROSS_VALIDATE:
-			print "{}-fold cross validation is enabled".format(const.NUM_FOLDS)
-
-			# Extract the number of training instances (previously verified to be
-			# consistent across training variables)
-			num_instances = X0.shape[0]
-
-			# Create the cross validation object that randomly shuffles too
-			kf = cross_validation.KFold(num_instances, n_folds=const.NUM_FOLDS, shuffle=True)
-
-			# Current fold number
-			fold_number = 0
-
-			# Dictionary of model save directories (key is fold number)
-			model_save_dirs = {}
-
-			# Iterate num folds times
-			for train_idx, test_idx in kf:
-				print "Beginning fold {}/{} complete.".format(fold_number+1, const.NUM_FOLDS)
-
-				# Split the data for this fold
-				X0_train, X0_test = X0[train_idx], X0[test_idx]
-				X1_train, X1_test = X1[train_idx], X1[test_idx]
-				Y_train, Y_test = Y[train_idx], Y[test_idx]
-
-				# Construct a run_id
-				run_id = self.constructRunID(exp_name, fold_id=fold_number)
-
-				# Network architecture
-				self._network = self.defineDNN()
-
-				# Init the model
-				self._model = tflearn.DNN(	self._network,
-											tensorboard_verbose=0,
-											tensorboard_dir=Utility.getICIPTensorboardDir()	)
-
-				# Train the model
-				self._model.fit(	[X0_train, X1_train],
-									Y_train,
-									validation_set=([X0_test, X1_test], Y_test),
-									n_epoch=const.NUM_EPOCHS,
-									batch_size=64,
-									run_id=run_id,
-									show_metric=True								)
-
-				# Save the trained model
-				model_save_dirs[fold_number] = self.saveModel(run_id=run_id)
-
-				# Evaluate
-				self.evaluateModel(X0_test, X1_test, Y_test, fold_id=fold_number)
-
-				# Delete variables/reset DNN
-				tf.reset_default_graph()
-				del self._network
-				del self._model
-
-				# Increment
-				fold_number += 1
-
-				print "Fold {}/{} complete.".format(fold_number, const.NUM_FOLDS)
-
-			# Print all results
-			print self._eval_results
-
-			# Find the fold with the best classification result
-			best_fold = max(self._eval_results.iterkeys(), key=(lambda key: self._eval_results[key]))
-
-			print "Best fold = {}".format(best_fold)
-
-			# Use this key to extract the directory of the best fold
-			best_model_path = model_save_dirs[best_fold]
-
-			# Report average and standard deviation classification results across all folds
-			all_values = np.asarray(self._eval_results.values())
-
-			print "Average accuracy = {}, standard deviation = {}".format(np.mean(all_values), np.std(all_values))
-
+			best_model_path = self.crossValidate(X0, X1, Y)
 		# Cross validation not enabled, just split, train and evaluate
 		else:
 			# Split the data into training/testing chunks
@@ -242,9 +268,16 @@ class DNNModel:
 			# Run ID
 			run_id = self.constructRunID(exp_name)
 
+			# If we're training the dual stream CNN with two optimisers, simply give the
+			# training label to both networks
+			if self.__use_dual_networks:
+				train_data = [Y_train, Y_train]
+			else:
+				train_data = [Y_train]
+
 			# Train the model
 			self._model.fit(	[X0_train, X1_train],
-								Y_train,
+								train_data,
 								validation_set=([X0_test, X1_test], Y_test),
 								n_epoch=const.NUM_EPOCHS,
 								batch_size=64,
@@ -335,7 +368,20 @@ class DNNModel:
 
 		return array
 
-	def defineDNN(self):
+	"""
+	Network architecture declaration methods
+	"""
+
+	# Defines dual input CNN architecture that takes both agent-centric inputs
+	def defineDNN(self, dual_optimiser=False):
+		# If motion is enabled (for the occupancy grid), add a dimension to input data
+		if const.OCCUPANCY_MAP_MODE == const.VISITATION_MODE:
+			visit_map_dims = 1
+		elif const.OCCUPANCY_MAP_MODE == const.MOTION_MODE:
+			visit_map_dims = 2
+		else:
+			Utility.die("Occupancy map mode not recognised in defineDNN()", __file__)
+
 		# Network 0 definition (IMAGE) -> AlexNet
 		net0 = tflearn.input_data([		None, 
 										self._img_height, 
@@ -357,13 +403,13 @@ class DNNModel:
 		net0 = fully_connected(net0, 4096, activation='tanh')
 		net0 = dropout(net0, 0.5)
 
-		# If motion is enabled (for the occupancy grid), add a dimension
-		if const.OCCUPANCY_MAP_MODE == const.VISITATION_MODE:
-			visit_map_dims = 1
-		elif const.OCCUPANCY_MAP_MODE == const.MOTION_MODE:
-			visit_map_dims = 2
-		else:
-			Utility.die("Occupancy map mode not recognised in defineDNN()", __file__)
+		# If we should have dual optimisation regression layers(one for each agent input)
+		if dual_optimiser:
+			optimiser0 = tflearn.Momentum(learning_rate=0.001)
+			net0 = fully_connected(net0, self._num_classes, activation='softmax')
+			net0 = regression(	net0, 
+								optimizer=optimiser0,
+								loss='categorical_crossentropy'		)
 
 		# Network 1 definition (VISIT MAP)
 		net1 = tflearn.input_data([		None,
@@ -375,21 +421,34 @@ class DNNModel:
 		net1 = local_response_normalization(net1)
 		net1 = fully_connected(net1, 1024, activation='tanh')
 
-		# Merge the networks
-		net = tflearn.merge([net0, net1], "concat", axis=1)
+		# If we should have dual optimisation regression layers(one for each agent input)
+		if dual_optimiser:
+			optimiser1 = tflearn.Momentum(learning_rate=0.001)
+			net1 = fully_connected(net1, self._num_classes, activation='softmax')
+			net1 = regression(	net1, 
+								optimizer=optimiser0,
+								loss='categorical_crossentropy'		)
 
-		# Softmax layer
-		net = fully_connected(net, self._num_classes, activation='softmax')
+			# Merge the two optimisation layers
+			net = tflearn.merge([net0, net1], mode="elemwise_sum")
 
-		# Optimiser
-		# optimiser = tflearn.Adam(learning_rate=0.001, beta1=0.99)
-		# optimiser = tflearn.Momentum(learning_rate=0.001, lr_decay=0.96, decay_step=100)
-		optimiser = tflearn.Momentum(learning_rate=0.001)
+		# We should merge the networks and have a single optimisation layer
+		else:
+			# Merge the networks
+			net = tflearn.merge([net0, net1], "concat", axis=1)
 
-		# Regression layer
-		net = regression(	net, 
-							optimizer=optimiser,
-							loss='categorical_crossentropy'		)
+			# Softmax layer
+			net = fully_connected(net, self._num_classes, activation='softmax')
+
+			# Optimiser definition
+			# optimiser = tflearn.Adam(learning_rate=0.001, beta1=0.99)
+			# optimiser = tflearn.Momentum(learning_rate=0.001, lr_decay=0.96, decay_step=100)
+			optimiser = tflearn.Momentum(learning_rate=0.001)
+
+			# Regression layer
+			net = regression(	net, 
+								optimizer=optimiser,
+								loss='categorical_crossentropy'		)
 
 		return net
 

@@ -21,10 +21,18 @@ class Algorithm:
 		# The chosen algorithm
 		self._algorithm_selection = algorithm_method
 
+		# Dual input CNN
 		if self._algorithm_selection == const.ALGORITHM_DUAL_INPUT_CNN:
 			self._algorithm = DualInputCNN.DualInputCNN(	use_simulator, 
 															model_path, 
 															use_loop_detector=const.USE_LOOP_DETECTOR 	)
+		# Similar to the dual input CNN, but with two networks (provided as a baseline)
+		elif self._algorithm_selection == const.ALGORITHM_SPLIT_INPUT_CNN:
+			self._algorithm = DualInputCNN.DualInputCNN(	use_simulator, 
+															model_path, 
+															use_loop_detector=const.USE_LOOP_DETECTOR,
+															split_into_dual_networks=True			 	)
+		# Select your algorithm here
 		elif self._algorithm_selection == const.ALGORITHM_YOUR_ALGORITHM:
 			self._algorithm = YourAlgorithm.YourAlgorithm()
 		else:

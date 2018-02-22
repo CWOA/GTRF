@@ -14,17 +14,17 @@ see the main function below
 # then evaluate on the best model yielded from cross-fold validation
 def generateTrainTest(experiment_name, iterations, visualise, use_simulator):
 	# Initialise FieldMap instance for training data generation and perform it
-	train_fm = FieldMap(	True, 
-							experiment_name, 
-							visualise=visualise, 
-							use_simulator=use_simulator, 
-							save=True						)
-	saved_to_path = train_fm.generateTrainingData(iterations)
+	# train_fm = FieldMap(	True, 
+	# 						experiment_name, 
+	# 						visualise=visualise, 
+	# 						use_simulator=use_simulator, 
+	# 						save=True						)
+	# saved_to_path = train_fm.generateTrainingData(iterations)
 
 	# Can comment the above two lines and uncomment the one below to just run data
 	# generation and testing
 	# saved_to_path = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/data/TRAINING_DATA_visitation_marked_TO.h5"
-	# saved_to_path = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/data/TRAINING_DATA_moving_equidistant.h5"
+	saved_to_path = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/data/training_data_SEQUENCE.h5"
 
 	# Use this training data to initialise and train the dual input CNN
 	dnn = DNN.DNNModel(use_simulator=use_simulator)
@@ -157,7 +157,7 @@ if __name__ == '__main__':
 	Primary function calls
 	"""
 
-	# generateTrainTest("equidistant_marked", iterations, visualise, use_simulator)
+	generateTrainTest("split_stream", iterations, visualise, use_simulator)
 	# generateTrainingExamples(iterations, visualise, use_simulator, save_video)
 	# trainModel(iterations, use_simulator)
 	# testModel(iterations, visualise, use_simulator)
@@ -166,33 +166,33 @@ if __name__ == '__main__':
 
 	# Testing function calls
 
-	# Base model directory
-	base = Utility.getICIPModelDir()
+	# # Base model directory
+	# base = Utility.getICIPModelDir()
 
-	# CU (best fold: 5)
-	model_path = "{}/model_CLOSEST_2017-12-14_20:04:09_CROSS_VALIDATE_5.tflearn".format(base)
-	testModel(iterations, "closest_unvisited", visualise, False, model_path, dist_method, False)
+	# # CU (best fold: 5)
+	# model_path = "{}/model_CLOSEST_2017-12-14_20:04:09_CROSS_VALIDATE_5.tflearn".format(base)
+	# testModel(iterations, "closest_unvisited", visualise, False, model_path, dist_method, False)
 
-	# TO (best fold: 4)
-	model_path = "{}/model_SEQUENCE_2017-12-15_15:51:08_CROSS_VALIDATE_4.tflearn".format(base)
-	testModel(iterations, "target_ordering", visualise, False, model_path, dist_method, False)
+	# # TO (best fold: 4)
+	# model_path = "{}/model_SEQUENCE_2017-12-15_15:51:08_CROSS_VALIDATE_4.tflearn".format(base)
+	# testModel(iterations, "target_ordering", visualise, False, model_path, dist_method, False)
 
-	# Static grid (best fold: 6)
-	dist_method = const.STAT_DIST
-	model_path = "{}/equidistant_SEQUENCE_2018-01-31_12:22:23_CROSS_VALIDATE_6.tflearn".format(base)
-	testModel(iterations, "static_grid", visualise, False, model_path, dist_method, False)
+	# # Static grid (best fold: 6)
+	# dist_method = const.STAT_DIST
+	# model_path = "{}/equidistant_SEQUENCE_2018-01-31_12:22:23_CROSS_VALIDATE_6.tflearn".format(base)
+	# testModel(iterations, "static_grid", visualise, False, model_path, dist_method, False)
 
-	# Gaussian (best fold: 2)
-	dist_method = const.GAUS_DIST
-	model_path = "{}/gaussian_SEQUENCE_2018-01-31_16:11:20_CROSS_VALIDATE_2.tflearn".format(base)
-	testModel(iterations, "gaussian", visualise, False, model_path, dist_method, False)
+	# # Gaussian (best fold: 2)
+	# dist_method = const.GAUS_DIST
+	# model_path = "{}/gaussian_SEQUENCE_2018-01-31_16:11:20_CROSS_VALIDATE_2.tflearn".format(base)
+	# testModel(iterations, "gaussian", visualise, False, model_path, dist_method, False)
 
-	# Random MARKED visitation (best fold: 4)
-	dist_method = const.PRNG_DIST
-	model_path = "{}/visitation_marked_TO_2018-02-13_22:28:27_CROSS_VALIDATE_4.tflearn".format(base)
-	testModel(iterations, "random_marked", visualise, False, model_path, dist_method, True)
+	# # Random MARKED visitation (best fold: 4)
+	# dist_method = const.PRNG_DIST
+	# model_path = "{}/visitation_marked_TO_2018-02-13_22:28:27_CROSS_VALIDATE_4.tflearn".format(base)
+	# testModel(iterations, "random_marked", visualise, False, model_path, dist_method, True)
 
-	# Gaussian MARKED visitation (best fold: 4)
-	dist_method = const.GAUS_DIST
-	model_path = "{}/visitation_marked_GAUSSIAN_2018-02-18_17:53:40_CROSS_VALIDATE_4.tflearn".format(base)
-	testModel(iterations, "gaussian_marked", visualise, False, model_path, dist_method, True)
+	# # Gaussian MARKED visitation (best fold: 4)
+	# dist_method = const.GAUS_DIST
+	# model_path = "{}/visitation_marked_GAUSSIAN_2018-02-18_17:53:40_CROSS_VALIDATE_4.tflearn".format(base)
+	# testModel(iterations, "gaussian_marked", visualise, False, model_path, dist_method, True)

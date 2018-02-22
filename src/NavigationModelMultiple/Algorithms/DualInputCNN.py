@@ -22,7 +22,8 @@ class DualInputCNN:
 	def __init__(	self,
 					use_simulator,
 					model_path,
-					use_loop_detector=True		):
+					use_loop_detector=True,
+					split_into_dual_networks=False		):
 		"""
 		Class arguments
 		"""
@@ -39,7 +40,8 @@ class DualInputCNN:
 			self._loop_detector = LoopDetector()
 
 		# Deep Neural Network class used for action selection
-		self._dnn = DNN.DNNModel(use_simulator)
+		self._dnn = DNN.DNNModel(	use_simulator, 
+									split_into_dual_networks=split_into_dual_networks	)
 
 		"""
 		Class initialisation
