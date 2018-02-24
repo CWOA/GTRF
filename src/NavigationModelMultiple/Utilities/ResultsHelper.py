@@ -260,6 +260,11 @@ class ResultsHelper:
 		print "__<10 Difference________________"
 		print "{}%\n".format((float(diff_10)/num_inst)*100)
 
+		# % of time generated length is over 300 moves (and environment time expires)
+		time_exp = np.where(data[:,0] > 300)[0].shape[0]
+		print "__Over 300 moves________________"
+		print "{}%\n".format((float(time_exp)/num_inst)*100)
+
 		# Find the target discovery rate and respective standard deviation
 		avg_dt = np.mean(data[:,3])
 		sig_dt = np.std(data[:,3])
@@ -370,5 +375,18 @@ if __name__ == '__main__':
 	# ResultsHelper.drawDatasetSizeAccuracyGraph()
 	# ResultsHelper.drawAccuracyGraph()
 
-	ResultsHelper.listResults("/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/data/RESULTS_naive_solution.npy")
+	# ResultsHelper.listResults("/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/data/RESULTS_naive_solution.npy")
+	# ResultsHelper.listResults("/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/data/RESULTS_split stream.npy")
+
+	# ResultsHelper.listResults("/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/data/RESULTS_closest_unvisited.npy")
+	# ResultsHelper.listResults("/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/data/RESULTS_target_ordering.npy")
+
+	# ResultsHelper.listResults("/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/data/RESULTS_static_grid.npy")
+	# ResultsHelper.listResults("/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/data/RESULTS_moving_equidistant.npy")
+	# ResultsHelper.listResults("/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/data/RESULTS_gaussian.npy")
+
+	# ResultsHelper.listResults("/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/data/RESULTS_random_marked.npy")
+	# ResultsHelper.listResults("/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/data/RESULTS_equidistant_marked.npy")
+	ResultsHelper.listResults("/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/data/RESULTS_gaussian_marked.npy")
+
 	# Utility.drawModelLengthHistogram()

@@ -10,7 +10,7 @@ Run-time arguments
 """
 
 # Whether to visualise visual input/map via OpenCV imshow for debugging purposes
-VISUALISE = True
+VISUALISE = False
 
 # Whether or not to use ROS/Gazebo simulator for synthesised visual input
 USE_SIMULATOR = False
@@ -30,8 +30,8 @@ ALGORITHM_SPLIT_INPUT_CNN = 1
 ALGORITHM_YOUR_ALGORITHM = 2
 # Add your extra algorithm definition here or change the one above
 
-# ALGORITHM_METHOD = ALGORITHM_DUAL_INPUT_CNN
-ALGORITHM_METHOD = ALGORITHM_SPLIT_INPUT_CNN
+ALGORITHM_METHOD = ALGORITHM_DUAL_INPUT_CNN
+# ALGORITHM_METHOD = ALGORITHM_SPLIT_INPUT_CNN
 # ALGORITHM_METHOD = ALGORITHM_YOUR_ALGORITHM
 
 """
@@ -143,7 +143,7 @@ TARGET_VISITED_VAL = 5
 
 # Motion mode occupancy map values
 MOTION_EMPTY_VAL = 0
-MOTION_HIGH_VALUE = 100
+MOTION_HIGH_VALUE = 50
 
 # Whether or not to mark positions in the map where a target was visited
 MARK_PAST_VISITATION = False
@@ -206,7 +206,7 @@ DNN model/training constants
 DATA_RATIO = 0.9
 
 # Number of epochs to train for (per fold for cross-fold validation)
-NUM_EPOCHS = 1
+NUM_EPOCHS = 50
 
 # Should we cross-validate, how many folds?
 CROSS_VALIDATE = False

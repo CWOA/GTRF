@@ -112,11 +112,14 @@ class DNNModel:
 			X_temp[:,:,:,0] = X1
 			X1 = X_temp
 
+		# X1[X1 > 0] -= 950
+		# X1[X1 < 0] = 0
+
 		# Quarter the number of instances
-		s = X0.shape[0]/8
-		X0 = X0[0:s,:,:,:]
-		X1 = X1[0:s,:,:,:]
-		Y = Y[0:s,:]
+		# s = X0.shape[0]/8
+		# X0 = X0[0:s,:,:,:]
+		# X1 = X1[0:s,:,:,:]
+		# Y = Y[0:s,:]
 
 		# Normalise all visual input from [0,255] to [0,1]
 		# X0 = self.normaliseInstances(X0, 255)
