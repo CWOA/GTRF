@@ -1,11 +1,17 @@
 #!/usr/bin/env python
 
+# Core libraries
+import sys
+sys.path.append('../')
 import math
 import copy
 import random
 import networkx as nx
-import Constants as const
 import matplotlib.pyplot as plt
+
+# My libraries/classes
+import Constants as const
+from Utilities.Utility import Utility
 
 """
 TBC
@@ -36,7 +42,7 @@ class MotionSolver:
 
 		# The max number of steps for those random positions
 		self._num_steps = len(self._rand_pos)
-		assert(self._num_steps == const.RANDOM_WALK_NUM_STEPS)
+		assert(self._num_steps == const.MOTION_NUM_STEPS)
 
 		# Insert target position list at the head of the list
 		target_start = [x.getPosTuple() for x in self._targets]
@@ -54,7 +60,7 @@ class MotionSolver:
 	def solve(self):
 		self.growTree()
 		self._actions = self.findBestSolutions()
-		return len(self._actions)
+		return len(self._actions), 0
 
 	def nextAction(self):
 		return self._actions.pop(0)

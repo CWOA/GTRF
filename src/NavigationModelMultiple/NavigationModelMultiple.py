@@ -5,41 +5,64 @@ from Utilities.Utility import Utility
 from Core.FieldMap import FieldMap
 from Algorithms import DNN
 
+from Algorithms.SplitStreamDNN import SplitStreamDNNModel
+import tensorflow as tf
+
 """
 This class forms the principal entry point for selecting experimentation,
 see the main function below
 """
 
+def temp():
+	dnn = SplitStreamDNNModel()
+	dnn.trainModel()
+
+	tf.reset_default_graph()
+	del dnn
+
+	best_model_path = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/models/split_stream.tflearn"
+
+	test_fm = FieldMap(		False, 
+							"split stream", 
+							visualise=False, 
+							use_simulator=False, 
+							model_path=best_model_path		)
+	test_fm.startTestingEpisodes(iterations)
+
 # Generate training data, save it to file and use as training data for DNN training
 # then evaluate on the best model yielded from cross-fold validation
-def generateTrainTest(experiment_name, iterations, visualise, use_simulator):
+def generateTrainTest(	experiment_name, 
+						iterations, 
+						visualise, 
+						use_simulator, 
+						split_into_dual_networks	):
 	# Initialise FieldMap instance for training data generation and perform it
-	# train_fm = FieldMap(	True, 
-	# 						experiment_name, 
-	# 						visualise=visualise, 
-	# 						use_simulator=use_simulator, 
-	# 						save=True						)
-	# saved_to_path = train_fm.generateTrainingData(iterations)
+	train_fm = FieldMap(	True, 
+							experiment_name, 
+							visualise=visualise, 
+							use_simulator=use_simulator, 
+							save=True						)
+	saved_to_path = train_fm.generateTrainingData(iterations)
 
 	# Can comment the above two lines and uncomment the one below to just run data
 	# generation and testing
 	# saved_to_path = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/data/TRAINING_DATA_visitation_marked_TO.h5"
-	saved_to_path = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/data/training_data_SEQUENCE.h5"
+	# saved_to_path = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/data/training_data_SEQUENCE.h5"
 
 	# Use this training data to initialise and train the dual input CNN
-	dnn = DNN.DNNModel(use_simulator=use_simulator)
-	best_model_path = dnn.trainModel(experiment_name, data_dir=saved_to_path)
+	# dnn = DNN.DNNModel(use_simulator=use_simulator, split_into_dual_networks=split_into_dual_networks)
+	# best_model_path = dnn.trainModel(experiment_name, data_dir=saved_to_path)
 
 	# best_model_path = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/models/visitation_marked_TO_2018-02-13_22:28:27_CROSS_VALIDATE_4.tflearn"
-	# best_model_path = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/models/visitation_marked_GAUSSIAN_2018-02-18_17:53:40_CROSS_VALIDATE_4.tflearn"
+	# best_model_path = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/models/split_stream.tflearn"
 
 	# Use the best model path to test
-	test_fm = FieldMap(		False, 
-							experiment_name, 
-							visualise=visualise, 
-							use_simulator=use_simulator, 
-							model_path=best_model_path		)
-	test_fm.startTestingEpisodes(iterations)
+	# test_fm = FieldMap(		False, 
+	# 						experiment_name, 
+	# 						visualise=visualise, 
+	# 						use_simulator=use_simulator, 
+	# 						model_path=best_model_path		)
+	# test_fm.startTestingEpisodes(iterations)
 
 # Just generate training examples
 def generateTrainingExamples(iterations, visualise, use_simulator, save_video):
@@ -157,7 +180,7 @@ if __name__ == '__main__':
 	Primary function calls
 	"""
 
-	generateTrainTest("split_stream", iterations, visualise, use_simulator)
+	generateTrainTest("herd_dynamics", iterations, visualise, use_simulator, True)
 	# generateTrainingExamples(iterations, visualise, use_simulator, save_video)
 	# trainModel(iterations, use_simulator)
 	# testModel(iterations, visualise, use_simulator)

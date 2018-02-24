@@ -25,7 +25,7 @@ from tflearn.layers.estimator import regression
 from Utilities.Utility import Utility
 
 """
-TBC
+Deep Neural Network class for training, testing and evaluation on new inputs
 """
 
 class DNNModel:
@@ -74,16 +74,14 @@ class DNNModel:
 
 		# If we're using the dual CNN with two optimisers
 		if self._use_dual_networks:
+			print "Utilising split stream CNN"
 			self._network = self.defineDNN(dual_optimiser=True)
-			self._model = tflearn.DNN(	self._network,
-										tensorboard_dir=Utility.getICIPTensorboardDir()	)
 		else:
-			# Network architecture
 			self._network = self.defineDNN()
 
-			# Model declaration
-			self._model = tflearn.DNN(	self._network,
-										tensorboard_dir=Utility.getICIPTensorboardDir()	)
+		# Model declaration
+		self._model = tflearn.DNN(	self._network,
+									tensorboard_dir=Utility.getICIPTensorboardDir()	)
 
 		print "Initialised DNN"
 
@@ -113,6 +111,12 @@ class DNNModel:
 			X_temp = np.zeros((X1.shape[0], X1.shape[1], X1.shape[2], 1))
 			X_temp[:,:,:,0] = X1
 			X1 = X_temp
+
+		# Quarter the number of instances
+		s = X0.shape[0]/8
+		X0 = X0[0:s,:,:,:]
+		X1 = X1[0:s,:,:,:]
+		Y = Y[0:s,:]
 
 		# Normalise all visual input from [0,255] to [0,1]
 		# X0 = self.normaliseInstances(X0, 255)
@@ -158,7 +162,7 @@ class DNNModel:
 		return run_id
 
 	# Train model and cross validate
-	def crossValidate(self, X0, X1, Y):
+	def crossValidate(self, exp_name, X0, X1, Y):
 		print "{}-fold cross validation is enabled".format(const.NUM_FOLDS)
 
 		# Extract the number of training instances (previously verified to be
@@ -194,21 +198,23 @@ class DNNModel:
 										tensorboard_verbose=0,
 										tensorboard_dir=Utility.getICIPTensorboardDir()	)
 
-			# If we're training the dual stream CNN with two optimisers, simply give the
-			# training label to both networks
-			if self.__use_dual_networks:
-				train_data = [Y_train, Y_train]
+			# Train!
+			if self._use_dual_networks:
+				self._model.fit(	[X0_train, X1_train],
+									[Y_train, Y_train],
+									validation_set=([X0_test, X1_test], [Y_test, Y_test]),
+									n_epoch=const.NUM_EPOCHS,
+									batch_size=64,
+									run_id=run_id,
+									show_metric=True								)
 			else:
-				train_data = [Y_train]
-
-			# Train the model
-			self._model.fit(	[X0_train, X1_train],
-								train_data,
-								validation_set=([X0_test, X1_test], Y_test),
-								n_epoch=const.NUM_EPOCHS,
-								batch_size=64,
-								run_id=run_id,
-								show_metric=True								)
+				self._model.fit(	[X0_train, X1_train],
+									Y_train,
+									validation_set=([X0_test, X1_test], Y_test),
+									n_epoch=const.NUM_EPOCHS,
+									batch_size=64,
+									run_id=run_id,
+									show_metric=True								)
 
 			# Save the trained model
 			model_save_dirs[fold_number] = self.saveModel(run_id=run_id)
@@ -259,7 +265,7 @@ class DNNModel:
 
 		# If we're supposed to cross-validate results, do so
 		if const.CROSS_VALIDATE:
-			best_model_path = self.crossValidate(X0, X1, Y)
+			best_model_path = self.crossValidate(exp_name, X0, X1, Y)
 		# Cross validation not enabled, just split, train and evaluate
 		else:
 			# Split the data into training/testing chunks
@@ -268,27 +274,31 @@ class DNNModel:
 			# Run ID
 			run_id = self.constructRunID(exp_name)
 
-			# If we're training the dual stream CNN with two optimisers, simply give the
-			# training label to both networks
-			if self.__use_dual_networks:
-				train_data = [Y_train, Y_train]
+			# Train
+			if self._use_dual_networks:
+				self._model.fit(	[X0_train, X1_train],
+									[Y_train, Y_train],
+									validation_set=([X0_test, X1_test], [Y_test, Y_test]),
+									n_epoch=const.NUM_EPOCHS,
+									batch_size=64,
+									run_id=run_id,
+									show_metric=True								)
 			else:
-				train_data = [Y_train]
+				self._model.fit(	[X0_train, X1_train],
+									Y_train,
+									validation_set=([X0_test, X1_test], Y_test),
+									n_epoch=const.NUM_EPOCHS,
+									batch_size=64,
+									run_id=run_id,
+									show_metric=True								)
 
-			# Train the model
-			self._model.fit(	[X0_train, X1_train],
-								train_data,
-								validation_set=([X0_test, X1_test], Y_test),
-								n_epoch=const.NUM_EPOCHS,
-								batch_size=64,
-								run_id=run_id,
-								show_metric=True								)
+			# self._model.evaluate([X0_test, X1_test], [Y_test, Y_test])
+
+			# Evaluate how we did
+			# self.evaluateModel(X0_test, X1_test, Y_test)
 
 			# Save the trained model
 			best_model_path = self.saveModel(run_id=run_id)
-
-			# Evaluate how we did
-			self.evaluateModel(X0_test, X1_test, Y_test)
 
 		return best_model_path
 
@@ -330,8 +340,11 @@ class DNNModel:
 		return self._model.predict([np_img, np_map])
 
 	def evaluateModel(self, X0_test, X1_test, Y_test, fold_id=0):
-		# Evaluate and get the result
-		result = self._model.evaluate([X0_test, X1_test], Y_test)
+		if self._use_dual_networks:
+			result = self._model.evaluate([X0_test, X1_test], [Y_test, Y_test])
+		else:
+			# Evaluate and get the result
+			result = self._model.evaluate([X0_test, X1_test], Y_test)
 
 		# Print it out
 		print result
@@ -344,11 +357,14 @@ class DNNModel:
 			# model_dir = Utility.getModelDir()
 			# model_dir = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/models/model_CLOSEST_2017-12-14_20:04:09_CROSS_VALIDATE_5.tflearn"
 			# model_dir = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/models/model_SEQUENCE_2017-12-15_15:51:08_CROSS_VALIDATE_4.tflearn"
-			model_dir = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/models/motion_test_MS_2018-02-13_17:08:22_CROSS_VALIDATE_9.tflearn"
+			# model_dir = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/models/split_stream_2018-02-22_17:43:21_CROSS_VALIDATE_0.tflearn"
+			pass
+
+		print "Loading TFLearn model at directory:{}".format(model_dir)
 
 		self._model.load(model_dir)
 
-		print "Loaded TFLearn model at directory:{}".format(model_dir)
+		print "Loaded model.".format(model_dir)
 
 	def saveModel(self, run_id=None):
 		if run_id is not None:
@@ -426,7 +442,7 @@ class DNNModel:
 			optimiser1 = tflearn.Momentum(learning_rate=0.001)
 			net1 = fully_connected(net1, self._num_classes, activation='softmax')
 			net1 = regression(	net1, 
-								optimizer=optimiser0,
+								optimizer=optimiser1,
 								loss='categorical_crossentropy'		)
 
 			# Merge the two optimisation layers

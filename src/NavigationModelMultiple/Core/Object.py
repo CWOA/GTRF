@@ -14,6 +14,7 @@ from tqdm import tqdm
 import Constants as const
 from Solvers.Solver import EpisodeSolver
 from Utilities.DiscoveryRate import DiscoveryRate
+from Utilities.Utility import Utility
 
 """
 TBC
@@ -22,7 +23,7 @@ TBC
 class ObjectHandler:
 	# Class constructor
 	def __init__(	self,
-					random_agent_pos=True,
+					random_agent_pos=const.RANDOM_AGENT_START_POS,
 					random_num_targets=False,
 					solver_method=const.SOLVER_METHOD,
 					dist_method=const.OBJECT_DIST_METHOD,
@@ -134,12 +135,15 @@ class ObjectHandler:
 		self._equi_y = []
 
 		# In case motion is disabled
-		self._rand_pos = None
+		self._motion_pos = None
 
 		# If random walk individual motion is enabled
-		if self._individual_motion and self._motion_method == const.INDIVIDUAL_MOTION_RANDOM:
+		if self._individual_motion:
 			# Pre-determine random walks so that we can generate GO solution
-			self._rand_pos, success = self.predetermineRandomWalk(const.RANDOM_WALK_NUM_STEPS)
+			if self._motion_method == const.INDIVIDUAL_MOTION_RANDOM:
+				self._motion_pos, success = self.predetermineMotionWalk(False, const.MOTION_NUM_STEPS)
+			elif self._motion_method == const.INDIVIDUAL_MOTION_HERD:
+				self._motion_pos, success = self.predetermineMotionWalk(True, const.MOTION_NUM_STEPS)
 
 			# If we coudln't figure out non-collision random walk for this configuration
 			# try generating another (recurse)
@@ -149,12 +153,12 @@ class ObjectHandler:
 			# Otherwise assign random walk positions to each target
 			else:
 				for i in range(len(self._targets)):
-					self._targets[i].assignRandomWalk(self._rand_pos, i)
+					self._targets[i].assignRandomWalk(self._motion_pos, i)
 
 		# Give generated agent and target objects to the solver
 		self._solver.reset(		copy.deepcopy(self._agent), 
 								copy.deepcopy(self._targets), 
-								rand_pos=self._rand_pos 		)
+								rand_pos=self._motion_pos 		)
 
 		# Initialise the second solver if we're supposed to
 		if self._use_second_solver:
@@ -344,16 +348,20 @@ class ObjectHandler:
 
 		return True
 
-	# If individual motion and random walk is enabled, this function pre-determines the
+	# If individual motion and random/herd walk is enabled, this function pre-determines the
 	# random motion of the targets in a way that object-object collisions are avoided
 	# such that a globally-optimal solution can be generated
-	def predetermineRandomWalk(self, num_steps):
+	def predetermineMotionWalk(self, herd, num_steps):
 		# Get the current target positions
 		cur_pos = self.getTargetPositions()
 
 		# Number of attempts to make to randomly generate random positions with no
 		# collisions
 		attempts_threshold = 10
+
+		if herd:
+			# Choose a random overall herd direction
+			direction = random.choice(const.ACTIONS)
 
 		# List of random walk positions
 		rand_pos = []
@@ -376,36 +384,74 @@ class ObjectHandler:
 						# The list of all actions possible in this position
 						possible_actions = Utility.possibleActionsForPosition(new_pos[j][0], new_pos[j][1])
 
-						# Shuffle the list
-						random.shuffle(possible_actions)
+						# If herd-like dynamics
+						if herd:
+							# Generate a float in range [0,1]
+							chance = random.uniform(0, 1)
 
-						# Loop over possible shuffled actions for this position
-						for action in possible_actions:
-							# Apply the action
+							# Chance of applying random action that isn't the current direction
+							# or the opposite direction
+							if chance <= const.INDIVIDUAL_RANDOM_CHANCE:
+								direction_removed = list(const.EXT_ACTIONS)
+								direction_removed.remove(direction)
+								direction_removed.remove(Utility.oppositeAction(direction))
+								action = random.choice(direction_removed)
+							# If the group heading is possible, apply it
+							elif direction in possible_actions:
+								action = direction
+							# Direction isn't possible (we're probably at the map boundaries)
+							else:
+								# pick a new random direction that isn't what we've just done
+								direction_removed = list(const.ACTIONS)
+								direction_removed.remove(direction)
+								direction = random.choice(direction_removed)
+
+								action = 'N'
+
+							# Apply the action selection
 							if action == 'F': t_pos = (new_pos[j][0], new_pos[j][1] - 1)
 							elif action == 'B': t_pos = (new_pos[j][0], new_pos[j][1] + 1)
 							elif action == 'L': t_pos = (new_pos[j][0] - 1, new_pos[j][1])
 							elif action == 'R': t_pos = (new_pos[j][0] + 1, new_pos[j][1])
+							elif action == 'N': t_pos = new_pos[j]
 
 							# Assign the tuple back
 							new_pos[j] = t_pos
 
-							# print "Inside action={}, attempts={}".format(action, attempts)
+						# Implement random walk
+						else:
+							# Shuffle the list
+							random.shuffle(possible_actions)
 
-							# Check the position is in the map boundaries
-							if Utility.checkPositionInBounds(new_pos[j][0], new_pos[j][1]):
-								break
+							# Loop over possible shuffled actions for this position
+							for action in possible_actions:
+								# Apply the action
+								if action == 'F': t_pos = (new_pos[j][0], new_pos[j][1] - 1)
+								elif action == 'B': t_pos = (new_pos[j][0], new_pos[j][1] + 1)
+								elif action == 'L': t_pos = (new_pos[j][0] - 1, new_pos[j][1])
+								elif action == 'R': t_pos = (new_pos[j][0] + 1, new_pos[j][1])
+
+								# Assign the tuple back
+								new_pos[j] = t_pos
+
+								# print "Inside action={}, attempts={}".format(action, attempts)
+
+								# Check the position is in the map boundaries
+								if Utility.checkPositionInBounds(new_pos[j][0], new_pos[j][1]):
+									break
 
 					# Ensure there are no duplicate generated positions
 					assert(len(new_pos) == const.NUM_TARGETS)
 					if len(new_pos) == len(set(new_pos)):
-						break
-					else:
-						# We've tried again to generate non-collision positions
-						attempts += 1
+						# Check all positions are in map boundaries
+						if Utility.checkPositionsListInBounds(new_pos):
+							break
 
-						# If we've exceeded a threshold, there's probably no solution
-						if attempts >= attempts_threshold: return None, False
+					# We've tried again to generate non-collision positions
+					attempts += 1
+
+					# If we've exceeded a threshold, there's probably no solution
+					if attempts >= attempts_threshold: return None, False
 
 			# If we're here, generated positions are valid, add to the list
 			rand_pos.append(new_pos)
@@ -576,10 +622,11 @@ class Object:
 
 					# Target velocity in grid squares per iteration
 					self._velocity = 0.5
-				# Random walk
-				elif self._motion_method == const.INDIVIDUAL_MOTION_RANDOM:
+				# Random walk or herd movement
+				elif (	self._motion_method == const.INDIVIDUAL_MOTION_RANDOM or
+						self._motion_method == const.INDIVIDUAL_MOTION_HERD			):
 					# List of random walk coordinates per iteration
-					self._random_walk = []
+					self._object_walk = []
 
 	# Class to string method
 	def __str__(self):
@@ -599,8 +646,9 @@ class Object:
 		assert(self._motion)
 
 		# Just replay random walk from pre-determined list
-		if self._motion_method == const.INDIVIDUAL_MOTION_RANDOM:
-			pos = self._random_walk.pop(0)
+		if (	self._motion_method == const.INDIVIDUAL_MOTION_RANDOM or
+				self._motion_method == const.INDIVIDUAL_MOTION_HERD			):
+			pos = self._object_walk.pop(0)
 			self._x = pos[0]
 			self._y = pos[1]
 		# If this target is using the heading/velocity model
@@ -634,7 +682,7 @@ class Object:
 	def assignRandomWalk(self, rand_pos, i):
 		# Loop over the number of steps
 		for j in range(len(rand_pos)):
-			self._random_walk.append(rand_pos[j][i])
+			self._object_walk.append(rand_pos[j][i])
 
 	"""
 	Getters
@@ -657,7 +705,7 @@ class Object:
 		if self.isAgent():
 			return self.getPosTuple()
 		else:
-			return self._random_walk[timestep-1]
+			return self._object_walk[timestep-1]
 
 	"""
 	Setters

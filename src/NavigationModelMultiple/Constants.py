@@ -10,7 +10,7 @@ Run-time arguments
 """
 
 # Whether to visualise visual input/map via OpenCV imshow for debugging purposes
-VISUALISE = False
+VISUALISE = True
 
 # Whether or not to use ROS/Gazebo simulator for synthesised visual input
 USE_SIMULATOR = False
@@ -60,7 +60,7 @@ ACTIONS = ['F', 'B', 'L', 'R'] # Forward, backward, left, right
 EXT_ACTIONS = ['F', 'B', 'L', 'R', 'N'] # Forward, backward, left, right, nothing
 
 # Whether to use extended actions including "Do nothing"
-USE_EXT_ACTIONS = False
+USE_EXT_ACTIONS = True
 
 # Unit to move the agent by each step (its velocity)
 MOVE_DIST = 1
@@ -75,6 +75,9 @@ NUM_TARGETS_RANGE = (2, 10)
 Object class consants
 """
 
+# Should the agent start in a random position
+RANDOM_AGENT_START_POS = False
+
 # Default agent starting position if random is disabled
 AGENT_START_COORDS = (0, 0)
 
@@ -85,10 +88,10 @@ GAUS_DIST = 2	# Gaussian distribution
 EQUI_DIST = 3	# Equidistant grid (at random positions)
 
 # Which distribution method to use
-OBJECT_DIST_METHOD = PRNG_DIST
+# OBJECT_DIST_METHOD = PRNG_DIST
 # OBJECT_DIST_METHOD = STAT_DIST
 # OBJECT_DIST_METHOD = GAUS_DIST
-# OBJECT_DIST_METHOD = EQUI_DIST
+OBJECT_DIST_METHOD = EQUI_DIST
 
 # Gaussian distribution initialisation parameters
 GAUS_MU_X = 3
@@ -102,7 +105,7 @@ STAT_START_Y = 3
 GRID_SPACING = 3 # Spacing between equidistant targets
 
 # Whether individuals should move according to their own velocity/heading parameters
-INDIVIDUAL_MOTION = False
+INDIVIDUAL_MOTION = True
 
 # Individual motion style
 INDIVIDUAL_MOTION_RANDOM = 0	# Individuals move randomly (random walk)
@@ -120,13 +123,13 @@ INDIVIDUAL_MOTION_METHOD = INDIVIDUAL_MOTION_HERD
 # move at 1 unit per 3 iterations
 INDIVIDUAL_VELOCITY = 3
 
-# When pre-determining random walks for objects (to generate ground-truth global optimal
+# When pre-determining motion for objects (to generate ground-truth global optimal
 # solution), how many random steps to generate
-RANDOM_WALK_NUM_STEPS = 200
+MOTION_NUM_STEPS = 200
 
 # When herd motion is enabled, this is the chance that each individual will perform a
 # random walk as opposed to following overall group motion
-INDIVIDUAL_RANDOM_CHANCE = 0.25
+INDIVIDUAL_RANDOM_CHANCE = 0.1
 
 """
 VisitationMap / Occupancy map constants
@@ -140,7 +143,7 @@ TARGET_VISITED_VAL = 5
 
 # Motion mode occupancy map values
 MOTION_EMPTY_VAL = 0
-MOTION_HIGH_VALUE = 1000
+MOTION_HIGH_VALUE = 100
 
 # Whether or not to mark positions in the map where a target was visited
 MARK_PAST_VISITATION = False
@@ -150,8 +153,8 @@ VISITATION_MODE = 0		# Used for when targets are static
 MOTION_MODE = 1			# Used for estimating moving target locations
 
 # Which mode is the occupancy map in
-OCCUPANCY_MAP_MODE = VISITATION_MODE
-# OCCUPANCY_MAP_MODE = MOTION_MODE
+# OCCUPANCY_MAP_MODE = VISITATION_MODE
+OCCUPANCY_MAP_MODE = MOTION_MODE
 
 """
 Visualisation/rendering constants
@@ -168,7 +171,7 @@ TARGET_COLOUR = (64,30,162)
 VISIBLE_COLOUR = (247,242,236)
 
 GRID_PIXELS = 1
-WAIT_AMOUNT = 1
+WAIT_AMOUNT = 0
 
 """
 SimulatorBridge constants
@@ -203,10 +206,10 @@ DNN model/training constants
 DATA_RATIO = 0.9
 
 # Number of epochs to train for (per fold for cross-fold validation)
-NUM_EPOCHS = 50
+NUM_EPOCHS = 1
 
 # Should we cross-validate, how many folds?
-CROSS_VALIDATE = True
+CROSS_VALIDATE = False
 NUM_FOLDS = 10
 
 """
@@ -238,10 +241,10 @@ NAIVE_SOLVER = 3
 MOTION_SOLVER = 4
 
 # Which solver to use
-SOLVER_METHOD = SEQUENCE_SOLVER
+# SOLVER_METHOD = SEQUENCE_SOLVER
 # SOLVER_METHOD = CLOSEST_SOLVER
 # SOLVER_METHOD = NAIVE_SOLVER
-# SOLVER_METHOD = MOTION_SOLVER
+SOLVER_METHOD = MOTION_SOLVER
 
 """
 Tree Solver constants

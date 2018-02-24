@@ -349,6 +349,9 @@ class FieldMap:
 
 		return file_str
 
+	def trainModel(self, experiment_name, data_dir):
+		self._algorithm.trainModel(experiment_name, data_dir)
+
 	# Do a given number of episodes
 	def generateTrainingData(self, num_episodes):
 		# Initialise progress bar (TQDM) object

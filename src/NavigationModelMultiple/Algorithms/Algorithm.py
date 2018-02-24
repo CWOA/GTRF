@@ -54,11 +54,15 @@ class Algorithm:
 	# If the selected algorithm method uses the loop detector, retrieve the 
 	# amount of times it was triggered
 	def getNumLoops(self):
-		if self._algorithm_selection == const.ALGORITHM_DUAL_INPUT_CNN:
+		if (self._algorithm_selection == const.ALGORITHM_DUAL_INPUT_CNN or
+			self._algorithm_selection == const.ALGORITHM_SPLIT_INPUT_CNN)	:
 			return self._algorithm.getNumLoops()
 		# Just return 0 if the selected algorithm doesn't have loop detection
 		else:
 			return 0
+
+	def trainModel(self, experiment_name, data_dir):
+		self._algorithm.trainModel(experiment_name, data_dir)
 
 # Entry method/unit testing
 if __name__ == '__main__':

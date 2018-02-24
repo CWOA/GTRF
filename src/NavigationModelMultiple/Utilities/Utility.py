@@ -204,11 +204,32 @@ class Utility:
 
 		return index[1][0], index[0][0]
 
+	# Return the opposing action (e.g. for F, B)
+	@staticmethod
+	def oppositeAction(action):
+		if action == 'F':
+			return 'B'
+		elif action == 'B':
+			return 'F'
+		elif action == 'L':
+			return 'R'
+		elif action == 'R':
+			return 'L'
+
 	# Check whether the supplied position is out of map bounds
 	@staticmethod
 	def checkPositionInBounds(x, y):
 		if x < 0 or y < 0 or x >= const.MAP_WIDTH or y >= const.MAP_HEIGHT:
 			return False
+
+		return True
+
+	# If all positions in a list are in map boundaries, return true
+	@staticmethod
+	def checkPositionsListInBounds(pos):
+		for p in pos:
+			if not Utility.checkPositionInBounds(p[0], p[1]):
+				return False
 
 		return True
 

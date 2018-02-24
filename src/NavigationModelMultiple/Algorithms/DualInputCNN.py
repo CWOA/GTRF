@@ -8,6 +8,7 @@ from collections import deque
 
 # My libraries/classes
 import DNN
+import SplitStreamDNN
 import Constants as const
 from Utilities.Utility import Utility
 from Core.VisitationMap import MapHandler
@@ -31,6 +32,9 @@ class DualInputCNN:
 		# Whether loop detection is enabled or not
 		self._use_loop_detector = use_loop_detector
 
+		# Whether to use split stream CNN
+		self._use_dual_networks = split_into_dual_networks
+
 		"""
 		Class attributes
 		"""
@@ -40,8 +44,10 @@ class DualInputCNN:
 			self._loop_detector = LoopDetector()
 
 		# Deep Neural Network class used for action selection
-		self._dnn = DNN.DNNModel(	use_simulator, 
-									split_into_dual_networks=split_into_dual_networks	)
+		if self._use_dual_networks:
+			self._dnn = SplitStreamDNN.SplitStreamDNNModel()
+		else:
+			self._dnn = DNN.DNNModel(use_simulator)
 
 		"""
 		Class initialisation
@@ -106,6 +112,9 @@ class DualInputCNN:
 					self._agent_stuck = False
 
 		return chosen_action
+
+	def trainModel(self, experiment_name, data_dir):
+		self._dnn.trainModel(experiment_name, data_dir=data_dir)
 
 	# Use the trained dual-input CNN in order to predict a suitable action based on the
 	# given inputs
