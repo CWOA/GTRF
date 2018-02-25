@@ -148,7 +148,7 @@ class ObjectHandler:
 			# If we coudln't figure out non-collision random walk for this configuration
 			# try generating another (recurse)
 			if not success:
-				print "Resetting"
+				# print "Resetting"
 				return self.reset()
 			# Otherwise assign random walk positions to each target
 			else:

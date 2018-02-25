@@ -19,7 +19,7 @@ USE_SIMULATOR = False
 SAVE_VIDEO = False
 
 # Number of episodes to test on or generate training examples
-ITERATIONS = 20000
+ITERATIONS = 60000
 
 """
 Algorithm class constants
@@ -71,12 +71,15 @@ NUM_TARGETS = 5
 # Range of random numbers of targets
 NUM_TARGETS_RANGE = (2, 10)
 
+# Maximum number of moves before environment expiry
+MAX_NUM_MOVES = 300
+
 """
 Object class consants
 """
 
 # Should the agent start in a random position
-RANDOM_AGENT_START_POS = False
+RANDOM_AGENT_START_POS = True
 
 # Default agent starting position if random is disabled
 AGENT_START_COORDS = (0, 0)
@@ -171,7 +174,7 @@ TARGET_COLOUR = (64,30,162)
 VISIBLE_COLOUR = (247,242,236)
 
 GRID_PIXELS = 1
-WAIT_AMOUNT = 0
+WAIT_AMOUNT = 1
 
 """
 SimulatorBridge constants
@@ -217,7 +220,7 @@ Loop Detector constants
 """
 
 # Whether to even use the loop detector
-USE_LOOP_DETECTOR = True
+USE_LOOP_DETECTOR = False
 
 # Use the string-based method (e.g. LRL) or coordinate-based system
 USE_ACTION_STRING = False

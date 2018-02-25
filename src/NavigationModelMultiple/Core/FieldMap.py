@@ -243,9 +243,6 @@ class FieldMap:
 			# Make the move
 			_ = self.performAction(chosen_action)
 
-			# Increment the move counter
-			num_moves += 1
-
 			# Render the updated views (for input into the subsequent iteration)
 			img, subview, occ_map = self._visualiser.update(self.retrieveStates(), render_occ_map=render_occ_map)
 
@@ -262,6 +259,13 @@ class FieldMap:
 
 			# Display if we're supposed to
 			if self._visualise: self._visualiser.display(wait_amount)
+
+			# Increment the move counter
+			num_moves += 1
+
+			# Ensure time hasn't expired yet
+			if num_moves > const.MAX_NUM_MOVES:
+				break
 
 		# If we're testing our algorithm
 		if not self._generating:

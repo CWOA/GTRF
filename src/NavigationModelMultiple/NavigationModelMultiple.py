@@ -36,17 +36,17 @@ def generateTrainTest(	experiment_name,
 						visualise, 
 						use_simulator 		):
 	# Initialise FieldMap instance for training data generation and perform it
-	# train_fm = FieldMap(	True, 
-	# 						experiment_name, 
-	# 						visualise=visualise, 
-	# 						use_simulator=use_simulator, 
-	# 						save=True						)
-	# saved_to_path = train_fm.generateTrainingData(iterations)
+	train_fm = FieldMap(	True, 
+							experiment_name, 
+							visualise=visualise, 
+							use_simulator=use_simulator, 
+							save=True						)
+	saved_to_path = train_fm.generateTrainingData(iterations)
 
 	# Can comment the above two lines and uncomment the one below to just run data
 	# generation and testing
 	# saved_to_path = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/data/TRAINING_DATA_visitation_marked_TO.h5"
-	saved_to_path = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/data/TRAINING_DATA_individual_motion_20k.h5"
+	# saved_to_path = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/data/TRAINING_DATA_individual_motion_20k.h5"
 
 	# Use this training data to initialise and train the dual input CNN
 	dnn = DNN.DNNModel(use_simulator=use_simulator)
@@ -56,12 +56,12 @@ def generateTrainTest(	experiment_name,
 	# best_model_path = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/models/split_stream.tflearn"
 
 	# Use the best model path to test
-	# test_fm = FieldMap(		False, 
-	# 						experiment_name, 
-	# 						visualise=visualise, 
-	# 						use_simulator=use_simulator, 
-	# 						model_path=best_model_path		)
-	# test_fm.startTestingEpisodes(iterations)
+	test_fm = FieldMap(		False, 
+							experiment_name, 
+							visualise=visualise, 
+							use_simulator=use_simulator, 
+							model_path=best_model_path		)
+	test_fm.startTestingEpisodes(iterations)
 
 # Just generate training examples
 def generateTrainingExamples(iterations, visualise, use_simulator, save_video):
@@ -179,8 +179,8 @@ if __name__ == '__main__':
 	Primary function calls
 	"""
 
-	generateTrainTest("individual_motion", iterations, visualise, use_simulator)
-	# generateTrainTest("herd_dynamics", iterations, visualise, use_simulator)
+	# generateTrainTest("individual_motion", iterations, visualise, use_simulator)
+	generateTrainTest("herd_dynamics", iterations, visualise, use_simulator)
 
 	# generateTrainingExamples(iterations, visualise, use_simulator, save_video)
 	# trainModel(iterations, use_simulator)
