@@ -318,9 +318,12 @@ class ObjectHandler:
 					target.setVisited(True)
 
 					# Return that this is the case and the target's ID
-					return True, target.getID()
+					return True, True, target.getID()
+				# This target has already been visited in the past (for target motion)
+				else:
+					return False, True, target.getID()
 
-		return False, -1
+		return False, False, -1
 
 	# Returns a list of all target positions
 	def getTargetPositions(self):
@@ -392,9 +395,12 @@ class ObjectHandler:
 							# Chance of applying random action that isn't the current direction
 							# or the opposite direction
 							if chance <= const.INDIVIDUAL_RANDOM_CHANCE:
-								direction_removed = list(const.EXT_ACTIONS)
-								direction_removed.remove(direction)
-								direction_removed.remove(Utility.oppositeAction(direction))
+								direction_removed = list(possible_actions)
+								direction_removed.append('N')
+								try: direction_removed.remove(direction)
+								except: pass
+								try: direction_removed.remove(Utility.oppositeAction(direction))
+								except: pass
 								action = random.choice(direction_removed)
 							# If the group heading is possible, apply it
 							elif direction in possible_actions:
@@ -405,7 +411,6 @@ class ObjectHandler:
 								direction_removed = list(const.ACTIONS)
 								direction_removed.remove(direction)
 								direction = random.choice(direction_removed)
-
 								action = 'N'
 
 							# Apply the action selection
@@ -413,7 +418,7 @@ class ObjectHandler:
 							elif action == 'B': t_pos = (new_pos[j][0], new_pos[j][1] + 1)
 							elif action == 'L': t_pos = (new_pos[j][0] - 1, new_pos[j][1])
 							elif action == 'R': t_pos = (new_pos[j][0] + 1, new_pos[j][1])
-							elif action == 'N': t_pos = new_pos[j]
+							elif action == 'N': t_pos = (new_pos[j][0], new_pos[j][1])
 
 							# Assign the tuple back
 							new_pos[j] = t_pos
@@ -433,8 +438,6 @@ class ObjectHandler:
 
 								# Assign the tuple back
 								new_pos[j] = t_pos
-
-								# print "Inside action={}, attempts={}".format(action, attempts)
 
 								# Check the position is in the map boundaries
 								if Utility.checkPositionInBounds(new_pos[j][0], new_pos[j][1]):

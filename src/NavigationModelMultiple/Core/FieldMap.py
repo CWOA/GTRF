@@ -154,7 +154,7 @@ class FieldMap:
 		# Requested position is in bounds
 		if Utility.checkPositionInBounds(req_x, req_y):
 			# Set the new agent position
-			target_match, target_id = self._object_handler.setAgentPos(req_x, req_y)
+			unvisited, target_match, target_id = self._object_handler.setAgentPos(req_x, req_y)
 		# Agent tried to move out of bounds, select a random valid action instead
 		else:
 			# Find possible actions from all actions given the map boundaries
@@ -265,6 +265,7 @@ class FieldMap:
 
 			# Ensure time hasn't expired yet
 			if num_moves > const.MAX_NUM_MOVES:
+				print "FAILED"
 				break
 
 		# If we're testing our algorithm

@@ -10,7 +10,7 @@ Run-time arguments
 """
 
 # Whether to visualise visual input/map via OpenCV imshow for debugging purposes
-VISUALISE = False
+VISUALISE = True
 
 # Whether or not to use ROS/Gazebo simulator for synthesised visual input
 USE_SIMULATOR = False
@@ -19,7 +19,7 @@ USE_SIMULATOR = False
 SAVE_VIDEO = False
 
 # Number of episodes to test on or generate training examples
-ITERATIONS = 60000
+ITERATIONS = 20
 
 """
 Algorithm class constants
@@ -128,7 +128,7 @@ INDIVIDUAL_VELOCITY = 3
 
 # When pre-determining motion for objects (to generate ground-truth global optimal
 # solution), how many random steps to generate
-MOTION_NUM_STEPS = 200
+MOTION_NUM_STEPS = 301
 
 # When herd motion is enabled, this is the chance that each individual will perform a
 # random walk as opposed to following overall group motion
@@ -174,7 +174,7 @@ TARGET_COLOUR = (64,30,162)
 VISIBLE_COLOUR = (247,242,236)
 
 GRID_PIXELS = 1
-WAIT_AMOUNT = 1
+WAIT_AMOUNT = 0
 
 """
 SimulatorBridge constants
