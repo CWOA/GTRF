@@ -1,8 +1,5 @@
 import os, sys
-const_path = os.path.abspath(os.path.join(__file__,'..','..'))
-solver_path = os.path.abspath(os.path.join(__file__,'..','..','Solvers'))
-sys.path.append(const_path)
-sys.path.append(solver_path)
+sys.path.append('../')
 
 import cv2
 import copy
@@ -11,9 +8,10 @@ import random
 import itertools
 import scipy.misc
 import matplotlib.pyplot as plt
-import SequenceSolver
+from Solvers.SequenceSolver import SequenceSolver
 import Constants as const
-from Object import Object
+from Core.Object import Object
+from Utilities.DiscoveryRate import DiscoveryRate
         
 class gameEnv():
     def __init__(   self,
@@ -22,7 +20,7 @@ class gameEnv():
                     num_targets        ):
 
         # Epsidoe solver method
-        self._solver = SequenceSolver.SequenceSolver()
+        self._solver = SequenceSolver()
 
         # Square dimensions
         self._sizeX = size
@@ -36,6 +34,9 @@ class gameEnv():
 
         # Penalty per-move
         self._move_penalty = -0.00
+
+        # For handling target discovery rate statistics
+        self._dr = DiscoveryRate()
 
         a = self.reset()
         #plt.imshow(a,interpolation="nearest")
@@ -62,10 +63,13 @@ class gameEnv():
 
         # Solve the episode using the globally-optimal sequence solver
         self._solver.reset(self._agent, self._targets)
-        min_actions = self._solver.solve()
+        min_actions, _ = self._solver.solve()
 
         # Create the current state
         self._state = self.renderEnv()
+
+        # Reset the DT metric
+        self._dr.reset()
 
         return self._state, min_actions
 
@@ -120,20 +124,23 @@ class gameEnv():
     def checkGoal(self):
         reward = 0
 
+        self._dr.iterate()
+
         # Iterate over all targets
         for target in self._targets:
             # If the agent is over an unvisited target
             if self._agent._x == target._x and self._agent._y == target._y and not target._visited:
                 reward = 1
                 target.setVisited(True)
+                self._dr.discovery()
 
         # Check whether all targets have now been visited
         for target in self._targets:
             if not target._visited:
-                return reward, False
+                return reward, False, self._dr.finish()
 
         # If we're here, all targets have now been visited
-        return reward, True
+        return reward, True, self._dr.finish()
 
     def renderEnv(self):
         # Create the image with a one pixel border
@@ -170,15 +177,15 @@ class gameEnv():
 
     def step(self, action):
         penalty = self.moveChar(action)
-        reward,done = self.checkGoal()
+        reward,done,dr = self.checkGoal()
         state = self.renderEnv()
         if reward == None:
             print(done)
             print(reward)
             print(penalty)
-            return state,(reward+penalty),done
+            return state,(reward+penalty),done,dr
         else:
-            return state,(reward+penalty),done
+            return state,(reward+penalty),done,dr
 
 # Entry method/unit testing
 if __name__ == '__main__':

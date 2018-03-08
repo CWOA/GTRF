@@ -53,11 +53,14 @@ class DiscoveryRate:
 
 	# Called at the end of each episode
 	def finish(self):
-		# Convert to numpy array
-		DT_np = np.asarray(self._DT)
+		if len(self._DT) > 0:
+			# Convert to numpy array
+			DT_np = np.asarray(self._DT)
 
-		# Return the mean and standard deviation
-		return np.mean(DT_np)
+			# Return the mean and standard deviation
+			return np.mean(DT_np)
+		else:
+			return 0
 
 	"""
 	Getters

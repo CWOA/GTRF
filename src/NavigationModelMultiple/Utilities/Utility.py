@@ -216,6 +216,57 @@ class Utility:
 		elif action == 'R':
 			return 'L'
 
+	@staticmethod
+	def applyActionToPosition(a, x, y):
+		if a == 'F':   n_pos = (x, y - 1)
+		elif a == 'B': n_pos = (x, y + 1)
+		elif a == 'L': n_pos = (x - 1, y)
+		elif a == 'R': n_pos = (x + 1, y)
+		elif a == 'N': return (x, y)
+
+		return n_pos
+
+	@staticmethod
+	def validActionsGivenPositions(x, y, o_x, o_y):
+		actions = list(const.EXT_ACTIONS)
+
+		if o_x.shape != o_y.shape:
+			print o_x
+			print o_y
+
+		assert(o_x.shape == o_y.shape)
+
+		for i in range(o_x.shape[0]):
+			if x == o_x[i] and y == o_y[i] and 'N' in actions: actions.remove('N')
+			elif x == o_x[i] and y - 1 == o_y[i] and 'F' in actions: actions.remove('F')
+			elif x == o_x[i] and y + 1 == o_y[i] and 'B' in actions: actions.remove('B')
+			elif x - 1 == o_x[i] and y == o_y[i] and 'L' in actions: actions.remove('L')
+			elif x + 1 == o_x[i] and y == o_y[i] and 'R' in actions: actions.remove('R')
+
+		if x == 0 and 'L' in actions: actions.remove('L')
+		elif x == const.MAP_WIDTH - 1 and 'R' in actions: actions.remove('R')
+
+		# Check map boundaries in y axis
+		if y == 0 and 'F' in actions: actions.remove('F')
+		elif y == const.MAP_HEIGHT - 1 and 'B' in actions: actions.remove('B')
+
+		return actions
+
+	# Return actions for zero elements in m surrounding m[x,y]
+	@staticmethod
+	def zeroElementsSurroundingPosition(m, x, y):
+		possible_actions = Utiltiy.possibleActionsForPosition(x, y)
+
+		valid_actions = []
+
+		for act in possible_actions:
+			if act == 'F' and m[y-1,x]: valid_actions.append(act)
+			elif act == 'B' and m[y+1,x]: valid_actions.append(act)
+			elif act == 'L' and m[y,x-1]: valid_actions.append(act)
+			elif act == 'R' and m[y,x+1]: valid_actions.append(act)
+
+		return actions
+
 	# Check whether the supplied position is out of map bounds
 	@staticmethod
 	def checkPositionInBounds(x, y):

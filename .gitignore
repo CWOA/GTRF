@@ -6,5 +6,5 @@
 bag/
 output/
 tflearn/
-DRQN/drqn
-DRQN/Center
+src/NavigationModelMultiple/DRQN/drqn
+src/NavigationModelMultiple/DRQN/Center

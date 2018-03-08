@@ -69,7 +69,7 @@ class FieldMap:
 
 		# If we should generate video
 		if self._save_video:
-			self._video_writer = VideoWriter.VideoWriter(self._exp_name, Utility.getVideoDir())
+			self._video_writer = VideoWriter(self._exp_name, Utility.getVideoDir())
 
 		if not self._generating:
 			# Algorithm class for selecting agent actions based on the environment state
@@ -79,9 +79,17 @@ class FieldMap:
 			# If we should generate video
 			if self._save_video:
 				# Initialise three video writers for our solution, agent view, agent occupancy map
-				self._vw_OURS = VideoWriter.VideoWriter(self._exp_name, Utility.getVideoDir())
-				self._vw_AGENT = VideoWriter.VideoWriter(self._exp_name, Utility.getVideoDir())
-				self._vw_OCC = VideoWriter.VideoWriter(self._exp_name, Utility.getVideoDir())
+				self._vw_OURS = VideoWriter(self._exp_name, Utility.getVideoDir())
+				self._vw_AGENT = VideoWriter(self._exp_name, Utility.getVideoDir())
+				self._vw_OCC = VideoWriter(self._exp_name, Utility.getVideoDir())
+
+				if const.OCCUPANCY_MAP_MODE == const.VISITATION_MODE:
+					self._vw_OCC = VideoWriter(self._exp_name, Utility.getVideoDir())
+				elif const.OCCUPANCY_MAP_MODE == const.MOTION_MODE:
+					self._vw_OCC_0 = VideoWriter(self._exp_name, Utility.getVideoDir())
+					self._vw_OCC_1 = VideoWriter(self._exp_name, Utility.getVideoDir())
+				else:
+					Utility.die("Occupancy map mode not recognised in resetVideoWriters()", __file__)
 		else:
 			# Training data list to save upon completion (if we're even supposed to be
 			# saving output at all)
@@ -99,9 +107,9 @@ class FieldMap:
 
 	# Reset the map (agent position, target positions, memory, etc.)
 	# Can supply function with epsiode configuration to override it
-	def reset(self, a_pos=None, t_pos=None):
+	def reset(self, a_pos=None, t_pos=None, m_pos=None):
 		# Reset objects (agent, target), returns generated agent/target positions
-		a_pos, t_pos = self._object_handler.reset(a_pos=a_pos, t_pos=t_pos)
+		a_pos, t_pos, m_pos = self._object_handler.reset(a_pos=a_pos, t_pos=t_pos, m_pos=m_pos)
 			
 		# Extract the starting agent position
 		a_x = a_pos[0]
@@ -116,19 +124,13 @@ class FieldMap:
 
 		# If we should generate and save video
 		if self._save_video: 
-			# Reset the other video writers if they exist
-			if not self._generating:
-				self._vw_OURS.reset("OURS")
-				self._vw_AGENT.reset("AGENT_VISUAL")
-				self._vw_OCC.reset("AGENT_OCC")
-			else:
-				self._video_writer.reset("GO")
+			self.resetVideoWriters()
 
 		# Reset the algorithm
 		if not self._generating: self._algorithm.reset()
 
 		# Return generated epsidoe configuration
-		return a_pos, t_pos
+		return a_pos, t_pos, m_pos
 
 	# Perform a given action
 	def performAction(self, action):
@@ -191,18 +193,11 @@ class FieldMap:
 	# Begin this episode whether we're generating training data, testing, etc.
 	def beginEpisode(self, testing, wait_amount=0, render_occ_map=False):
 		# Render the initial episode state
-		img, subview, occ_map = self._visualiser.update(self.retrieveStates(), render_occ_map=render_occ_map)
+		img, subview, occ_map0, occ_map1 = self._visualiser.update(self.retrieveStates(), render_occ_map=render_occ_map)
 
 		# If we should generate and save video
 		if self._save_video:
-			# If we're testing
-			if testing:
-				self._vw_OURS.iterate(img)
-				self._vw_AGENT.iterate(subview)
-				self._vw_OCC.iterate(occ_map)
-			# We're generating training examples
-			else:
-				self._video_writer.iterate(img)
+			self.iterateVideoWriters(img, subview, occ_map0, occ_map1)
 
 		# Number of moves the agent has made
 		num_moves = 0
@@ -244,18 +239,11 @@ class FieldMap:
 			_ = self.performAction(chosen_action)
 
 			# Render the updated views (for input into the subsequent iteration)
-			img, subview, occ_map = self._visualiser.update(self.retrieveStates(), render_occ_map=render_occ_map)
+			img, subview, occ_map0, occ_map1 = self._visualiser.update(self.retrieveStates(), render_occ_map=render_occ_map)
 
 			# If we should generate and save video
 			if self._save_video:
-				# If we're testing
-				if testing:
-					self._vw_OURS.iterate(img)
-					self._vw_AGENT.iterate(subview)
-					self._vw_OCC.iterate(occ_map)
-				# We're generating training examples
-				else:
-					self._video_writer.iterate(img)
+				self.iterateVideoWriters(img, subview, occ_map0, occ_map1)
 
 			# Display if we're supposed to
 			if self._visualise: self._visualiser.display(wait_amount)
@@ -276,14 +264,7 @@ class FieldMap:
 
 		# If we should generate and save video
 		if self._save_video: 
-			# If we're testing
-			if testing:
-				self._vw_OURS.finishUp()
-				self._vw_AGENT.finishUp()
-				self._vw_OCC.finishUp()
-			# We're generating training examples
-			else:
-				self._video_writer.finishUp()
+			self.finishVideoWriters()
 
 		# Finish up the object handler
 		mu_DT = self._object_handler.finishUp()
@@ -354,6 +335,61 @@ class FieldMap:
 
 		return file_str
 
+	"""
+	VideoWriter helper functions
+	"""
+
+	def resetVideoWriters(self):
+		# Reset the other video writers if they exist
+		if not self._generating:
+			self._vw_OURS.reset("OURS")
+			self._vw_AGENT.reset("AGENT_VISUAL")
+			if const.OCCUPANCY_MAP_MODE == const.VISITATION_MODE:
+				self._vw_OCC.reset("AGENT_OCC")
+			elif const.OCCUPANCY_MAP_MODE == const.MOTION_MODE:
+				self._vw_OCC_0.reset("AGENT_OCC_T")
+				self._vw_OCC_1.reset("AGENT_OCC_A")
+			else:
+				Utility.die("Occupancy map mode not recognised in resetVideoWriters()", __file__)
+		else:
+			self._video_writer.reset("GO")
+
+	def iterateVideoWriters(self, img, subview, occ_map0, occ_map1):
+		# If we're testing
+		if not self._generating:
+			self._vw_OURS.iterate(img)
+			self._vw_AGENT.iterate(subview)
+			if const.OCCUPANCY_MAP_MODE == const.VISITATION_MODE:
+				self._vw_OCC.iterate(occ_map)
+			elif const.OCCUPANCY_MAP_MODE == const.MOTION_MODE:
+				self._vw_OCC_0.iterate(occ_map0)
+				self._vw_OCC_1.iterate(occ_map1)
+			else:
+				Utility.die("Occupancy map mode not recognised in iterateVideoWriters()", __file__)
+		# We're generating training examples
+		else:
+			self._video_writer.iterate(img)
+
+	def finishVideoWriters(self):
+		# If we're testing
+		if not self._generating:
+			self._vw_OURS.finishUp()
+			self._vw_AGENT.finishUp()
+			if const.OCCUPANCY_MAP_MODE == const.VISITATION_MODE:
+				self._vw_OCC.finishUp()
+			elif const.OCCUPANCY_MAP_MODE == const.MOTION_MODE:
+				self._vw_OCC_0.finishUp()
+				self._vw_OCC_1.finishUp()
+			else:
+				Utility.die("Occupancy map mode not recognised in finishVideoWriters()", __file__)
+		# We're generating training examples
+		else:
+			self._video_writer.finishUp()
+
+	"""
+	Experiment running functions
+	"""
+
 	def trainModel(self, experiment_name, data_dir):
 		self._algorithm.trainModel(experiment_name, data_dir)
 
@@ -388,6 +424,12 @@ class FieldMap:
 		# 3: Average discovery/per timestep for that episode
 		test_data = np.zeros((num_episodes, 4))
 
+		over_100 = 0
+		opt = 0
+		dif_10 = 0
+		over_300 = 0
+		average_DT = []
+
 		# Initialise progress bar (TQDM) object
 		pbar = tqdm(total=num_episodes)
 
@@ -404,6 +446,24 @@ class FieldMap:
 			test_data[i,1] = sol_length
 			test_data[i,2] = num_loops
 			test_data[i,3] = mu_DT
+
+			# Update stats
+			if num_moves > 100: over_100 +=1
+			if num_moves == sol_length: opt += 1
+			if num_moves - sol_length <= 10: dif_10 += 1
+			if num_moves > 300: over_300 += 1
+			average_DT.append(mu_DT)
+
+			# Compute percentages
+			s1 = (float(over_100)/(i+1))*100
+			s2 = (float(opt)/(i+1))*100
+			s3 = (float(dif_10)/(i+1))*100
+			s4 = (float(over_300)/(i+1))*100
+			s5 = np.mean(np.asarray(average_DT))
+			s6 = np.std(np.asarray(average_DT))
+
+			# Print stats along the way
+			print ">100={}%, opt={}%, <11 diff={}%, >300={}%, mu_DT={}, sigma_DT={}".format(s1, s2, s3, s4, s5, s6)
 
 			# Update progress bar
 			pbar.update()
@@ -483,7 +543,7 @@ class FieldMap:
 			"""
 			self._generating = True
 			# Generate a new episode
-			a_pos, t_pos = self.reset()
+			a_pos, t_pos, m_pos = self.reset()
 
 			# Record the solver's solution to the episode (globally-optimal)
 			self.beginEpisode(False, wait_amount=const.WAIT_AMOUNT)
@@ -493,7 +553,7 @@ class FieldMap:
 			"""
 			self._generating = False
 			# Supply the same starting configurations to the episode
-			self.reset(a_pos=a_pos, t_pos=t_pos)
+			self.reset(a_pos=a_pos, t_pos=t_pos, m_pos=m_pos)
 			# Record our solution to the episode
 			self.beginEpisode(True, wait_amount=const.WAIT_AMOUNT, render_occ_map=True)
 

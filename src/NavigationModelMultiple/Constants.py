@@ -2,7 +2,8 @@
 # encoding: utf-8
 
 """
-This file contains all parameters that remain constant throughout execution
+This file contains all parameters that remain constant throughout execution but can be
+modified between runs for different experiments
 """
 
 """
@@ -10,16 +11,16 @@ Run-time arguments
 """
 
 # Whether to visualise visual input/map via OpenCV imshow for debugging purposes
-VISUALISE = True
+VISUALISE = False
 
 # Whether or not to use ROS/Gazebo simulator for synthesised visual input
-USE_SIMULATOR = False
+USE_SIMULATOR = True
 
 # Save frames to individual per-episode videos?
-SAVE_VIDEO = False
+SAVE_VIDEO = True
 
 # Number of episodes to test on or generate training examples
-ITERATIONS = 20
+ITERATIONS = 100
 
 """
 Algorithm class constants
@@ -174,7 +175,7 @@ TARGET_COLOUR = (64,30,162)
 VISIBLE_COLOUR = (247,242,236)
 
 GRID_PIXELS = 1
-WAIT_AMOUNT = 0
+WAIT_AMOUNT = 1
 
 """
 SimulatorBridge constants
@@ -212,7 +213,7 @@ DATA_RATIO = 0.9
 NUM_EPOCHS = 50
 
 # Should we cross-validate, how many folds?
-CROSS_VALIDATE = False
+CROSS_VALIDATE = True
 NUM_FOLDS = 10
 
 """

@@ -112,9 +112,6 @@ class DNNModel:
 			X_temp[:,:,:,0] = X1
 			X1 = X_temp
 
-		# X1[X1 > 0] -= 950
-		# X1[X1 < 0] = 0
-
 		# Quarter the number of instances
 		# s = X0.shape[0]/8
 		# X0 = X0[0:s,:,:,:]

@@ -9,7 +9,12 @@ from scipy.signal import savgol_filter
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 
+# For PDF compliance with type 1 fonts
+mpl.rcParams['pdf.fonttype'] = 42
+mpl.rcParams['ps.fonttype'] = 42
+
 # My classes
+from Utility import Utility
 import Constants as const
 
 """
@@ -69,29 +74,64 @@ class ResultsHelper:
 
 	@staticmethod
 	def drawGenerationGraphs(m_s, m_c, t_s, t_c, num_targets):
-		plt.style.use('seaborn-darkgrid')
-		fig, axs = plt.subplots(1, 2, sharey=False, tight_layout=True)
+		# Plot all three side by side? Otherwise it plots two
+		three_plots = True
 
-		# Number of targets array
-		R = np.asarray(num_targets)
+		if three_plots:
+			plt.style.use('seaborn-darkgrid')
+			fig, axs = plt.subplots(1, 3, sharey=False, tight_layout=True)
 
-		# Average results
-		m_seq_avg = np.average(m_s, axis=1)
-		m_clo_avg = np.average(m_c, axis=1)
-		t_seq_avg = np.average(t_s, axis=1)
-		t_clo_avg = np.average(t_c, axis=1)
+			# Number of targets array
+			R = np.asarray(num_targets)
 
-		axs[0].plot(R, m_seq_avg, 'b', label="Target Ordering")
-		axs[0].plot(R, m_clo_avg, 'r', label="Closest Unvisited")
-		axs[1].plot(R, t_seq_avg, 'b', label="Target Ordering")
-		axs[1].plot(R, t_clo_avg, 'r', label="Closest Unvisited")
+			# Average results
+			m_seq_avg = np.average(m_s, axis=1)
+			m_clo_avg = np.average(m_c, axis=1)
+			t_seq_avg = np.average(t_s, axis=1)
+			t_clo_avg = np.average(t_c, axis=1)
 
-		axs[0].set_ylabel("|Moves|")
-		axs[0].set_xlabel("|R|")
-		axs[1].set_ylabel("Time (s)")
-		axs[1].set_xlabel("|R|")
+			# Histogram vector
+			hist_vec = (m_c - m_s).flatten()
 
-		plt.legend(loc="upper left")
+			axs[0].plot(R, m_seq_avg, 'r', label="PT")
+			axs[0].plot(R, m_clo_avg, 'b', label="CU")
+			axs[1].plot(R, t_seq_avg, 'r', label="PT")
+			axs[1].plot(R, t_clo_avg, 'b', label="CU")
+			axs[2].hist(hist_vec, color='b', bins=13, normed=True, histtype='stepfilled', label="a")
+
+			axs[0].set_ylabel(r"$|S|$")
+			axs[0].set_xlabel(r"$|R|$")
+			axs[1].set_ylabel("Time (s)")
+			axs[1].set_xlabel(r"$|R|$")
+			axs[2].set_ylabel("Probability")
+			axs[2].set_xlabel(r"$|S_{CU}|-|S_{PT}|$")
+
+			axs[1].legend(loc="upper left")
+		# Two plots side by side
+		else:
+			plt.style.use('seaborn-darkgrid')
+			fig, axs = plt.subplots(1, 2, sharey=False, tight_layout=True)
+
+			# Number of targets array
+			R = np.asarray(num_targets)
+
+			# Average results
+			m_seq_avg = np.average(m_s, axis=1)
+			m_clo_avg = np.average(m_c, axis=1)
+			t_seq_avg = np.average(t_s, axis=1)
+			t_clo_avg = np.average(t_c, axis=1)
+
+			axs[0].plot(R, m_seq_avg, 'b', label="PT")
+			axs[0].plot(R, m_clo_avg, 'r', label="CU")
+			axs[1].plot(R, t_seq_avg, 'b', label="PT")
+			axs[1].plot(R, t_clo_avg, 'r', label="CU")
+
+			axs[0].set_ylabel("|S|")
+			axs[0].set_xlabel("|R|")
+			axs[1].set_ylabel("Time (s)")
+			axs[1].set_xlabel("|R|")
+
+		# plt.legend(loc="upper left")
 		plt.tight_layout()
 		plt.savefig("{}/solution-generation.pdf".format(Utility.getICIPFigureDir()))
 		plt.show()
@@ -120,7 +160,7 @@ class ResultsHelper:
 		plt.style.use('seaborn-darkgrid')
 		plt.plot(x, y)
 		plt.xlabel('Dataset size')
-		plt.ylabel('Accuracy')
+		plt.ylabel('Validation accuracy')
 		plt.tight_layout()
 		plt.savefig("{}/dataset-size-accuracy.pdf".format(Utility.getICIPFigureDir()))
 		plt.show()
@@ -129,6 +169,9 @@ class ResultsHelper:
 	# epochs.
 	@staticmethod
 	def drawAccuracyGraph():
+		# Whether to draw all three graphs togther
+		three_plots = False
+
 		# Convolutional based smoothing function
 		def smooth(y, box_pts):
 		    return savgol_filter(y, box_pts, 3)
@@ -149,7 +192,21 @@ class ResultsHelper:
 
 		# Define the style and subplots
 		plt.style.use('seaborn-darkgrid')
-		fig, axs = plt.subplots(1, 2, sharey=True, tight_layout=True)
+
+		if three_plots:
+			f, (ax1, ax2, ax3) = plt.subplots(1, 3, tight_layout=True)
+
+			# Extract maximum validation values
+			max_5 = val_5k['z'].max()
+			max_10 = val_10k['z'].max()
+			max_20 = val_20k['z'].max()
+			max_40 = val_40k['z'].max()
+			max_60 = val_60k['z'].max()
+
+			x = np.asarray([5000, 10000, 20000, 40000, 60000])
+			y = np.asarray([max_5, max_10, max_20, max_40, max_60])
+		else:
+			f, (ax1, ax2) = plt.subplots(1, 2, tight_layout=True)
 
 		# Scale x-axis values down to the number of epochs
 		acc_5k['y'] = (const.NUM_EPOCHS*(acc_5k['y'] - acc_5k['y'].min())) / acc_5k['y'].max()
@@ -170,46 +227,62 @@ class ResultsHelper:
 		# Smoothing parameter
 		tra_s = 99
 
-		# Plot to training accuracy graph
-		axs[0].plot(acc_5k['y'], acc_5k['z'], color='y', alpha=alpha)
-		axs[0].plot(acc_10k['y'], acc_10k['z'], color='k', alpha=alpha)
-		axs[0].plot(acc_20k['y'], acc_20k['z'], color='r', alpha=alpha)
-		axs[0].plot(acc_40k['y'], acc_40k['z'], color='g', alpha=alpha)
-		axs[0].plot(acc_60k['y'], acc_60k['z'], color='b', alpha=alpha)
+		# First subplot
+		# ax1 = plt.subplot(311)
 
-		axs[0].plot(acc_5k['y'], smooth(acc_5k['z'], tra_s), color='y', label='5k')
-		axs[0].plot(acc_10k['y'], smooth(acc_10k['z'], tra_s), color='k', label='10k')
-		axs[0].plot(acc_20k['y'], smooth(acc_20k['z'], tra_s), color='r', label='20k')
-		axs[0].plot(acc_40k['y'], smooth(acc_40k['z'], tra_s), color='g', label='40k')
-		axs[0].plot(acc_60k['y'], smooth(acc_60k['z'], tra_s), color='b', label='60k')
+		# Plot to training accuracy graph
+		ax1.plot(acc_5k['y'], acc_5k['z'], color='y', alpha=alpha)
+		ax1.plot(acc_10k['y'], acc_10k['z'], color='k', alpha=alpha)
+		ax1.plot(acc_20k['y'], acc_20k['z'], color='r', alpha=alpha)
+		ax1.plot(acc_40k['y'], acc_40k['z'], color='g', alpha=alpha)
+		ax1.plot(acc_60k['y'], acc_60k['z'], color='b', alpha=alpha)
+
+		ax1.plot(acc_5k['y'], smooth(acc_5k['z'], tra_s), color='y', label='5k')
+		ax1.plot(acc_10k['y'], smooth(acc_10k['z'], tra_s), color='k', label='10k')
+		ax1.plot(acc_20k['y'], smooth(acc_20k['z'], tra_s), color='r', label='20k')
+		ax1.plot(acc_40k['y'], smooth(acc_40k['z'], tra_s), color='g', label='40k')
+		ax1.plot(acc_60k['y'], smooth(acc_60k['z'], tra_s), color='b', label='60k')
+
+		ax1.set_xlabel("Epochs")
+		ax1.set_ylabel("Accuracy")
+		ax1.set_title("Training")
+		ax1.axis([0, 50, 0.5, 0.9])
+
+		# First subplot
+		# ax2 = plt.subplot(321, sharey=ax1)
 
 		# Plot to validation accuracy graph
-		axs[1].plot(val_5k['y'], val_5k['z'], color='y', alpha=alpha)
-		axs[1].plot(val_10k['y'], val_10k['z'], color='k', alpha=alpha)
-		axs[1].plot(val_20k['y'], val_20k['z'], color='r', alpha=alpha)
-		axs[1].plot(val_40k['y'], val_40k['z'], color='g', alpha=alpha)
-		axs[1].plot(val_60k['y'], val_60k['z'], color='b', alpha=alpha)
+		ax2.plot(val_5k['y'], val_5k['z'], color='y', alpha=alpha)
+		ax2.plot(val_10k['y'], val_10k['z'], color='k', alpha=alpha)
+		ax2.plot(val_20k['y'], val_20k['z'], color='r', alpha=alpha)
+		ax2.plot(val_40k['y'], val_40k['z'], color='g', alpha=alpha)
+		ax2.plot(val_60k['y'], val_60k['z'], color='b', alpha=alpha)
 
 		# Smoothing constant
 		val_s = 11
 
-		axs[1].plot(val_5k['y'], smooth(val_5k['z'], val_s), color='y', label='5k')
-		axs[1].plot(val_10k['y'], smooth(val_10k['z'], val_s), color='k', label='10k')
-		axs[1].plot(val_20k['y'], smooth(val_20k['z'], val_s), color='r', label='20k')
-		axs[1].plot(val_40k['y'], smooth(val_40k['z'], val_s), color='g', label='40k')
-		axs[1].plot(val_60k['y'], smooth(val_60k['z'], val_s), color='b', label='60k')
+		ax2.plot(val_5k['y'], smooth(val_5k['z'], val_s), color='y', label='5k')
+		ax2.plot(val_10k['y'], smooth(val_10k['z'], val_s), color='k', label='10k')
+		ax2.plot(val_20k['y'], smooth(val_20k['z'], val_s), color='r', label='20k')
+		ax2.plot(val_40k['y'], smooth(val_40k['z'], val_s), color='g', label='40k')
+		ax2.plot(val_60k['y'], smooth(val_60k['z'], val_s), color='b', label='60k')
 
 		# Set axis labels for subplots
-		axs[0].set_xlabel("Epochs")
-		axs[0].set_ylabel("Accuracy")
-		axs[0].set_title("Training")
-		axs[1].set_xlabel("Epochs")
-		axs[1].set_title("Validation")
+		ax2.set_xlabel("Epochs")
+		ax2.set_title("Validation")
+		ax2.axis([0, 50, 0.5, 0.9])
+		ax2.legend(loc="upper right")
 
-		plt.axis([0, 50, 0.5, 0.9])
-		plt.legend(loc="upper right")
+		ax1.get_shared_y_axes().join(ax1, ax2)
+		ax2.set_yticklabels([])
+
+		if three_plots:
+			ax3.plot(x, y)
+			ax3.set_xlabel('Dataset size')
+			ax3.set_ylabel('Validation accuracy')
+			ax3.axis([0, 60000, 0.58, 0.61])
+
 		plt.tight_layout()
-
 		plt.savefig("{}/motion-training-accuracy.pdf".format(Utility.getICIPFigureDir()))
 		plt.show()
 
@@ -359,7 +432,7 @@ class ResultsHelper:
 
 		plt.hist(	hist_vec, bins=80, normed=True, histtype='step',
 					color=['g', 'b', 'k', 'r'],
-					label=['TO', 'CU', 'NS', 'TO+S'], stacked=False		)
+					label=['PT', 'CU', 'NS', 'PT+S'], stacked=False		)
 
 		plt.xlabel("Difference in solution length")
 		plt.ylabel("Probability")
@@ -373,7 +446,7 @@ class ResultsHelper:
 # Entry method/unit testing
 if __name__ == '__main__':
 	# ResultsHelper.drawDatasetSizeAccuracyGraph()
-	# ResultsHelper.drawAccuracyGraph()
+	ResultsHelper.drawAccuracyGraph()
 
 	# ResultsHelper.listResults("/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/data/RESULTS_naive_solution.npy")
 	# ResultsHelper.listResults("/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/data/RESULTS_split stream.npy")
@@ -387,6 +460,10 @@ if __name__ == '__main__':
 
 	# ResultsHelper.listResults("/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/data/RESULTS_random_marked.npy")
 	# ResultsHelper.listResults("/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/data/RESULTS_equidistant_marked.npy")
-	ResultsHelper.listResults("/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/data/RESULTS_gaussian_marked.npy")
+	# ResultsHelper.listResults("/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/data/RESULTS_gaussian_marked.npy")
 
-	# Utility.drawModelLengthHistogram()
+	# ResultsHelper.listResults("/home/will/catkin_ws/src/uav_id/src/NavigationModelMultiple/DRQN/test_data_DRQN.npy")
+
+	# ResultsHelper.drawModelLengthHistogram()
+
+	# ResultsHelper.drawGenerationGraphs()

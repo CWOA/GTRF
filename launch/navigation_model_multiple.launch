@@ -6,6 +6,7 @@
   	<arg name="world" value="$(find uav_id)/world/5_cows.world"/>
     <!-- Start Gazebo without visualisation/GUI (still produces simulated image topic) -->
   	<arg name="gui" value="true"/>
+    <!-- <arg name="gui" value="false"/> -->
   </include>
 
   <!-- Spawn GRID-based, no-gravity camera -->

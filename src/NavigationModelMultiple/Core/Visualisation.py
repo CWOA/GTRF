@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 # Core libraries
+import sys
+sys.path.append('../')
 import cv2
 import math
 import random
@@ -17,6 +19,9 @@ from gazebo_msgs.srv import *
 from sensor_msgs.msg import Image
 from geometry_msgs.msg import Pose
 from cv_bridge import CvBridge, CvBridgeError
+
+# My libraries
+from Utilities.Utility import Utility
 
 class Visualiser:
 	# Class constructor
@@ -55,9 +60,10 @@ class Visualiser:
 		a_y = state[0][1]
 
 		# Render the occupancy grid map in grayscale if we're supposed to
-		occ_map = None
+		occ_map0 = None
+		occ_map1 = None
 		if render_occ_map:
-			occ_map = self.renderOccupancyMap(state[2])
+			occ_map0, occ_map1 = self.renderOccupancyMap(state[2])
 
 		# Set image to background colour
 		img[:] = const.BACKGROUND_COLOUR
@@ -106,7 +112,7 @@ class Visualiser:
 
 		# Use the ROS simulator to generate the subview
 		if self._use_simulator:
-			subview = self._simulator_bridge.renderSubviewUsingSimulator(a_x, a_y)
+			subview = self._simulator_bridge.renderSubviewUsingSimulator(a_x, a_y, state[1])
 
 			# Downsample the image
 			subview = cv2.resize(subview, (const.IMG_DOWNSAMPLED_WIDTH, const.IMG_DOWNSAMPLED_HEIGHT))
@@ -132,13 +138,17 @@ class Visualiser:
 		self._render_img = img
 		self._subview = subview
 
-		return img, subview, occ_map
+		return img, subview, occ_map0, occ_map1
 
 	# Given the occupancy map in numpy array form, construct a grayscale image of it for
 	# visualisation purposes
 	def renderOccupancyMap(self, occ_map):
-		# Create image to render to
-		img = np.zeros((const.MAP_HEIGHT, const.MAP_WIDTH, 3), np.uint8)
+		# Check which occupancy map mode we're in
+		if const.OCCUPANCY_MAP_MODE == const.VISITATION_MODE:
+			img = np.zeros((const.MAP_HEIGHT, const.MAP_WIDTH, 3), np.uint8)
+		elif const.OCCUPANCY_MAP_MODE == const.MOTION_MODE:
+			img0 = np.zeros((const.MAP_HEIGHT, const.MAP_WIDTH, 3), np.uint8)
+			img1 = np.zeros((const.MAP_HEIGHT, const.MAP_WIDTH, 3), np.uint8)
 
 		# Make sure the sizes are the same
 		assert(occ_map.shape[0] == const.MAP_WIDTH)
@@ -147,33 +157,47 @@ class Visualiser:
 		# Iterate over the occupancy map
 		for i in range(const.MAP_WIDTH):
 			for j in range(const.MAP_HEIGHT):
-				# Get the current occupancy map value
-				val = occ_map[j,i]
+				# Check which occupancy map mode we're in
+				if const.OCCUPANCY_MAP_MODE == const.VISITATION_MODE:
+					# Get the current occupancy map value
+					val = occ_map[j,i]
 
-				# If the value is non-zero
-				if val != 0:
-					# Check which occupancy map mode we're in
-					if const.OCCUPANCY_MAP_MODE == const.VISITATION_MODE:
+					# If the value is non-zero
+					if val > 0:
 						# Scale value to grayscale range
 						val = Utility.scaleValueFromRangeToRange(	val,
-																		const.UNVISITED_VAL,
-																		const.AGENT_VAL,
-																		120.0,
-																		255.0				)
-					elif const.OCCUPANCY_MAP_MODE == const.MOTION_MODE:
+																	const.UNVISITED_VAL,
+																	const.AGENT_VAL,
+																	120.0,
+																	255.0				)
+
+						# Assign scaled value to the image
+						img[j,i,:] = val
+				elif const.OCCUPANCY_MAP_MODE == const.MOTION_MODE:
+					val0 = occ_map[j,i,0]
+					val1 = occ_map[j,i,1]
+
+					if val0 > 0:
 						# Scale value to grayscale range
-						val = Utility.scaleValueFromRangeToRange(	val,
-																		const.MOTION_EMPTY_VAL,
-																		const.MOTION_HIGH_VALUE,
-																		0.0,
-																		255.0				)
-					else:
-						Utility.die("Occupancy map mode not recognised in renderOccupancyMap()", __file__)
+						val0 = Utility.scaleValueFromRangeToRange(	val0,
+																	const.MOTION_EMPTY_VAL,
+																	const.MOTION_HIGH_VALUE,
+																	0.0,
+																	255.0				)
+						img0[j,i,:] = val0
 
-				# Assign scaled value to the image
-				img[j,i,:] = val
+					if val1 > 0:
+						val1 = Utility.scaleValueFromRangeToRange(	val1,
+																	const.MOTION_EMPTY_VAL,
+																	const.MOTION_HIGH_VALUE,
+																	0.0,
+																	255.0				)
+						img1[j,i,:] = val1
 
-		return img
+		if const.OCCUPANCY_MAP_MODE == const.VISITATION_MODE:
+			return img, None
+		elif const.OCCUPANCY_MAP_MODE == const.MOTION_MODE:
+			return img0, img1
 
 	def padBorders(self, img, pad):
 		# Create a new image with the correct borders
@@ -208,6 +232,8 @@ class SimulatorBridge:
 
 		# CV Bridge (converting ROS images to openCV)
 		self._bridge = CvBridge()
+
+		self._cow_angles = []
 
 		"""
 		ROS/Class attributes
@@ -261,9 +287,21 @@ class SimulatorBridge:
 			Utility.die("Service call failed for reason: {}".format(e), __file__)
 
 	# Use the ROS simulator to generate the current agent subview
-	def renderSubviewUsingSimulator(self, a_x, a_y):
+	def renderSubviewUsingSimulator(self, a_x, a_y, targets):
 		# Move the agent to the updated location
 		self.teleportAbsolute(const.ROBOT_NAME, a_x, a_y, const.DEFAULT_HEIGHT, 0)
+
+		if const.INDIVIDUAL_MOTION:
+			for i in range(len(targets)):
+				# Construct current target model name
+				target_name = const.BASE_TARGET_NAME + "_" + str(i)
+
+				# Extract positions
+				t_x = targets[i][0]
+				t_y = targets[i][1]
+
+				# Move the target
+				self.teleportAbsolute(target_name, t_x, t_y, 0, self._cow_angles[i])
 
 		# Convert agent to gazebo reference frame
 		g_x, g_y = self.leftHandToRightHandPosition(a_x, a_y)
@@ -293,6 +331,8 @@ class SimulatorBridge:
 		# Move the agent
 		self.teleportAbsolute(const.ROBOT_NAME, a_x, a_y, const.DEFAULT_HEIGHT, 0)
 
+		self._cow_angles = []
+
 		# Move all the targets
 		for i in range(len(target_poses)):
 			# Construct current target model name
@@ -304,6 +344,8 @@ class SimulatorBridge:
 
 			# Generate a random angle, convert to radians
 			angle = math.radians(random.randint(0, 360))
+
+			self._cow_angles.append(angle)
 
 			# Move the target
 			self.teleportAbsolute(target_name, t_x, t_y, 0, angle)

@@ -23,8 +23,8 @@ from helper import *
 from gridworld import gameEnv
 
 # Whether to jump straight to testing and load the model from file
-# TRAIN_NETWORK = True
 TRAIN_NETWORK = False
+# TRAIN_NETWORK = False
 
 # Whether or not to test after training
 TEST_NETWORK = True
@@ -146,12 +146,12 @@ if TRAIN_NETWORK:
     startE = 1 #Starting chance of random action
     endE = 0.1 #Final chance of random action
     anneling_steps = 10000 #How many steps of training to reduce startE to endE.
-    num_episodes = 20000 #How many episodes of game environment to train network with.
+    num_episodes = 10000 #How many episodes of game environment to train network with.
     pre_train_steps = 10000 #How many steps of random actions before training begins.
     load_model = False #Whether to load a saved model.
     path = "./drqn" #The path to save our model to.
     h_size = 512 #The size of the final convolutional layer before splitting it into Advantage and Value streams.
-    max_epLength = 300 #The max allowed length of our episode.
+    max_epLength = 301 #The max allowed length of our episode.
     time_per_step = 0.25 #Length of each step used in gif creation
     summaryLength = 100 #Number of epidoes to periodically save for analysis
     tau = 0.001
@@ -204,7 +204,7 @@ if TRAIN_NETWORK:
         for i in range(num_episodes):
             episodeBuffer = []
             #Reset environment and get first new observation
-            sP = env.reset()
+            sP, _ = env.reset()
             s = processState(sP)
             d = False
             rAll = 0
@@ -222,7 +222,7 @@ if TRAIN_NETWORK:
                     a, state1 = sess.run([mainQN.predict,mainQN.rnn_state],\
                         feed_dict={mainQN.scalarInput:[s/255.0],mainQN.trainLength:1,mainQN.state_in:state,mainQN.batch_size:1})
                     a = a[0]
-                s1P,r,d = env.step(a)
+                s1P,r,d,_ = env.step(a)
                 s1 = processState(s1P)
                 total_steps += 1
                 episodeBuffer.append(np.reshape(np.array([s,a,r,s1,d]),[1,5]))
@@ -295,7 +295,7 @@ if TEST_NETWORK:
     path = "./drqn" #The path to save/load our model to/from.
     h_size = 512 #The size of the final convolutional layer before splitting it into Advantage and Value streams.
     h_size = 512 #The size of the final convolutional layer before splitting it into Advantage and Value streams.
-    max_epLength = 300 #The max allowed length of our episode.
+    max_epLength = 301 #The max allowed length of our episode.
     time_per_step = 0.25 #Length of each step used in gif creation
     summaryLength = 100 #Number of epidoes to periodically save for analysis
 
@@ -315,12 +315,14 @@ if TEST_NETWORK:
     total_steps = 0
 
     # Numpy data to save to file
-    test_data = np.zeros((num_episodes, 3))
+    test_data = np.zeros((num_episodes, 4))
 
     # Statistic keeping variables
     over_100 = 0
+    over_300 = 0
     optimal = 0
     dif_10 = 0
+    average_DT = []
 
     #Make a path for our model to be saved in.
     if not os.path.exists(path):
@@ -334,9 +336,14 @@ if TEST_NETWORK:
         #wr = csv.writer(open('./Center/log.csv', 'a'), quoting=csv.QUOTE_ALL)
     with tf.Session() as sess:
         if load_model == True:
-            ckpt = tf.train.get_checkpoint_state(path)
-            print ('Loading Model from {}'.format(ckpt.model_checkpoint_path))
-            saver.restore(sess,ckpt.model_checkpoint_path)
+            model_path = './drqn/model-19999.cptk'
+            print ('Loading Model from {}'.format(model_path))
+            saver.restore(sess, model_path)
+
+            # ckpt = tf.train.get_checkpoint_state(path)
+            # print ('Loading Model from {}'.format(ckpt.model_checkpoint_path))
+            # saver.restore(sess,ckpt.model_checkpoint_path)
+            # saver.restore(sess,'model-19999.cptk')
             print ('Loaded model.')
         else:
             sess.run(init)
@@ -367,7 +374,7 @@ if TEST_NETWORK:
                         feed_dict={mainQN.scalarInput:[s/255.0],mainQN.trainLength:1,\
                         mainQN.state_in:state,mainQN.batch_size:1})
                     a = a[0]
-                s1P,r,d = env.step(a)
+                s1P,r,d,mu_DT = env.step(a)
                 s1 = processState(s1P)
                 total_steps += 1
                 episodeBuffer.append(np.reshape(np.array([s,a,r,s1,d]),[1,5])) #Save the experience to our episode buffer.
@@ -376,13 +383,15 @@ if TEST_NETWORK:
                 sP = s1P
                 state = state1
                 if d == True:
-                    
                     break
 
             # Store statistics to numpy array
             test_data[i,0] = j
             test_data[i,1] = min_actions
             test_data[i,2] = 0
+            test_data[i,3] = mu_DT
+
+            average_DT.append(mu_DT)
 
             bufferArray = np.array(episodeBuffer)
             jList.append(j)
@@ -398,14 +407,16 @@ if TEST_NETWORK:
             dif = j - min_actions
 
             if j > 100: over_100 += 1
+            if j > 300: over_300 += 1
             if dif == 0: optimal += 1
             if dif < 10: dif_10 += 1
 
             stat_1 = (float(over_100)/(i+1))*100
-            stat_2 = (float(optimal)/(i+1))*100
-            stat_3 = (float(dif_10)/(i+1))*100
+            stat_2 = (float(over_300)/(i+1))*100
+            stat_3 = (float(optimal)/(i+1))*100
+            stat_4 = (float(dif_10)/(i+1))*100
 
-            print(">100 {}%, optimal {}%, <10 dif {}%".format(stat_1, stat_2, stat_3))
+            print(">100 {}%, >300 {}%, optimal {}%, <10 dif {}%, mu_DT={}".format(stat_1, stat_2, stat_3, stat_4, np.mean(np.asarray(average_DT))))
 
             pbar.update()
 
