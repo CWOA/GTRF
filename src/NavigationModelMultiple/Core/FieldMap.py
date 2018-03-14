@@ -69,7 +69,8 @@ class FieldMap:
 
 		# If we should generate video
 		if self._save_video:
-			self._video_writer = VideoWriter(self._exp_name, Utility.getVideoDir())
+			self._vw_GO_I = VideoWriter(self._exp_name, Utility.getVideoDir())
+			self._vw_GO_M = VideoWriter(self._exp_name, Utility.getVideoDir())
 
 		if not self._generating:
 			# Algorithm class for selecting agent actions based on the environment state
@@ -190,6 +191,10 @@ class FieldMap:
 
 		return (pos, targets_pos, visit_map)
 
+	"""
+	MAIN EPISODE LOOP BELOW
+	"""
+
 	# Begin this episode whether we're generating training data, testing, etc.
 	def beginEpisode(self, testing, wait_amount=0, render_occ_map=False):
 		# Render the initial episode state
@@ -243,7 +248,7 @@ class FieldMap:
 
 			# If we should generate and save video
 			if self._save_video:
-				self.iterateVideoWriters(img, subview, occ_map0, occ_map1)
+				self.iterateVideoWriters(img, subview, occ_map0, occ_map1, action=chosen_action)
 
 			# Display if we're supposed to
 			if self._visualise: self._visualiser.display(wait_amount)
@@ -352,23 +357,25 @@ class FieldMap:
 			else:
 				Utility.die("Occupancy map mode not recognised in resetVideoWriters()", __file__)
 		else:
-			self._video_writer.reset("GO")
+			self._vw_GO_I.reset("GO_I")
+			self._vw_GO_M.reset("GO_M")
 
-	def iterateVideoWriters(self, img, subview, occ_map0, occ_map1):
+	def iterateVideoWriters(self, img, subview, occ_map0, occ_map1, action=None):
 		# If we're testing
 		if not self._generating:
-			self._vw_OURS.iterate(img)
-			self._vw_AGENT.iterate(subview)
+			self._vw_OURS.iterate(img, action=action)
+			self._vw_AGENT.iterate(subview, action=action)
 			if const.OCCUPANCY_MAP_MODE == const.VISITATION_MODE:
-				self._vw_OCC.iterate(occ_map)
+				self._vw_OCC.iterate(occ_map0, action=action)
 			elif const.OCCUPANCY_MAP_MODE == const.MOTION_MODE:
-				self._vw_OCC_0.iterate(occ_map0)
-				self._vw_OCC_1.iterate(occ_map1)
+				self._vw_OCC_0.iterate(occ_map0, action=action)
+				self._vw_OCC_1.iterate(occ_map1, action=action)
 			else:
 				Utility.die("Occupancy map mode not recognised in iterateVideoWriters()", __file__)
 		# We're generating training examples
 		else:
-			self._video_writer.iterate(img)
+			self._vw_GO_I.iterate(subview, action=action)
+			self._vw_GO_M.iterate(occ_map0, action=action)
 
 	def finishVideoWriters(self):
 		# If we're testing
@@ -384,7 +391,8 @@ class FieldMap:
 				Utility.die("Occupancy map mode not recognised in finishVideoWriters()", __file__)
 		# We're generating training examples
 		else:
-			self._video_writer.finishUp()
+			self._vw_GO_I.finishUp()
+			self._vw_GO_M.finishUp()
 
 	"""
 	Experiment running functions

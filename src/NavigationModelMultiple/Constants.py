@@ -14,13 +14,13 @@ Run-time arguments
 VISUALISE = False
 
 # Whether or not to use ROS/Gazebo simulator for synthesised visual input
-USE_SIMULATOR = True
+USE_SIMULATOR = False
 
 # Save frames to individual per-episode videos?
 SAVE_VIDEO = True
 
 # Number of episodes to test on or generate training examples
-ITERATIONS = 100
+ITERATIONS = 3
 
 """
 Algorithm class constants
@@ -92,10 +92,10 @@ GAUS_DIST = 2	# Gaussian distribution
 EQUI_DIST = 3	# Equidistant grid (at random positions)
 
 # Which distribution method to use
-# OBJECT_DIST_METHOD = PRNG_DIST
+OBJECT_DIST_METHOD = PRNG_DIST
 # OBJECT_DIST_METHOD = STAT_DIST
 # OBJECT_DIST_METHOD = GAUS_DIST
-OBJECT_DIST_METHOD = EQUI_DIST
+# OBJECT_DIST_METHOD = EQUI_DIST
 
 # Gaussian distribution initialisation parameters
 GAUS_MU_X = 3
@@ -118,9 +118,9 @@ INDIVIDUAL_MOTION_HERD = 2		# Population moves in a general direction but indivi
 								# have a small chance of inter-cluster randomness
 
 # Which individual motion model to utilise
-# INDIVIDUAL_MOTION_METHOD = INDIVIDUAL_MOTION_RANDOM
+INDIVIDUAL_MOTION_METHOD = INDIVIDUAL_MOTION_RANDOM
 # INDIVIDUAL_MOTION_METHOD = INDIVIDUAL_MOTION_HEADING
-INDIVIDUAL_MOTION_METHOD = INDIVIDUAL_MOTION_HERD
+# INDIVIDUAL_MOTION_METHOD = INDIVIDUAL_MOTION_HERD
 
 # If individual's are supposed to move, how much slower do they move compared to the agent
 # e.g. the agent moves at 1 unit per iteration, with individual_velocity=3, targets will
@@ -221,7 +221,7 @@ Loop Detector constants
 """
 
 # Whether to even use the loop detector
-USE_LOOP_DETECTOR = False
+USE_LOOP_DETECTOR = True
 
 # Use the string-based method (e.g. LRL) or coordinate-based system
 USE_ACTION_STRING = False
@@ -245,10 +245,10 @@ NAIVE_SOLVER = 3
 MOTION_SOLVER = 4
 
 # Which solver to use
-# SOLVER_METHOD = SEQUENCE_SOLVER
+SOLVER_METHOD = SEQUENCE_SOLVER
 # SOLVER_METHOD = CLOSEST_SOLVER
 # SOLVER_METHOD = NAIVE_SOLVER
-SOLVER_METHOD = MOTION_SOLVER
+# SOLVER_METHOD = MOTION_SOLVER
 
 """
 Tree Solver constants
@@ -275,6 +275,9 @@ Sequence Solver constants
 """
 VideoWriter constants
 """
+
+# Just save frames out individually (don't write video)
+JUST_SAVE_FRAMES = True
 
 # Video codec to encode saved videos with
 VIDEO_CODEC = 'FMP4'

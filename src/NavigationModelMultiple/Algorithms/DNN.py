@@ -8,6 +8,7 @@ import h5py
 import numpy as np
 import Constants as const
 import datetime
+from tqdm import tqdm
 
 # Machine learning scikit
 from sklearn.model_selection import train_test_split
@@ -468,7 +469,132 @@ class DNNModel:
 
 		return net
 
+	# This function implements the training strategy that Tilo suggested
+	def motionTrainingStrategy(self, data_dir):
+		# Reset tensorflow graph
+		tf.reset_default_graph()
+
+		# Load all ground-truth training data
+		X0, X1, Y = self.loadData(data_dir)
+
+		# Split the data into training/testing chunks
+		X0_train, X0_test, X1_train, X1_test, Y_train, Y_test = self.segregateData(X0, X1, Y)
+
+		# Run identifier (for tensorboard)
+		run_id = "training_strategy_motion_60k_V"
+
+		# Callback class
+		trainingCallback = TrainingCallback()
+
+		# Training parameters
+		pre_epochs = 10 # epochs to run prior to generating fake labels
+		fake_epochs = 2 # epochs to run with fake labels
+		norm_epochs = 2 # epochs to run with normal labels after fake
+		alt_num = 4 # number of times to alternate between fake/normal
+		post_epochs = 5 # epochs to run post fake label training
+		repeat_spikes = 4
+
+		invert_fake_labels = True
+
+		# Initial run
+		self._model.fit(	[X0_train, X1_train], 
+							Y_train,
+							validation_set=([X0_test, X1_test], Y_test),
+							n_epoch=pre_epochs,
+							batch_size=64,
+							show_metric=True,
+							run_id=run_id,
+							callbacks=trainingCallback							)
+
+		print "Finished initial training run"
+
+		for x in range(repeat_spikes):
+			# Number of alternate optimisation steps
+			for i in range(alt_num):
+				pbar = tqdm(total=X0_train.shape[0])
+
+				Y_fake = np.zeros(Y_train.shape)
+				# Generate labels on training data with current model state
+				for j in range(X0_train.shape[0]):
+					img_input = np.zeros((1, self._img_width, self._img_height, const.NUM_CHANNELS))
+					img_input[0,:,:,:] = X0_train[j,:,:,:]
+					map_input = np.zeros((1, const.MAP_WIDTH, const.MAP_HEIGHT, 2))
+					map_input[0,:,:,:] = X1_train[j,:,:,:]
+
+					prediction = self._model.predict([img_input, map_input])
+
+					max_idx = np.argmax(prediction)
+					choice_vec = np.zeros(len(const.EXT_ACTIONS))
+					choice_vec[max_idx] = 1
+
+					# Invert the label
+					if invert_fake_labels:
+						choice_vec = (1 - choice_vec) / (len(choice_vec) - 1.0)
+
+					Y_fake[j,:] = choice_vec
+
+					pbar.update()
+
+				pbar.close()
+
+				print "Finished generating fake labels"
+
+				# Train on fake labels
+				self._model.fit(	[X0_train, X1_train],
+									Y_fake,
+									validation_set=([X0_test, X1_test], Y_test),
+									n_epoch=fake_epochs,
+									batch_size=64,
+									show_metric=True,
+									run_id=run_id,
+									callbacks=trainingCallback							)
+
+				print "Finished training on fake labels"
+
+				# Train on normal labels
+				self._model.fit(	[X0_train, X1_train],
+									Y_train,
+									validation_set=([X0_test, X1_test], Y_test),
+									n_epoch=norm_epochs,
+									batch_size=64,
+									show_metric=True,
+									run_id=run_id,
+									callbacks=trainingCallback							)
+
+			print "Finished alternate optimisation"
+
+			# Train on normal labels
+			self._model.fit(	[X0_train, X1_train],
+								Y_train,
+								validation_set=([X0_test, X1_test], Y_test),
+								n_epoch=post_epochs,
+								batch_size=64,
+								show_metric=True,
+								run_id=run_id,
+								callbacks=trainingCallback							)
+
+		print "Finished training completely"
+
+		# self.evaluateModel(X0_test, X1_test, Y_test)
+
+		self.saveModel(run_id=run_id)
+
+
+class TrainingCallback(tflearn.callbacks.Callback):
+	def __init__(self):
+		self._train_acc = []
+
+	def on_batch_end(self, training_state, snapshot=False):
+		# print "Training acc is: {}".format(training_state.global_acc)
+		# self._train_acc.append(training_state.global_acc)
+		pass
+
 # Entry method for unit testing
 if __name__ == '__main__':
 	dnn = DNNModel()
-	dnn.loadSaveModel()
+
+	# dnn.loadSaveModel()
+
+	# Run training strategy Tilo suggested
+	data_dir = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/data/TRAINING_DATA_individual_motion_60k.h5"
+	dnn.motionTrainingStrategy(data_dir)

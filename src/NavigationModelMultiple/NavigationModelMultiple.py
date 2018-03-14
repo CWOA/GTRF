@@ -135,8 +135,8 @@ def generateVideoComparison(iterations, exp_name, visualise):
 	# best_model_path = "{}/visitation_marked_GAUSSIAN_2018-02-18_17:53:40_CROSS_VALIDATE_4.tflearn".format(base)
 
 	# 4) Random
-	# exp_name = "random"
-	# best_model_path = "{}/model_SEQUENCE_2017-12-15_15:51:08_CROSS_VALIDATE_4.tflearn".format(base)
+	exp_name = "random"
+	best_model_path = "{}/model_SEQUENCE_2017-12-15_15:51:08_CROSS_VALIDATE_4.tflearn".format(base)
 
 	# 5) Random simulator
 	# use_simulator = True
@@ -149,10 +149,10 @@ def generateVideoComparison(iterations, exp_name, visualise):
 	# best_model_path = "{}/individual_motion_60k_2018-02-16_10:29:15_CROSS_VALIDATE_0.tflearn".format(base)
 
 	# 7) Herd motion (+ simulator)
-	use_simulator = True
-	pause_for_user_input = True
-	exp_name = "herd_walk"
-	best_model_path = "{}/herd_simulator_2018-02-28_13:24:30.tflearn".format(base)
+	# use_simulator = True
+	# pause_for_user_input = True
+	# exp_name = "herd_walk"
+	# best_model_path = "{}/herd_simulator_2018-02-28_13:24:30.tflearn".format(base)
 
 	fm = FieldMap(	False, 
 					exp_name, 
@@ -193,11 +193,11 @@ if __name__ == '__main__':
 	# generateTrainTest("individual_motion", iterations, visualise, use_simulator)
 	# generateTrainTest("herd_simulator", iterations, visualise, use_simulator)
 
-	# generateTrainingExamples(iterations, visualise, use_simulator, save_video)
+	generateTrainingExamples(iterations, visualise, use_simulator, save_video)
 	# trainModel(iterations, use_simulator)
 	# testModel(iterations, visualise, use_simulator)
 	# compareSolvers(iterations, "naive_solution", visualise)
-	generateVideoComparison(iterations, "", visualise)
+	# generateVideoComparison(iterations, "", visualise)
 
 	# Testing function calls
 
