@@ -16,7 +16,4 @@
   <node pkg="uav_id" name="NavigationModelMultiple" type="NavigationModelMultiple.py" output="screen" required="true">
 
   </node>
-
-  <!-- Start rviz visualization with preset config -->
-<!--   <node pkg="rviz" type="rviz" name="rviz" args="-d $(find uav_id)/rviz_cfg/will_test.rviz"/> -->
 </launch>
