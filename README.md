@@ -1,10 +1,10 @@
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](LICENSE)
 
 # GTRF (Grid-based Target Recovery Framework)
 
 This repository provides a framework for rapidly prototyping, verifying and evaluating algorithmic approaches to the problem of distributed static and moving target recovery.
 
-This repository accompanies the IROS 2018 submission entitled *"Learning to Search for Distributed Targets from UAV-like Vision"*.
+This repository accompanies the paper to be published as part of the 2018 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) proceedings entitled *"Deep Learning for Exploration and Recovery of Uncharted and Dynamic Targets from UAV-like Vision"*.
 All source code used to generate results and data within the submission is given here for public use, further work, replicability and transparency.
 
 Essential dependencies
@@ -34,4 +34,4 @@ To add your own algorithm, edit the file "YourAlgorithm.py"
 
 License
 ------
-MIT License
+GPL-V3.0 (see [LICENSE](LICENSE))
