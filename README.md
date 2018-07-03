@@ -11,7 +11,7 @@ All source code used to generate results and data within the paper is given here
 Installation
 ------
 1. Simply clone this repository: *https://github.com/CWOA/GTRF*
-..* If using ROS, place repository in your catkin workspace
+⋅⋅* If using ROS, place repository in your catkin workspace
 2. Install the dependencies below as necessary
 
 Essential dependencies
