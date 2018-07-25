@@ -7,10 +7,11 @@ This repository provides a framework for rapidly prototyping, verifying and eval
 This repository accompanies the paper to be published as part of the 2018 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) proceedings entitled *"Deep Learning for Exploration and Recovery of Uncharted and Dynamic Targets from UAV-like Vision"*.
 Therefore, for implementation details, results, etc. see the published paper.
 All source code used to generate results and data within the paper is given here for public use, further work, replicability and transparency.
+The video accompanying the paper -- providing an overview of the implemented dual-stream paradigm as well as performance results across a variety of experiments -- can be watched at: https://vimeo.com/280747562
 
 Installation
 ------
-1. Simply clone this repository: *https://github.com/CWOA/GTRF* (if using ROS, place repository in your catkin workspace)
+1. Simply clone this repository: *https://github.com/CWOA/gtrf* (if using ROS, place repository in your catkin workspace)
 2. Install the dependencies below as necessary
 
 Essential dependencies
@@ -28,13 +29,14 @@ Non-essential dependencies
   * Scikit-learn (http://scikit-learn.org/stable/) - used for randomly segregating training towards cross-fold validation
   * ROS (http://www.ros.org/) - used to interact between main classes and Gazebo and simulate UAV-like properties
   * Gazebo (http://gazebosim.org/) - used to render simulated camera view for UAV downward vision
+  * Hector Quadrotor (http://wiki.ros.org/hector_quadrotor) - used to simulate the UAV agent in simulation within Gazebo
 
 Getting started
 ------
 * Run the file "src/NavigationModelMultiple.py"
 * To add your own algorithm, edit the file "YourAlgorithm.py"
 * Experiment configurations, constants, etc. can be found in "src/Constants.py"
-* To run via ROS and Gazebo, run the command "roslaunch GTRF navigation_model_multiple.launch"
+* To run via ROS and Gazebo, run the command "roslaunch gtrf navigation_model_multiple.launch" which spawns a simulated UAV, the environment itself (containing 5 target cow models) and runs the file "src/NavigationModelMultiple.py".
 
 License
 ------
