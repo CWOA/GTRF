@@ -7,7 +7,7 @@ This repository provides a framework for rapidly prototyping, verifying and eval
 This repository accompanies the paper to be published as part of the 2018 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) proceedings entitled *"Deep Learning for Exploration and Recovery of Uncharted and Dynamic Targets from UAV-like Vision"*.
 Therefore, for implementation details, results, etc. see the published paper.
 All source code used to generate results and data within the paper is given here for public use, further work, replicability and transparency.
-The video accompanying the paper -- providing an overview of the implemented dual-stream paradigm as well as performance results across a variety of experiments -- can be watched at: https://vimeo.com/280747562
+The video accompanying the paper -- providing an overview of the problem definition itself, the implemented dual-stream paradigm as well as performance results across a variety of experiments -- can be watched at: https://vimeo.com/280747562
 
 Installation
 ------
