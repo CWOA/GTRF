@@ -27,6 +27,10 @@ Non-essential dependencies
   * TFLearn (http://tflearn.org/) - high-level API for Tensorflow DNN operations
   * Matplotlib (https://matplotlib.org/) - used for plotting graph data
   * Scikit-learn (http://scikit-learn.org/stable/) - used for randomly segregating training towards cross-fold validation
+  
+ROS dependencies
+------
+If using ROS; you want to operate on realistic visual input from the simulator, the following dependencies must be installed: 
   * ROS (http://www.ros.org/) - used to interact between main classes and Gazebo and simulate UAV-like properties
   * Gazebo (http://gazebosim.org/) - used to render simulated camera view for UAV downward vision
   * Hector Quadrotor (http://wiki.ros.org/hector_quadrotor) - used to simulate the UAV agent in simulation within Gazebo
