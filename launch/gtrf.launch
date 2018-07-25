@@ -2,18 +2,18 @@
 <!-- All constants are in "Constants.py" -->
 <launch>
   <!-- Start Gazebo with field/cow world -->
-  <include file="$(find uav_id)/launch/start_world.launch">
-  	<arg name="world" value="$(find uav_id)/world/5_cows.world"/>
+  <include file="$(find gtrf)/launch/utility/start_world.launch">
+  	<arg name="world" value="$(find gtrf)/world/5_cows.world"/>
     <!-- Start Gazebo without visualisation/GUI (still produces simulated image topic) -->
   	<arg name="gui" value="true"/>
     <!-- <arg name="gui" value="false"/> -->
   </include>
 
   <!-- Spawn GRID-based, no-gravity camera -->
-  <include file="$(find uav_id)/launch/spawn_static_camera.launch" />
+  <include file="$(find gtrf)/launch/utility/spawn_static_camera.launch" />
 
   <!-- Launch non-ROS node NavigationModelMultiple.py -->
-  <node pkg="uav_id" name="NavigationModelMultiple" type="NavigationModelMultiple.py" output="screen" required="true">
+  <node pkg="gtrf" name="NavigationModelMultiple" type="NavigationModelMultiple.py" output="screen" required="true">
 
   </node>
 </launch>

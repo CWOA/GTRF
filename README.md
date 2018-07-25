@@ -22,6 +22,7 @@ Essential dependencies
 
 Non-essential dependencies
 ------
+  * h5py (https://pypi.org/project/h5py/) - for storing large synthesised datasets to file.
   * TQDM (https://pypi.python.org/pypi/tqdm) - progressbar visualisation package for monitoring iterative progress in large operations (e.g. training data generation, evaluation)
   * Tensorflow v1.0+ (https://www.tensorflow.org/) - installed to support TFLearn
   * TFLearn (http://tflearn.org/) - high-level API for Tensorflow DNN operations
@@ -40,7 +41,8 @@ Getting started
 * Run the file "src/NavigationModelMultiple.py"
 * To add your own algorithm, edit the file "YourAlgorithm.py"
 * Experiment configurations, constants, etc. can be found in "src/Constants.py"
-* To run via ROS and Gazebo, run the command "roslaunch gtrf navigation_model_multiple.launch" which spawns a simulated UAV, the environment itself (containing 5 target cow models) and runs the file "src/NavigationModelMultiple.py".
+* To run via ROS and Gazebo, run the command "roslaunch gtrf gtrf.launch" which spawns a simulated UAV, the environment itself (containing 5 target cow models) and runs the file "src/NavigationModelMultiple.py".
+* Edit the base directory constant (BASE_DIR) in "src/Constants.py" to point at the complete path at which you want to store training data, model weights, etc. (e.g. "/home/USERNAME/catkin_ws/src/gtrf/data")
 
 License
 ------

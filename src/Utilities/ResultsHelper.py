@@ -69,7 +69,7 @@ class ResultsHelper:
 		# plt.ylabel('moves')
 		plt.legend(loc="center right")
 		plt.tight_layout()
-		plt.savefig("{}/solution-generation-hist.pdf".format(Utility.getICIPFigureDir()))
+		plt.savefig("{}/solution-generation-hist.pdf".format(Utility.getFigureDir()))
 		plt.show()
 
 	@staticmethod
@@ -133,14 +133,14 @@ class ResultsHelper:
 
 		# plt.legend(loc="upper left")
 		plt.tight_layout()
-		plt.savefig("{}/solution-generation.pdf".format(Utility.getICIPFigureDir()))
+		plt.savefig("{}/solution-generation.pdf".format(Utility.getFigureDir()))
 		plt.show()
 
 	# Draws graph of training data instance size versus best validation accuracy
 	@staticmethod
 	def drawDatasetSizeAccuracyGraph():
 		# Load the data
-		base = Utility.getICIPDataDir()
+		base = Utility.getDataDir()
 		val_5k = np.genfromtxt("{}/5k_val_acc.csv".format(base), delimiter=',', skip_header=1, names=['x', 'y', 'z'])
 		val_10k = np.genfromtxt("{}/10k_val_acc.csv".format(base), delimiter=',', skip_header=1, names=['x', 'y', 'z'])
 		val_20k = np.genfromtxt("{}/20k_val_acc.csv".format(base), delimiter=',', skip_header=1, names=['x', 'y', 'z'])
@@ -162,7 +162,7 @@ class ResultsHelper:
 		plt.xlabel('Dataset size')
 		plt.ylabel('Validation accuracy')
 		plt.tight_layout()
-		plt.savefig("{}/dataset-size-accuracy.pdf".format(Utility.getICIPFigureDir()))
+		plt.savefig("{}/dataset-size-accuracy.pdf".format(Utility.getFigureDir()))
 		plt.show()
 
 	# Method for drawing a graph that compares training and validation accuracy versus
@@ -178,7 +178,7 @@ class ResultsHelper:
 		    # return y_smooth
 
 		# Load the data
-		base = Utility.getICIPDataDir()
+		base = Utility.getDataDir()
 		acc_5k = np.genfromtxt("{}/5k_train_acc.csv".format(base), delimiter=',', skip_header=1, names=['x', 'y', 'z'])
 		val_5k = np.genfromtxt("{}/5k_val_acc.csv".format(base), delimiter=',', skip_header=1, names=['x', 'y', 'z'])
 		acc_10k = np.genfromtxt("{}/10k_train_acc.csv".format(base), delimiter=',', skip_header=1, names=['x', 'y', 'z'])
@@ -283,7 +283,7 @@ class ResultsHelper:
 			ax3.axis([0, 60000, 0.58, 0.61])
 
 		plt.tight_layout()
-		plt.savefig("{}/motion-training-accuracy.pdf".format(Utility.getICIPFigureDir()))
+		plt.savefig("{}/motion-training-accuracy.pdf".format(Utility.getFigureDir()))
 		plt.show()
 
 	# List results from a given filepath to a numpy results file
@@ -346,7 +346,7 @@ class ResultsHelper:
 
 	@staticmethod
 	def drawModelLengthHistogram():
-		base = Utility.getICIPDataDir()
+		base = Utility.getDataDir()
 		data_seq = np.load("{}/test_data_seq.npy".format(base))
 		data_clo = np.load("{}/test_data_clo.npy".format(base))
 		data_nav = np.load("{}/test_data_NAIVE.npy".format(base))
@@ -440,30 +440,9 @@ class ResultsHelper:
 		plt.legend()
 		plt.tight_layout()
 
-		plt.savefig("{}/model-solution-length.pdf".format(Utility.getICIPFigureDir()))
+		plt.savefig("{}/model-solution-length.pdf".format(Utility.getFigureDir()))
 		plt.show()
 
 # Entry method/unit testing
 if __name__ == '__main__':
-	# ResultsHelper.drawDatasetSizeAccuracyGraph()
-	ResultsHelper.drawAccuracyGraph()
-
-	# ResultsHelper.listResults("/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/data/RESULTS_naive_solution.npy")
-	# ResultsHelper.listResults("/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/data/RESULTS_split stream.npy")
-
-	# ResultsHelper.listResults("/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/data/RESULTS_closest_unvisited.npy")
-	# ResultsHelper.listResults("/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/data/RESULTS_target_ordering.npy")
-
-	# ResultsHelper.listResults("/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/data/RESULTS_static_grid.npy")
-	# ResultsHelper.listResults("/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/data/RESULTS_moving_equidistant.npy")
-	# ResultsHelper.listResults("/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/data/RESULTS_gaussian.npy")
-
-	# ResultsHelper.listResults("/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/data/RESULTS_random_marked.npy")
-	# ResultsHelper.listResults("/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/data/RESULTS_equidistant_marked.npy")
-	# ResultsHelper.listResults("/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/data/RESULTS_gaussian_marked.npy")
-
-	# ResultsHelper.listResults("/home/will/catkin_ws/src/uav_id/src/NavigationModelMultiple/DRQN/test_data_DRQN.npy")
-
-	# ResultsHelper.drawModelLengthHistogram()
-
-	# ResultsHelper.drawGenerationGraphs()
+	pass

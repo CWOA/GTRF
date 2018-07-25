@@ -739,7 +739,7 @@ class ObjectHandler:
 		dif_num_targets = len(num_targets)
 
 		# Get base directory(folder) to save numpy arrays to
-		base = Utility.getICIPDataDir()
+		base = Utility.getDataDir()
 
 		# Need to generate data
 		if not load:

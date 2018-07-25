@@ -291,8 +291,7 @@ class FieldMap:
 	def saveDataToFile(self):
 		print "Saving data using h5py"
 
-		# file_str = Utility.getHDF5DataDir()
-		file_str = "{}/TRAINING_DATA_{}.h5".format(Utility.getICIPDataDir(), self._exp_name)
+		file_str = "{}/TRAINING_DATA_{}.h5".format(Utility.getDataDir(), self._exp_name)
 
 		# Open the dataset file (may overwrite an existing file!!)
 		dataset = h5py.File(file_str, 'w')
@@ -423,7 +422,7 @@ class FieldMap:
 		print "Beginning testing on generated examples"
 
 		# Place to store testing data to in numpy form
-		base = Utility.getICIPDataDir()
+		base = Utility.getDataDir()
 
 		# Numpy array for testing data, consists of:
 		# 0: number of moves required by the model
@@ -493,7 +492,7 @@ class FieldMap:
 		print "Beginning comparing solvers"
 
 		# Place to store testing data to in numpy form
-		base = Utility.getICIPDataDir()
+		base = Utility.getDataDir()
 
 		# Numpy array for testing data, consists of:
 		# 0: number of moves required by the model
@@ -582,7 +581,7 @@ class FieldMap:
 		self._dnn.loadSaveModel()
 
 		# Place to store images to
-		base = os.path.join(Utility.getICIPFigureDir(), "raw_instances")
+		base = os.path.join(Utility.getFigureDir(), "raw_instances")
 
 		# Initialise progress bar (TQDM) object
 		pbar = tqdm(total=num_images)
@@ -629,6 +628,6 @@ class FieldMap:
 
 # Entry method/unit testing
 if __name__ == '__main__':
-	# Generate visualisations of runs for ICIP/thesis
+	# Generate visualisations of runs for paper
 	fm = FieldMap(visualise=True, use_simulator=False)
 	fm.generateVisualisations((40, 50), num_images=25)

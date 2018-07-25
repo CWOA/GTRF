@@ -108,7 +108,7 @@ class SplitStreamDNNModel:
 
 	def loadData(self):
 		# Prepare and load data
-		data_path = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/data/training_data_SEQUENCE.h5"
+		data_path = "tbc"
 		dataset = h5py.File(data_path, 'r')
 
 		# Extract the datasets contained within the file as numpy arrays, simple :)
@@ -131,7 +131,7 @@ class SplitStreamDNNModel:
 	def trainModel(self):
 		X0_train, X0_test, X1_train, X1_test, Y_train, Y_test = self.loadData()
 
-		save_location = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/models/split_stream.tflearn"
+		save_location = "tbc"
 
 		net = self.defineNetworkArchitecture()
 		self._model = tflearn.DNN(net)

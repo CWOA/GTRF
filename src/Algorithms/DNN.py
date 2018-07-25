@@ -82,7 +82,7 @@ class DNNModel:
 
 		# Model declaration
 		self._model = tflearn.DNN(	self._network,
-									tensorboard_dir=Utility.getICIPTensorboardDir()	)
+									tensorboard_dir=Utility.getTensorboardDir()	)
 
 		print "Initialised DNN"
 
@@ -93,7 +93,7 @@ class DNNModel:
 		# Load location
 		if data_dir is None:
 			# load_loc = Utility.getHDF5DataDir()
-			load_loc = "{}/gaussian_SEQUENCE.h5".format(Utility.getICIPDataDir())
+			load_loc = "{}/gaussian_SEQUENCE.h5".format(Utility.getDataDir())
 		else:
 			load_loc = data_dir
 
@@ -197,7 +197,7 @@ class DNNModel:
 			# Init the model
 			self._model = tflearn.DNN(	self._network,
 										tensorboard_verbose=0,
-										tensorboard_dir=Utility.getICIPTensorboardDir()	)
+										tensorboard_dir=Utility.getTensorboardDir()	)
 
 			# Train!
 			if self._use_dual_networks:
@@ -355,10 +355,6 @@ class DNNModel:
 
 	def loadModel(self, model_dir=None):
 		if model_dir is None:
-			# model_dir = Utility.getModelDir()
-			# model_dir = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/models/model_CLOSEST_2017-12-14_20:04:09_CROSS_VALIDATE_5.tflearn"
-			# model_dir = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/models/model_SEQUENCE_2017-12-15_15:51:08_CROSS_VALIDATE_4.tflearn"
-			# model_dir = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/models/split_stream_2018-02-22_17:43:21_CROSS_VALIDATE_0.tflearn"
 			pass
 
 		print "Loading TFLearn model at directory:{}".format(model_dir)
@@ -369,7 +365,7 @@ class DNNModel:
 
 	def saveModel(self, run_id=None):
 		if run_id is not None:
-			model_dir = Utility.getICIPModelDir()
+			model_dir = Utility.getModelDir()
 			model_dir = "{}/{}.tflearn".format(model_dir, run_id)
 
 		self._model.save(model_dir)
@@ -591,10 +587,4 @@ class TrainingCallback(tflearn.callbacks.Callback):
 
 # Entry method for unit testing
 if __name__ == '__main__':
-	dnn = DNNModel()
-
-	# dnn.loadSaveModel()
-
-	# Run training strategy Tilo suggested
-	data_dir = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/data/TRAINING_DATA_individual_motion_60k.h5"
-	dnn.motionTrainingStrategy(data_dir)
+	pass

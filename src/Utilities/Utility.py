@@ -21,34 +21,20 @@ class Utility:
 	Directory generation methods
 	"""
 	@staticmethod
-	def getHDF5DataDir():
-		return os.path.join(const.BASE_DIR, const.DATA_DIR_HDF5)
+	def getDataDir():
+		return os.path.join(const.BASE_DIR, const.DATA_DIR)
 	@staticmethod
 	def getTensorboardDir():
 		return os.path.join(const.BASE_DIR, const.TENSORBOARD_DIR)
 	@staticmethod
 	def getModelDir():
-		filename = "{}.tflearn".format(const.MODEL_NAME)
-		return os.path.join(const.BASE_DIR, const.MODELS_DIR, filename)
+		return os.path.join(const.BASE_DIR, const.MODELS_DIR)
 	@staticmethod
 	def getVideoDir():
 		return os.path.join(const.BASE_DIR, const.VIDEO_DIR)
-
-	"""
-	ICIP 2018 directory methods
-	"""
 	@staticmethod
-	def getICIPDataDir():
-		return os.path.join(const.BASE_DIR, const.ICIP_DATA_DIR)
-	@staticmethod
-	def getICIPFigureDir():
-		return os.path.join(const.BASE_DIR, const.ICIP_FIGURE_DIR)
-	@staticmethod
-	def getICIPModelDir():
-		return os.path.join(const.BASE_DIR, const.ICIP_MODELS_DIR)
-	@staticmethod
-	def getICIPTensorboardDir():
-		return os.path.join(const.BASE_DIR, const.ICIP_TENSORBOARD_DIR)
+	def getFigureDir():
+		return os.path.join(const.BASE_DIR, const.FIGURE_DIR)
 
 	"""
 	General utility functions
@@ -333,8 +319,3 @@ class Utility:
 # Entry method/unit testing
 if __name__ == '__main__':
 	pass
-
-	# file1_path = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/data/TRAINING_DATA_individual_motion_LARGE.h5"
-	# file2_path = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/data/TRAINING_DATA_individual_motion_MS.h5"
-	# out_path = "/home/will/catkin_ws/src/uav_id/tflearn/ICIP2018/data/TRAINING_DATA_individual_motion_60k.h5"
-	# Utility.combineH5Databases(out_path, file1_path, file2_path)

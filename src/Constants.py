@@ -38,19 +38,13 @@ ALGORITHM_METHOD = ALGORITHM_DUAL_INPUT_CNN
 """
 Directory constats
 """
-BASE_DIR = "/home/will/catkin_ws/src/uav_id/tflearn"
-DATA_DIR_HDF5 = "data/multiple_nav_data_SIMULATOR.h5"
+# BASE_DIR = "/home/YOUR-USERNAME-HERE/catkin_ws/src/gtrf/data"
+BASE_DIR = "/home/will/catkin_ws/src/gtrf/data"
 TENSORBOARD_DIR = "tensorboard"
 MODELS_DIR = "models"
-VIDEO_DIR = "ICIP2018/video"
-
-"""
-ICIP directories
-"""
-ICIP_DATA_DIR = "ICIP2018/data"
-ICIP_FIGURE_DIR = "ICIP2018/figures"
-ICIP_MODELS_DIR = "ICIP2018/models"
-ICIP_TENSORBOARD_DIR = "ICIP2018/tensorboard"
+VIDEO_DIR = "video"
+DATA_DIR = "data"
+FIGURE_DIR = "figures"
 
 """
 FieldMap constants
@@ -213,7 +207,7 @@ DATA_RATIO = 0.9
 NUM_EPOCHS = 50
 
 # Should we cross-validate, how many folds?
-CROSS_VALIDATE = True
+CROSS_VALIDATE = False
 NUM_FOLDS = 10
 
 """
