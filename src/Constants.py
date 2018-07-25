@@ -38,8 +38,7 @@ ALGORITHM_METHOD = ALGORITHM_DUAL_INPUT_CNN
 """
 Directory constats
 """
-# BASE_DIR = "/home/YOUR-USERNAME-HERE/catkin_ws/src/gtrf/data"
-BASE_DIR = "/home/will/catkin_ws/src/gtrf/data"
+BASE_DIR = "/home/YOUR-USERNAME-HERE/catkin_ws/src/gtrf/data"
 TENSORBOARD_DIR = "tensorboard"
 MODELS_DIR = "models"
 VIDEO_DIR = "video"
