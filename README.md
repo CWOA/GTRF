@@ -1,5 +1,3 @@
-[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](LICENSE)
-
 # GTRF (Grid-based Target Recovery Framework)
 
 This repository provides a framework for rapidly prototyping, verifying and evaluating algorithmic approaches to the problem of distributed static and moving target recovery when given limited environment visibility.
