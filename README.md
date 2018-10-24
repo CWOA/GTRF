@@ -44,4 +44,4 @@ Getting started
 
 License
 ------
-GNU GPL-V3.0 (see [LICENSE](LICENSE))
+Non-Commercial Government License (see [LICENSE](LICENSE))
