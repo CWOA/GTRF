@@ -44,4 +44,4 @@ Getting started
 
 License
 ------
-Non-Commercial Government License (see [LICENSE](LICENSE))
+Non-Commercial Government License (see [LICENSE](LICENSE.md))
